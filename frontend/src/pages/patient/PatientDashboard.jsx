@@ -1,8 +1,27 @@
 import { useAuthStore } from '../../store/useAuthStore';
 import { Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../../api/axiosConfig';
+import DoctorCard from '../../components/DoctorCard';
 
 const PatientDashboard = () => {
     const { user } = useAuthStore();
+    const [doctors, setDoctors] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                const response = await api.get('/doctors');
+                setDoctors(response.data);
+            } catch (error) {
+                console.error("Error cargando doctores", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDoctors();
+    }, []);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">
@@ -30,14 +49,17 @@ const PatientDashboard = () => {
                 />
             </div>
 
-            {/* Contenedor de Doctores (Placeholder para el próximo sprint) */}
+            {/* Contenedor de Doctores */}
             <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Especialistas Destacados en el Zulia</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Aquí irán las DoctorCards */}
-                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center h-48 text-gray-400">
-                        Cargando especialistas...
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {loading ? (
+                        <p className="text-gray-400 col-span-full text-center py-10">Cargando especialistas...</p>
+                    ) : doctors.length > 0 ? (
+                        doctors.map(doc => <DoctorCard key={doc.doctor_id} doctor={doc} />)
+                    ) : (
+                        <p className="text-gray-400 col-span-full text-center py-10">No hay especialistas verificados disponibles en este momento.</p>
+                    )}
                 </div>
             </div>
         </div>

@@ -16,6 +16,7 @@ app.use(express.urlencoded({ extended: true })); // Para recibir archivos (audio
 // Rutas
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
+app.use('/api/doctors', require('./routes/doctorRoutes'));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {
