@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 import PatientDashboard from './pages/patient/PatientDashboard';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import DoctorSchedule from './pages/doctor/DoctorSchedule';
 
 // Placeholder temporal para el Admin
 const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
@@ -24,6 +25,7 @@ function App() {
             {/* Rutas específicas para Doctores */}
             <Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+              <Route path="/doctor/schedule" element={<DoctorSchedule />} />
             </Route>
 
             {/* Rutas específicas para Pacientes */}
