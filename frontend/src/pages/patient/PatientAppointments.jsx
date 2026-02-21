@@ -26,8 +26,7 @@ const PatientAppointments = () => {
 
     const handleJoinVideoCall = (appointmentId) => {
         // Redirigir a la sala de espera / videollamada del paciente
-        alert("Iniciando conexión segura con el consultorio virtual...");
-        // navigate(`/patient/video-room/${appointmentId}`); // Lo activaremos cuando hagamos la sala del paciente
+        navigate(`/patient/video-room/${appointmentId}`); 
     };
 
     // Diccionario visual para los estados

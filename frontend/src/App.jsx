@@ -9,6 +9,7 @@ import VideoRoom from './pages/doctor/VideoRoom';
 import ReportEditor from './pages/doctor/ReportEditor';
 import DoctorBooking from './pages/patient/DoctorBooking';
 import PatientAppointments from './pages/patient/PatientAppointments';
+import PatientVideoRoom from './pages/patient/PatientVideoRoom';
 
 // Placeholder temporal para el Admin
 const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
@@ -27,6 +28,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           {/* Ruta inmersiva de Telemedicina (Sin Sidebar) */}
           <Route path="/doctor/video-room/:id" element={<VideoRoom />} />
+          <Route path="/patient/video-room/:id" element={<PatientVideoRoom />} />
 
           <Route element={<DashboardLayout />}>
             {/* Rutas específicas para Doctores */}
