@@ -1,6 +1,9 @@
 import { Star, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const DoctorCard = ({ doctor }) => {
+    const navigate = useNavigate();
+
     return (
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
@@ -35,7 +38,9 @@ const DoctorCard = ({ doctor }) => {
                 </div>
             </div>
 
-            <button className="w-full mt-6 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-medium py-2.5 rounded-xl transition-colors text-sm">
+            <button 
+                onClick={() => navigate(`/patient/book/${doctor.doctor_id}`, { state: { doctor } })}
+                className="w-full mt-6 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-medium py-2.5 rounded-xl transition-colors text-sm">
                 Agendar Cita
             </button>
         </div>
