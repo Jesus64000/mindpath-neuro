@@ -18,6 +18,7 @@ const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/schedules', require('./routes/scheduleRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {
