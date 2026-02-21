@@ -62,3 +62,40 @@ exports.updateAppointmentStatus = async (req, res) => {
         res.status(500).json({ message: 'Error al actualizar el estado de la cita.' });
     }
 };
+
+// Función interna auxiliar para traducir user_id a patient_id
+const getPatientId = async (userId) => {
+    const [rows] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+    return rows.length > 0 ? rows[0].id : null;
+};
+
+// 3. Obtener todas las citas del paciente logueado
+exports.getPatientAppointments = async (req, res) => {
+    try {
+        const patientId = await getPatientId(req.user.id);
+        if (!patientId) return res.status(403).json({ message: 'Acceso denegado. Perfil de paciente no encontrado.' });
+
+        // JOIN Triple: Citas -> Doctores -> Usuarios (Para sacar el nombre y especialidad del Dr)
+        const [appointments] = await db.query(`
+            SELECT 
+                a.id AS appointment_id,
+                a.appointment_date,
+                a.start_time,
+                a.status,
+                a.type,
+                u.full_name AS doctor_name,
+                d.specialty,
+                d.profile_picture
+            FROM appointments a
+            JOIN doctors d ON a.doctor_id = d.id
+            JOIN users u ON d.user_id = u.id
+            WHERE a.patient_id = ?
+            ORDER BY a.appointment_date DESC, a.start_time DESC
+        `, [patientId]);
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        console.error("Error en getPatientAppointments:", error);
+        res.status(500).json({ message: 'Error interno al obtener tus citas.' });
+    }
+};

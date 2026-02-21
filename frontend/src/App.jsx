@@ -8,6 +8,7 @@ import DoctorSchedule from './pages/doctor/DoctorSchedule';
 import VideoRoom from './pages/doctor/VideoRoom';
 import ReportEditor from './pages/doctor/ReportEditor';
 import DoctorBooking from './pages/patient/DoctorBooking';
+import PatientAppointments from './pages/patient/PatientAppointments';
 
 // Placeholder temporal para el Admin
 const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
@@ -39,6 +40,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
               <Route path="/patient/dashboard" element={<PatientDashboard />} />
               <Route path="/patient/book/:doctorId" element={<DoctorBooking />} />
+              <Route path="/patient/appointments" element={<PatientAppointments />} />
             </Route>
 
             {/* Rutas específicas para Administradores */}
