@@ -11,6 +11,7 @@ const DashboardLayout = () => {
         { name: 'Panel', path: '/doctor/dashboard', icon: LayoutDashboard },
         { name: 'Pacientes', path: '/doctor/patients', icon: Users },
         { name: 'Agenda', path: '/doctor/schedule', icon: Calendar },
+        { name: 'Perfil', path: '/doctor/profile-settings', icon: Settings },
     ] : [
         { name: 'Inicio', path: '/patient/dashboard', icon: LayoutDashboard },
         { name: 'Mis Citas', path: '/patient/appointments', icon: Calendar },
