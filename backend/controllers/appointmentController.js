@@ -69,13 +69,30 @@ const getPatientId = async (userId) => {
     return rows.length > 0 ? rows[0].id : null;
 };
 
-// 3. Obtener todas las citas del paciente logueado
+// 3. Obtener citas del paciente logueado con paginación
 exports.getPatientAppointments = async (req, res) => {
     try {
-        const patientId = await getPatientId(req.user.id);
-        if (!patientId) return res.status(403).json({ message: 'Acceso denegado. Perfil de paciente no encontrado.' });
+        const userId = req.user.id;
 
-        // JOIN Triple: Citas -> Doctores -> Usuarios (Para sacar el nombre y especialidad del Dr)
+        // Paginación
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const offset = (page - 1) * limit;
+
+        // Obtener patient_id
+        const [patient] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+        if (patient.length === 0) return res.status(404).json({ message: 'Paciente no encontrado.' });
+        const patientId = patient[0].id;
+
+        // Total de registros
+        const [countResult] = await db.query(
+            'SELECT COUNT(*) as total FROM appointments WHERE patient_id = ?',
+            [patientId]
+        );
+        const totalRecords = countResult[0].total;
+        const totalPages = Math.ceil(totalRecords / limit);
+
+        // Página actual con JOIN a doctores/usuarios
         const [appointments] = await db.query(`
             SELECT 
                 a.id AS appointment_id,
@@ -91,11 +108,19 @@ exports.getPatientAppointments = async (req, res) => {
             JOIN users u ON d.user_id = u.id
             WHERE a.patient_id = ?
             ORDER BY a.appointment_date DESC, a.start_time DESC
-        `, [patientId]);
+            LIMIT ? OFFSET ?
+        `, [patientId, limit, offset]);
 
-        res.status(200).json(appointments);
+        res.status(200).json({
+            data: appointments,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages === 0 ? 1 : totalPages,
+                totalRecords
+            }
+        });
     } catch (error) {
-        console.error("Error en getPatientAppointments:", error);
+        console.error('Error en getPatientAppointments:', error);
         res.status(500).json({ message: 'Error interno al obtener tus citas.' });
     }
 };

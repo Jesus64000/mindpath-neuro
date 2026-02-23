@@ -1,7 +1,7 @@
 import { useAuthStore } from '../../store/useAuthStore';
-import { Search, Video, Calendar, ArrowRight, X } from 'lucide-react';
+import { Video, Calendar, ArrowRight, Clock, Users, PlusCircle, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import DoctorCard from '../../components/DoctorCard';
 
@@ -9,27 +9,43 @@ const PatientDashboard = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
     
-    const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [nextAppointment, setNextAppointment] = useState(null);
-    
-    // 🧠 NUEVO: Estado para el buscador inteligente
-    const [searchTerm, setSearchTerm] = useState('');
+    const [nextAppointment, setNextAppointment] = useState(null); // La cita de HOY (Urgente)
+    const [upcomingAppointments, setUpcomingAppointments] = useState([]); // Próximas citas (Mini-lista)
+    const [myDoctors, setMyDoctors] = useState([]); // El equipo médico del paciente
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const docsResponse = await api.get('/doctors');
-                setDoctors(docsResponse.data);
-
+                // 1. Cargamos TODAS las citas del paciente
                 const appsResponse = await api.get('/appointments/patient');
+                const appointments = appsResponse.data;
                 const today = new Date().toDateString();
-                const upcoming = appsResponse.data.find(app => 
+
+                // Separar la cita de HOY (si existe)
+                const todayApp = appointments.find(app => 
                     new Date(app.appointment_date).toDateString() === today && 
                     app.status === 'confirmed' && 
                     app.type === 'virtual'
                 );
-                if (upcoming) setNextAppointment(upcoming);
+                if (todayApp) setNextAppointment(todayApp);
+
+                // Separar las PRÓXIMAS citas (que no sean hoy, y que estén pendientes o confirmadas)
+                // Tomamos solo las primeras 3 para la mini-lista
+                const futureApps = appointments
+                    .filter(app => new Date(app.appointment_date) >= new Date() && app.appointment_id !== todayApp?.appointment_id && (app.status === 'pending' || app.status === 'confirmed'))
+                    .slice(0, 3);
+                setUpcomingAppointments(futureApps);
+
+                // 2. Cargamos "Mi Equipo Médico" (Idealmente, el backend hará esta lógica, 
+                // pero por ahora hacemos una petición a una ruta que crearemos luego)
+                try {
+                    const doctorsResponse = await api.get('/patients/my-doctors');
+                    setMyDoctors(doctorsResponse.data);
+                } catch (error) {
+                    console.warn("Ruta /my-doctors aún no existe en el backend, usando arreglo vacío por ahora.");
+                    setMyDoctors([]); // Fallback temporal
+                }
 
             } catch (error) {
                 console.error("Error cargando datos del dashboard", error);
@@ -37,22 +53,22 @@ const PatientDashboard = () => {
                 setLoading(false);
             }
         };
-        fetchData();
+        fetchDashboardData();
     }, []);
 
-    // 🧠 NUEVO: Lógica de filtrado en tiempo real
-    const filteredDoctors = doctors.filter(doc => {
-        const searchLower = searchTerm.toLowerCase();
-        const nameMatch = doc.full_name?.toLowerCase().includes(searchLower);
-        const specialtyMatch = doc.specialty?.toLowerCase().includes(searchLower);
-        return nameMatch || specialtyMatch;
-    });
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-[70vh]">
+                <Activity className="animate-spin text-mindpath-primary" size={48} />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-10">
             
-            {/* WIDGET INTELIGENTE: Consulta de Hoy */}
-            {nextAppointment && (
+            {/* 🚨 WIDGET 1: LA CITA DE HOY (El más importante) */}
+            {nextAppointment ? (
                 <div className="bg-gradient-to-r from-mindpath-primary to-purple-600 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-purple-500/20 animate-fade-in border border-purple-400">
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center mr-6 backdrop-blur-sm">
@@ -72,67 +88,100 @@ const PatientDashboard = () => {
                         Entrar a la Sala <ArrowRight size={18} className="ml-2" />
                     </button>
                 </div>
-            )}
-
-            {/* Banner de Bienvenida Clásico */}
-            {!nextAppointment && (
-                <div className="bg-mindpath-light rounded-3xl p-8 flex justify-between items-center border border-violet-100">
+            ) : (
+                <div className="bg-white rounded-3xl p-8 flex justify-between items-center border border-gray-100 shadow-sm">
                     <div>
-                        <h1 className="text-3xl font-bold text-mindpath-dark mb-2">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             ¡Hola, {user?.full_name?.split(' ')[0] || 'Paciente'}! 👋
                         </h1>
-                        <p className="text-gray-600">
-                            Encuentra al mejor especialista para tus necesidades y agenda una cita en minutos.
+                        <p className="text-gray-500">
+                            Bienvenido a tu centro de salud mental. ¿Cómo te sientes hoy?
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* 🔍 BUSCADOR INTELIGENTE INTEGRADO */}
-            <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search size={20} className={`transition-colors ${searchTerm ? 'text-mindpath-primary' : 'text-gray-400 group-hover:text-mindpath-primary'}`} />
-                </div>
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none text-gray-700 transition-all"
-                    placeholder="Buscar especialista por nombre o especialidad (ej. Neurólogo)..."
-                />
-                {/* Botón para limpiar la búsqueda rápidamente */}
-                {searchTerm && (
-                    <button 
-                        onClick={() => setSearchTerm('')}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                        <X size={20} />
-                    </button>
-                )}
-            </div>
-
-            {/* Contenedor de Doctores */}
-            <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                    <Calendar size={20} className="text-mindpath-primary mr-2"/>
-                    {searchTerm ? `Resultados para "${searchTerm}"` : 'Especialistas Destacados'}
-                </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {loading ? (
-                        <p className="text-gray-400 col-span-full text-center py-10">Cargando especialistas...</p>
-                    ) : filteredDoctors.length > 0 ? (
-                        filteredDoctors.map(doc => <DoctorCard key={doc.doctor_id} doctor={doc} />)
+                {/* ⬅️ COLUMNA IZQUIERDA: Mi Equipo Médico (Ocupa 2/3 del espacio) */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex justify-between items-end">
+                        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                            <Users size={24} className="text-mindpath-primary mr-2"/>
+                            Mi Equipo Médico
+                        </h3>
+                        <Link to="/patient/doctors" className="text-sm font-bold text-mindpath-primary hover:underline flex items-center">
+                            Explorar Directorio <ArrowRight size={16} className="ml-1" />
+                        </Link>
+                    </div>
+
+                    {myDoctors.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {myDoctors.map(doc => <DoctorCard key={doc.doctor_id} doctor={doc} />)}
+                        </div>
                     ) : (
-                        <div className="col-span-full bg-gray-50 rounded-2xl p-8 text-center border-2 border-dashed border-gray-200">
-                            <Search size={40} className="mx-auto text-gray-300 mb-3" />
-                            <p className="text-gray-500 font-medium">No se encontraron especialistas que coincidan con "{searchTerm}".</p>
-                            <button onClick={() => setSearchTerm('')} className="mt-4 text-mindpath-primary font-bold hover:underline">
-                                Limpiar búsqueda
+                        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-10 text-center flex flex-col items-center justify-center">
+                            <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                                <PlusCircle size={32} className="text-gray-300" />
+                            </div>
+                            <h4 className="text-lg font-bold text-gray-700 mb-2">Aún no tienes médicos asignados</h4>
+                            <p className="text-gray-500 mb-6 max-w-sm">
+                                Explora nuestro directorio de especialistas verificados y agenda tu primera consulta para empezar a construir tu equipo médico.
+                            </p>
+                            <button 
+                                onClick={() => navigate('/patient/doctors')}
+                                className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-md"
+                            >
+                                Buscar Especialista
                             </button>
                         </div>
                     )}
                 </div>
+
+                {/* ➡️ COLUMNA DERECHA: Mini-Lista de Próximas Citas (Ocupa 1/3 del espacio) */}
+                <div className="space-y-6">
+                    <div className="flex justify-between items-end">
+                        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                            <Calendar size={24} className="text-mindpath-primary mr-2"/>
+                            Próximas Citas
+                        </h3>
+                    </div>
+
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                        {upcomingAppointments.length > 0 ? (
+                            <div className="space-y-4">
+                                {upcomingAppointments.map(app => (
+                                    <div key={app.appointment_id} className="flex items-start p-3 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100 cursor-pointer" onClick={() => navigate('/patient/appointments')}>
+                                        <div className="h-10 w-10 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
+                                            <Clock size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 line-clamp-1">Dr(a). {app.doctor_name}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(app.appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
+                                            </p>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${app.status === 'confirmed' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                                                {app.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button 
+                                    onClick={() => navigate('/patient/appointments')}
+                                    className="w-full mt-4 py-2 text-sm font-bold text-mindpath-primary bg-mindpath-light rounded-xl hover:bg-purple-100 transition-colors"
+                                >
+                                    Ver todas mis citas
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Calendar size={32} className="mx-auto text-gray-300 mb-3" />
+                                <p className="text-sm font-medium text-gray-500">No tienes citas programadas próximamente.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
         </div>
     );

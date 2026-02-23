@@ -21,6 +21,7 @@ app.use('/api/schedules', require('./routes/scheduleRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/consultations', require('./routes/consultationRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
+app.use('/api/patients', require('./routes/patientRoutes'));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {

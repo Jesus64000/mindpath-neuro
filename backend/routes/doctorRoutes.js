@@ -5,5 +5,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 // Protegemos la ruta para que solo usuarios logueados vean los médicos
 router.get('/', authMiddleware, doctorController.getAllDoctors);
+router.get('/:id', authMiddleware, doctorController.getDoctorById);
 
 module.exports = router;

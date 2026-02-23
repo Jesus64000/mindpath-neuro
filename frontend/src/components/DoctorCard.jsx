@@ -6,7 +6,7 @@ const DoctorCard = ({ doctor }) => {
 
     return (
         <div 
-            onClick={() => navigate(`/patient/book/${doctor.doctor_id}`, { state: { doctor } })}
+            onClick={() => navigate(`/patient/doctor/${doctor.doctor_id}`, { state: { doctor } })}
             className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
         >
             <div className="flex items-start gap-4 mb-4">
