@@ -8,56 +8,63 @@ const getPatientId = async (userId) => {
 
 // 1. Calcular disponibilidad real de un doctor para una fecha específica
 exports.getAvailability = async (req, res) => {
-    const { doctorId, date } = req.query; // date en formato 'YYYY-MM-DD'
-
-    if (!doctorId || !date) return res.status(400).json({ message: 'Faltan parámetros.' });
-
     try {
-        // Obtenemos el día de la semana en inglés para cruzarlo con nuestra tabla de horarios
-        const dateObj = new Date(`${date}T00:00:00`);
-        const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const { doctorId, date } = req.query; // date viene en formato 'YYYY-MM-DD'
 
-        // A. Buscar el horario de trabajo configurado por el doctor para ese día
+        if (!doctorId || !date) {
+            return res.status(400).json({ message: 'Se requiere doctorId y date' });
+        }
+
+        // Traducir fecha a ENUM de la base (Sunday/Monday...)
+        const requestDate = new Date(date);
+        const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeekEnum = daysMap[requestDate.getUTCDay()];
+
+        // Buscar la regla de horario en doctor_schedules
         const [schedules] = await db.query(
-            'SELECT start_time, end_time FROM doctor_schedules WHERE doctor_id = ? AND day_of_week = ?',
-            [doctorId, dayOfWeek]
+            `SELECT start_time, end_time 
+             FROM doctor_schedules 
+             WHERE doctor_id = ? AND day_of_week = ?`,
+            [doctorId, dayOfWeekEnum]
         );
 
         if (schedules.length === 0) {
-            return res.status(200).json([]); // No trabaja ese día
+            return res.status(200).json([]);
         }
 
-        // B. Buscar las citas que YA están agendadas para ese día (para restarlas)
+        const rule = schedules[0];
+        const SLOT_DURATION = 30; // minutos
+
+        // Citas ya agendadas ese día
         const [bookedAppointments] = await db.query(
-            'SELECT start_time FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND status != "cancelled"',
+            `SELECT start_time 
+             FROM appointments 
+             WHERE doctor_id = ? AND appointment_date = ? AND status != 'cancelled'`,
             [doctorId, date]
         );
-        const bookedTimes = bookedAppointments.map(app => app.start_time.slice(0, 5)); // 'HH:mm'
 
-        // C. Generar los slots de 30 minutos
-        let availableSlots = [];
-        const { start_time, end_time } = schedules[0];
-        
-        // Convertimos horas a minutos para iterar fácilmente
-        let startMins = parseInt(start_time.split(':')[0]) * 60 + parseInt(start_time.split(':')[1]);
-        const endMins = parseInt(end_time.split(':')[0]) * 60 + parseInt(end_time.split(':')[1]);
+        const bookedTimes = bookedAppointments.map(app => app.start_time.substring(0, 5));
 
-        while (startMins + 30 <= endMins) {
-            const h = Math.floor(startMins / 60).toString().padStart(2, '0');
-            const m = (startMins % 60).toString().padStart(2, '0');
-            const timeString = `${h}:${m}`;
+        // Generar slots de 30 min dentro del rango
+        const slots = [];
+        let currentSlot = new Date(`1970-01-01T${rule.start_time}Z`);
+        const endTime = new Date(`1970-01-01T${rule.end_time}Z`);
 
-            // Si la hora NO está en la lista de ocupadas, la agregamos
+        while (currentSlot < endTime) {
+            const timeString = currentSlot.toISOString().substring(11, 16); // HH:MM
+
             if (!bookedTimes.includes(timeString)) {
-                availableSlots.push(timeString);
+                slots.push(timeString);
             }
-            startMins += 30; // Saltos de 30 minutos
+
+            currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + SLOT_DURATION);
         }
 
-        res.status(200).json(availableSlots);
+        res.status(200).json(slots);
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al calcular disponibilidad.' });
+        console.error('Error al calcular disponibilidad:', error);
+        res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 

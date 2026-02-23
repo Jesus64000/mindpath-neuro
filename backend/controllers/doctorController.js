@@ -7,6 +7,7 @@ exports.getAllDoctors = async (req, res) => {
         const [doctors] = await db.query(`
             SELECT 
                 d.id AS doctor_id,
+                u.id AS user_id,
                 u.full_name,
                 d.specialty,
                 d.profile_picture,
@@ -14,7 +15,7 @@ exports.getAllDoctors = async (req, res) => {
                 d.is_verified
             FROM doctors d
             JOIN users u ON d.user_id = u.id
-            WHERE d.is_verified = true
+            WHERE u.role = 'doctor' AND d.is_verified = TRUE
         `);
 
         res.status(200).json(doctors);

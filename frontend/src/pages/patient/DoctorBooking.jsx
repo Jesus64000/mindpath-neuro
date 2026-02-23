@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, Star, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, Star, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const DoctorBooking = () => {
     const { doctorId } = useParams();
@@ -9,18 +9,36 @@ const DoctorBooking = () => {
     const { state } = useLocation(); // Recibimos datos del doctor si venimos del Dashboard
     const doctor = state?.doctor || null; // Fallback por si refresca la página
 
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const formatDateLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const today = new Date();
+    const [selectedDate, setSelectedDate] = useState(formatDateLocal(today));
+    const [weekOffset, setWeekOffset] = useState(0); // Semanas desde la actual
     const [availableSlots, setAvailableSlots] = useState([]);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [modality, setModality] = useState('virtual');
     const [loadingSlots, setLoadingSlots] = useState(false);
 
-    // Generar próximos 7 días para el calendario horizontal
-    const next7Days = Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        return d;
-    });
+    // Generar semana desde lunes en adelante (7 días) con desplazamiento por semanas
+    const getWeekStartingMonday = (offsetWeeks = 0) => {
+        const base = new Date();
+        const day = base.getDay(); // 0 domingo ... 6 sábado
+        const offsetToMonday = day === 0 ? 6 : day - 1;
+        const monday = new Date(base);
+        monday.setDate(base.getDate() - offsetToMonday + offsetWeeks * 7);
+        return Array.from({ length: 7 }).map((_, i) => {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            return date;
+        });
+    };
+
+    const next7Days = getWeekStartingMonday(weekOffset);
 
     useEffect(() => {
         const fetchAvailability = async () => {
@@ -97,12 +115,29 @@ const DoctorBooking = () => {
 
             {/* Selector de Fecha (Calendario Horizontal) */}
             <div className="bg-mindpath-dark p-6 rounded-3xl shadow-sm text-white">
-                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Selecciona tu fecha</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Selecciona tu fecha</h3>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setWeekOffset((prev) => Math.max(0, prev - 1))}
+                            disabled={weekOffset === 0}
+                            className={`p-2 rounded-full border border-white/10 hover:border-white/30 transition-colors ${weekOffset === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/10'}`}
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+                        <button
+                            onClick={() => setWeekOffset((prev) => prev + 1)}
+                            className="p-2 rounded-full border border-white/10 hover:border-white/30 transition-colors hover:bg-white/10"
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+                </div>
                 <div className="flex justify-between items-center overflow-x-auto pb-2 scrollbar-hide gap-2">
                     {next7Days.map((date, i) => {
-                        const dateString = date.toISOString().split('T')[0];
+                        const dateString = formatDateLocal(date);
                         const isSelected = selectedDate === dateString;
-                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                        const dayName = date.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase();
                         const dayNum = date.getDate();
 
                         return (
