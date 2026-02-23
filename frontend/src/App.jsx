@@ -17,6 +17,8 @@ import PatientFile from './pages/doctor/PatientFile';
 import ScheduleConfig from './pages/doctor/ScheduleConfig';
 import DoctorProfileSettings from './pages/doctor/DoctorProfileSettings';
 
+import AILab from './pages/doctor/AILab';
+
 // Placeholder temporal para el Admin
 const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
 const Unauthorized = () => <div className="p-8 text-2xl font-bold text-red-600">🚫 Acceso Denegado</div>;
@@ -47,6 +49,7 @@ function App() {
               <Route path="/doctor/report-editor/:reportId" element={<ReportEditor />} />
               <Route path="/doctor/patients" element={<PatientsList />} />
               <Route path="/doctor/patient/:id" element={<PatientFile />} />
+              <Route path="/doctor/ia-lab" element={<AILab />} />
             </Route>
 
             {/* Rutas específicas para Pacientes */}

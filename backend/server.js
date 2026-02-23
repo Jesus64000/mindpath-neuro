@@ -17,6 +17,7 @@ app.use(express.urlencoded({ extended: true })); // Para recibir archivos (audio
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', require('./routes/doctorRoutes'));
+app.use('/api/ia', require('./routes/iaRoutes'));
 app.use('/api/schedules', require('./routes/scheduleRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/consultations', require('./routes/consultationRoutes'));
