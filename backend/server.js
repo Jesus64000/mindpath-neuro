@@ -26,9 +26,11 @@ app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
-// Servir fotos de perfil estáticamente
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Servir archivos estáticos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import Login from './pages/Login';
 import Register from './pages/auth/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -18,15 +19,29 @@ import ScheduleConfig from './pages/doctor/ScheduleConfig';
 import DoctorProfileSettings from './pages/doctor/DoctorProfileSettings';
 import PatientSettings from './pages/patient/PatientSettings';
 import AppointmentDetail from './pages/doctor/AppointmentDetail';
-
 import AILab from './pages/doctor/AILab';
 import WrapUp from './pages/doctor/WrapUp';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import SuperAdminSetup from './pages/admin/SuperAdminSetup';
+import useSettingsStore from './store/useSettingsStore';
+import api from './api/axiosConfig';
 
-// Placeholder temporal para el Admin
-const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
 const Unauthorized = () => <div className="p-8 text-2xl font-bold text-red-600">🚫 Acceso Denegado</div>;
 
 function App() {
+  const applySettings = useSettingsStore(s => s.applySettings);
+
+  useEffect(() => {
+    // Aplicar dark mode guardado en localStorage
+    const savedTheme = localStorage.getItem('mindpath_theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+
+    // Cargar configuración del sistema (theming)
+    api.get('/admin/settings').then(res => applySettings(res.data)).catch(() => {});
+  }, [applySettings]);
+
   return (
     <Router>
       <Routes>
@@ -35,6 +50,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/superadmin" element={<SuperAdminSetup />} />
 
         {/* Rutas Privadas envueltas en el Layout */}
         <Route element={<ProtectedRoute />}>
