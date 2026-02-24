@@ -27,3 +27,5 @@ CREATE TABLE IF NOT EXISTS doctor_schedules (
 	is_active BOOLEAN DEFAULT TRUE,
 	FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
 );
+
+--

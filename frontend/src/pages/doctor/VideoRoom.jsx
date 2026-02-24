@@ -1,142 +1,224 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
-import { useClinicalRecorder } from '../../hooks/useClinicalRecorder';
-import { Mic, Square, Activity, UploadCloud, CheckCircle, BrainCircuit } from 'lucide-react';
-import api from '../../api/axiosConfig';
+import { Mic, Pause, Play, BrainCircuit, Activity } from 'lucide-react';
 
 const VideoRoom = () => {
-    const { id } = useParams(); // El ID de la cita es el Room ID
+    const { id } = useParams();
     const navigate = useNavigate();
 
-    // Grabador clínico (audio + IA)
-    const { status: recordStatus, startRecording, stopRecording, audioBlob, formattedDuration } = useClinicalRecorder();
-    const [isUploading, setIsUploading] = useState(false);
-    const [aiResult, setAiResult] = useState(null);
+    // ── Estado de la transcripción ──────────────────────────────────────────
+    const [isListening, setIsListening] = useState(false);
+    const [isPaused, setIsPaused]       = useState(false);
 
-    // ZegoCloud: crea y une la sala
+    // finalTranscript: texto confirmado por el motor (no se repite)
+    const [finalTranscript, setFinalTranscript] = useState('');
+    // interimTranscript: palabra que está diciendo ahora (temporal, se reemplaza)
+    const [interimTranscript, setInterimTranscript] = useState('');
+
+    // Ref para que ZegoCloud (onLeaveRoom) pueda leer el transcript más reciente
+    const finalTranscriptRef = useRef('');
+
+    const recognitionRef = useRef(null);
+
+    // Inicializar Web Speech API
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous     = true;
+        recognition.interimResults = true;
+        recognition.lang           = 'es-VE';
+
+        recognition.onresult = (event) => {
+            let newFinal   = '';
+            let newInterim = '';
+
+            // Solo procesamos desde resultIndex (los anteriores ya fueron confirmados)
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const text = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    newFinal += text + ' ';   // Resultado confirmado → acumular
+                } else {
+                    newInterim += text;       // Resultado parcial → temporal
+                }
+            }
+
+            if (newFinal) {
+                setFinalTranscript(prev => {
+                    const updated = prev + newFinal;
+                    finalTranscriptRef.current = updated; // Mantener ref en sync
+                    return updated;
+                });
+            }
+            setInterimTranscript(newInterim);
+        };
+
+        recognition.onerror = (e) => {
+            console.warn('SpeechRecognition error:', e.error);
+            // Si pierde conexión o es abortado, simplemente reseteamos
+            if (e.error === 'aborted') return;
+            setIsListening(false);
+            setIsPaused(false);
+        };
+
+        recognitionRef.current = recognition;
+        return () => recognition.stop();
+    }, []);
+
+    // ── Controles del micrófono ─────────────────────────────────────────────
+    const handleStart = () => {
+        if (!recognitionRef.current) {
+            return alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
+        }
+        recognitionRef.current.start();
+        setIsListening(true);
+        setIsPaused(false);
+    };
+
+    const handlePause = () => {
+        recognitionRef.current.stop();
+        setInterimTranscript('');
+        setIsPaused(true);
+    };
+
+    const handleResume = () => {
+        recognitionRef.current.start();
+        setIsPaused(false);
+    };
+
+    // Finalizar: detener y navegar a WrapUp con el texto acumulado
+    const navigateToWrapUp = (transcriptText) => {
+        navigate(`/doctor/wrap-up/${id}`, {
+            state: { initialText: transcriptText.trim() }
+        });
+    };
+
+    const handleEndCall = () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        navigateToWrapUp(finalTranscriptRef.current);
+    };
+    // handleEndCall se mantiene para ser llamado desde onLeaveRoom de ZegoCloud
+
+    // ── ZegoCloud ──────────────────────────────────────────────────────────
     const myMeeting = async (element) => {
         if (!element) return;
 
-        // Credenciales desde .env (Vite requiere prefijo VITE_)
-        const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
+        const appID        = Number(import.meta.env.VITE_ZEGO_APP_ID);
         const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
 
         const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-            appID,
-            serverSecret,
-            id,
-            Date.now().toString(),
-            'Dr. Especialista'
+            appID, serverSecret, id, Date.now().toString(), 'Dr. Especialista'
         );
 
         const zp = ZegoUIKitPrebuilt.create(kitToken);
-
         zp.joinRoom({
             container: element,
-            scenario: {
-                mode: ZegoUIKitPrebuilt.OneONoneCall,
-            },
+            scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
             showScreenSharingButton: false,
             showPreJoinView: false,
             onLeaveRoom: () => {
-                navigate('/doctor/schedules');
+                // Al colgar desde el botón de ZegoCloud también vamos a WrapUp
+                if (recognitionRef.current) recognitionRef.current.stop();
+                navigateToWrapUp(finalTranscriptRef.current);
             },
         });
     };
 
-    // Procesar audio con IA
-    const handleProcessAI = async () => {
-        if (!audioBlob) return;
-        setIsUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'consulta.webm');
-            formData.append('appointmentId', id);
-
-            const response = await api.post('/consultations/process-audio', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            setAiResult(response.data.data);
-            alert('Audio procesado con éxito.');
-        } catch (error) {
-            console.error('Error procesando audio con IA:', error);
-            alert('Error al procesar el audio.');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
+    // ── Render ─────────────────────────────────────────────────────────────
     return (
         <div className="flex h-screen bg-gray-900 font-sans overflow-hidden">
-            {/* ZegoCloud controla el video */}
+            {/* Video de ZegoCloud (ocupa todo el espacio izquierdo) */}
             <div className="flex-1 relative" ref={myMeeting}></div>
 
-            {/* Panel clínico IA */}
+            {/* Panel lateral de transcripción */}
             <div className="w-80 md:w-96 bg-white border-l border-gray-200 flex flex-col shadow-2xl z-20">
+
+                {/* Header del panel */}
                 <div className="p-5 border-b border-gray-100 bg-mindpath-light/30 flex items-center justify-between">
                     <div>
                         <h2 className="font-bold text-gray-800 flex items-center">
                             <BrainCircuit size={20} className="text-mindpath-primary mr-2" />
                             Mindpath AI
                         </h2>
-                        <p className="text-xs text-gray-500 mt-1">Asistente Clínico Activo</p>
+                        <p className="text-xs text-gray-500 mt-1">Asistente de Transcripción</p>
                     </div>
-                    {recordStatus === 'recording' && (
+                    {isListening && !isPaused && (
                         <div className="flex items-center text-red-500 text-xs font-bold animate-pulse bg-red-50 px-2 py-1 rounded-full">
-                            <Activity size={12} className="mr-1" /> GRABANDO
+                            <Activity size={12} className="mr-1" /> EN VIVO
+                        </div>
+                    )}
+                    {isPaused && (
+                        <div className="flex items-center text-yellow-600 text-xs font-bold bg-yellow-50 px-2 py-1 rounded-full">
+                            ⏸ PAUSADO
                         </div>
                     )}
                 </div>
 
-                <div className="flex-1 p-5 overflow-y-auto bg-gray-50/50">
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-6">
-                        <h3 className="text-sm font-bold text-gray-700 mb-4">Captura de Audio</h3>
+                {/* Cuerpo del panel */}
+                <div className="flex-1 p-5 flex flex-col gap-4 overflow-hidden">
 
-                        <div className="flex justify-center mb-4">
-                            <div className={`text-3xl font-mono tabular-nums ${recordStatus === 'recording' ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                                {formattedDuration}
+                    {/* Controles del micrófono */}
+                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                        <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
+                            <Mic size={15} className="mr-2 text-mindpath-primary" />
+                            Transcripción en Vivo
+                        </h3>
+
+                        {!isListening ? (
+                            <button
+                                onClick={handleStart}
+                                className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center hover:bg-black transition-all"
+                            >
+                                <Mic size={16} className="mr-2" /> Iniciar Transcripción
+                            </button>
+                        ) : (
+                            <div className="flex gap-2">
+                                {isPaused ? (
+                                    <button
+                                        onClick={handleResume}
+                                        className="flex-1 py-2 bg-yellow-100 text-yellow-700 font-bold rounded-xl flex items-center justify-center hover:bg-yellow-200 transition-all"
+                                    >
+                                        <Play size={16} className="mr-1" /> Reanudar
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handlePause}
+                                        className="w-full py-2 bg-orange-100 text-orange-700 font-bold rounded-xl flex items-center justify-center hover:bg-orange-200 transition-all"
+                                    >
+                                        <Pause size={16} className="mr-1" /> Pausar
+                                    </button>
+                                )}
                             </div>
-                        </div>
+                        )}
+                    </div>
 
-                        <div className="flex gap-3 justify-center">
-                            {recordStatus !== 'recording' ? (
-                                <button
-                                    onClick={startRecording}
-                                    className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl flex items-center justify-center transition-colors border border-red-200"
-                                >
-                                    <Mic size={18} className="mr-2" /> Iniciar
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={stopRecording}
-                                    className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-gray-900/20"
-                                >
-                                    <Square size={18} className="mr-2" /> Detener
-                                </button>
+                    {/* Texto transcrito */}
+                    <div className="flex-1 bg-gray-50 rounded-2xl border border-gray-100 p-4 overflow-y-auto flex flex-col">
+                        <p className="text-xs font-bold text-gray-400 uppercase mb-2">Texto capturado</p>
+                        <div className="flex-1 text-sm text-gray-700 leading-relaxed">
+                            {/* Texto confirmado por el motor */}
+                            <span>{finalTranscript}</span>
+                            {/* Texto en proceso (atenuado) */}
+                            {interimTranscript && (
+                                <span className="text-gray-400 italic">{interimTranscript}</span>
+                            )}
+                            {/* Estado vacío */}
+                            {!finalTranscript && !interimTranscript && (
+                                <span className="italic text-gray-400">
+                                    Presiona "Iniciar Transcripción" y comienza a hablar...
+                                </span>
                             )}
                         </div>
                     </div>
 
-                    {audioBlob && !aiResult && (
-                        <div className="bg-mindpath-light/30 rounded-2xl p-5 border border-mindpath-primary/20 animate-fade-in">
-                            <h3 className="text-sm font-bold text-mindpath-primary mb-2 flex items-center">
-                                <CheckCircle size={16} className="mr-1.5" /> Audio Capturado
-                            </h3>
-                            <p className="text-xs text-gray-600 mb-4">Listo para análisis con Whisper.</p>
-                            <button
-                                onClick={handleProcessAI}
-                                disabled={isUploading}
-                                className="w-full py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-purple-300 text-white font-bold rounded-xl flex items-center justify-center transition-all shadow-md shadow-purple-500/20"
-                            >
-                                {isUploading ? (
-                                    <><Activity size={18} className="mr-2 animate-spin" /> Procesando IA...</>
-                                ) : (
-                                    <><UploadCloud size={18} className="mr-2" /> Generar Nota Clínica</>
-                                )}
-                            </button>
-                        </div>
+                    {isListening && (
+                        <p className="text-xs text-center text-gray-400 pb-1">
+                            Al <strong>colgar la llamada</strong> se guardará el expediente automáticamente.
+                        </p>
                     )}
                 </div>
             </div>

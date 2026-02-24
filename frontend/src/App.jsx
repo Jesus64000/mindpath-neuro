@@ -18,6 +18,7 @@ import ScheduleConfig from './pages/doctor/ScheduleConfig';
 import DoctorProfileSettings from './pages/doctor/DoctorProfileSettings';
 
 import AILab from './pages/doctor/AILab';
+import WrapUp from './pages/doctor/WrapUp';
 
 // Placeholder temporal para el Admin
 const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-slate-800">⚙️ Panel de Administración</div>;
@@ -37,6 +38,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           {/* Ruta inmersiva de Telemedicina (Sin Sidebar) */}
           <Route path="/doctor/video-room/:id" element={<VideoRoom />} />
+          <Route path="/doctor/wrap-up/:appointmentId" element={<WrapUp />} />
           <Route path="/patient/video-room/:id" element={<PatientVideoRoom />} />
 
           <Route element={<DashboardLayout />}>
