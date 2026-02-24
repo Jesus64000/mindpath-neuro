@@ -27,6 +27,50 @@ exports.getMyDoctors = async (req, res) => {
     }
 };
 
+// Obtener perfil del paciente autenticado
+exports.getProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [rows] = await db.query(`
+            SELECT u.full_name, u.email,
+                   p.phone, p.date_of_birth, p.gender, p.address, p.profile_picture
+            FROM patients p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.user_id = ?
+        `, [userId]);
+
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ message: 'Perfil no encontrado.' });
+        }
+        res.status(200).json(rows[0]);
+    } catch (error) {
+        console.error('Error al cargar perfil del paciente:', error);
+        res.status(500).json({ message: 'Error al cargar perfil.' });
+    }
+};
+
+// Actualizar perfil del paciente
+exports.updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { full_name, phone, address } = req.body;
+
+        await db.query(
+            'UPDATE patients SET phone = ?, address = ? WHERE user_id = ?',
+            [phone ?? null, address ?? null, userId]
+        );
+
+        if (full_name) {
+            await db.query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
+        }
+
+        res.status(200).json({ message: 'Perfil actualizado correctamente.' });
+    } catch (error) {
+        console.error('Error al actualizar perfil del paciente:', error);
+        res.status(500).json({ message: 'Error al actualizar perfil.' });
+    }
+};
+
 // Obtener el informe de una cita (solo si el doctor lo compartió)
 exports.getAppointmentReport = async (req, res) => {
     try {

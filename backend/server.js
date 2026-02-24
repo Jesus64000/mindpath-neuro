@@ -1,6 +1,7 @@
 // backend/server.js
 const express = require('express');
-const cors = require('cors');
+const cors    = require('cors');
+const path    = require('path');
 require('dotenv').config();
 
 // Importamos la conexión a la BD
@@ -24,6 +25,10 @@ app.use('/api/consultations', require('./routes/consultationRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+
+// Servir fotos de perfil estáticamente
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {

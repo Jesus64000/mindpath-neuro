@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 // Month helpers
 const getMonthStart = (date) => {
@@ -246,13 +246,26 @@ const DoctorSchedule = () => {
                                                 </>
                                             )}
 
+                                            {/* Botón: Ver Cita (siempre visible si no está cancelada/completada) */}
+                                            {(app.status === 'pending' || app.status === 'confirmed') && (
+                                                <button
+                                                    onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}
+                                                    className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex items-center transition-colors"
+                                                    title="Ver detalle de la cita"
+                                                >
+                                                    <FileText size={18} className="mr-2" />
+                                                    Ver Cita
+                                                </button>
+                                            )}
+
+                                            {/* Botón: Iniciar Consulta (directo al video) */}
                                             {(app.status === 'confirmed' || app.status === 'pending') && app.type === 'virtual' && (
                                                 <button 
                                                     onClick={() => handleStartVideoCall(app.appointment_id)}
                                                     className="px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm"
                                                 >
                                                     <Video size={18} className="mr-2" />
-                                                    Iniciar Consulta
+                                                    Iniciar
                                                 </button>
                                             )}
                                         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { useAuthStore } from '../../store/useAuthStore';
 import { 
@@ -8,6 +9,7 @@ import {
 
 const DoctorDashboard = () => {
     const { user } = useAuthStore();
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dayAppointments, setDayAppointments] = useState([]);
@@ -187,7 +189,9 @@ const DoctorDashboard = () => {
                             ) : dayAppointments.length > 0 ? (
                                 <div className="space-y-3">
                                     {dayAppointments.map((app) => (
-                                        <div key={app.appointment_id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                        <div key={app.appointment_id}
+                                            className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3 cursor-pointer hover:border-mindpath-primary/30 transition-all"
+                                            onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}>
                                             <div>
                                                 <p className="text-sm font-bold text-gray-700">{app.patient_name}</p>
                                                 <p className="text-xs text-gray-500 flex items-center"><Clock size={14} className="mr-1" /> {app.start_time.slice(0,5)} • {app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}</p>

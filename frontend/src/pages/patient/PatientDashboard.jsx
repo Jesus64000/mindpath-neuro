@@ -18,22 +18,28 @@ const PatientDashboard = () => {
         const fetchDashboardData = async () => {
             try {
                 // 1. Cargamos TODAS las citas del paciente
-                const appsResponse = await api.get('/appointments/patient');
-                const appointments = appsResponse.data;
+                const appsResponse = await api.get('/appointments/patient?limit=50');
+                // La API devuelve { data: [], pagination: {} } — extraemos el array
+                const appointments = Array.isArray(appsResponse.data)
+                    ? appsResponse.data
+                    : (appsResponse.data?.data ?? []);
                 const today = new Date().toDateString();
 
                 // Separar la cita de HOY (si existe)
-                const todayApp = appointments.find(app => 
-                    new Date(app.appointment_date).toDateString() === today && 
-                    app.status === 'confirmed' && 
+                const todayApp = appointments.find(app =>
+                    new Date(app.appointment_date).toDateString() === today &&
+                    app.status === 'confirmed' &&
                     app.type === 'virtual'
                 );
                 if (todayApp) setNextAppointment(todayApp);
 
-                // Separar las PRÓXIMAS citas (que no sean hoy, y que estén pendientes o confirmadas)
-                // Tomamos solo las primeras 3 para la mini-lista
+                // Separar las PRÓXIMAS citas
                 const futureApps = appointments
-                    .filter(app => new Date(app.appointment_date) >= new Date() && app.appointment_id !== todayApp?.appointment_id && (app.status === 'pending' || app.status === 'confirmed'))
+                    .filter(app =>
+                        new Date(app.appointment_date) >= new Date() &&
+                        app.appointment_id !== todayApp?.appointment_id &&
+                        (app.status === 'pending' || app.status === 'confirmed')
+                    )
                     .slice(0, 3);
                 setUpcomingAppointments(futureApps);
 

@@ -16,6 +16,8 @@ import PatientsList from './pages/doctor/PatientsList';
 import PatientFile from './pages/doctor/PatientFile';
 import ScheduleConfig from './pages/doctor/ScheduleConfig';
 import DoctorProfileSettings from './pages/doctor/DoctorProfileSettings';
+import PatientSettings from './pages/patient/PatientSettings';
+import AppointmentDetail from './pages/doctor/AppointmentDetail';
 
 import AILab from './pages/doctor/AILab';
 import WrapUp from './pages/doctor/WrapUp';
@@ -52,6 +54,7 @@ function App() {
               <Route path="/doctor/patients" element={<PatientsList />} />
               <Route path="/doctor/patient/:id" element={<PatientFile />} />
               <Route path="/doctor/ia-lab" element={<AILab />} />
+              <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
             </Route>
 
             {/* Rutas específicas para Pacientes */}
@@ -60,6 +63,7 @@ function App() {
               <Route path="/patient/doctors" element={<DoctorsDirectory />} />
               <Route path="/patient/doctor/:id" element={<DoctorProfile />} />
               <Route path="/patient/appointments" element={<PatientAppointments />} />
+              <Route path="/patient/settings" element={<PatientSettings />} />
             </Route>
 
             {/* Rutas específicas para Administradores */}

@@ -28,6 +28,21 @@ exports.getAllDoctors = async (req, res) => {
 // Alias para mantener compatibilidad con código previo
 exports.getSpecialists = exports.getAllDoctors;
 
+// Catálogo público de especialidades
+exports.getSpecialties = async (_req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id, name FROM specialties ORDER BY name ASC');
+        res.status(200).json(rows);
+    } catch (error) {
+        // Si no existe la tabla aún, devolver lista hardcoded
+        res.status(200).json([
+            { id: 1, name: 'Neurología' }, { id: 2, name: 'Psiquiatría' },
+            { id: 3, name: 'Psicología Clínica' }, { id: 4, name: 'Neuropsicología' },
+            { id: 5, name: 'Medicina General' }
+        ]);
+    }
+};
+
 // Obtener el perfil público de un doctor por su ID
 exports.getDoctorById = async (req, res) => {
     try {
@@ -170,7 +185,10 @@ exports.getProfileSettings = async (req, res) => {
     try {
         const userId = req.user.id;
         const [doctor] = await db.query(`
-            SELECT u.full_name, u.email, d.* FROM doctors d 
+            SELECT u.full_name, u.email, d.specialty, d.bio, d.clinic_name,
+                   d.clinic_address, d.license_number, d.experience_years,
+                   d.consultation_fee, d.languages, d.education, d.profile_picture
+            FROM doctors d 
             JOIN users u ON d.user_id = u.id 
             WHERE u.id = ?
         `, [userId]);
@@ -190,15 +208,25 @@ exports.getProfileSettings = async (req, res) => {
 exports.updateProfileSettings = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { specialty, bio, clinic_name, clinic_address, license_number, experience_years, consultation_fee } = req.body;
+        const {
+            specialty, bio, clinic_name, clinic_address,
+            license_number, experience_years, consultation_fee,
+            languages, education, full_name
+        } = req.body;
 
         await db.query(`
             UPDATE doctors SET 
-                specialty = ?, bio = ?, clinic_name = ?, 
-                clinic_address = ?, license_number = ?, 
-                experience_years = ?, consultation_fee = ?
+                specialty = ?, bio = ?, clinic_name = ?, clinic_address = ?,
+                license_number = ?, experience_years = ?, consultation_fee = ?,
+                languages = ?, education = ?
             WHERE user_id = ?
-        `, [specialty, bio, clinic_name, clinic_address, license_number, experience_years, consultation_fee, userId]);
+        `, [specialty, bio, clinic_name, clinic_address, license_number,
+            experience_years, consultation_fee, languages, education, userId]);
+
+        // Actualizar nombre en tabla users si vino
+        if (full_name) {
+            await db.query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
+        }
 
         res.status(200).json({ message: 'Perfil actualizado con éxito' });
     } catch (error) {

@@ -17,6 +17,9 @@ router.post('/update-schedule', authMiddleware, doctorController.updateSchedule)
 router.get('/profile/settings', authMiddleware, doctorController.getProfileSettings);
 router.put('/profile/settings', authMiddleware, doctorController.updateProfileSettings);
 
+// Catálogo público de especialidades (sin auth — para el registro y directorio)
+router.get('/specialties', doctorController.getSpecialties);
+
 // Perfil público del doctor (mantener al final para evitar conflictos con rutas específicas)
 router.get('/:id', authMiddleware, doctorController.getDoctorById);
 

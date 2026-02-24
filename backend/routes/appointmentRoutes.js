@@ -12,4 +12,7 @@ router.patch('/doctor/block', authMiddleware, appointmentController.updateDoctor
 // Ruta para el Paciente
 router.get('/patient', authMiddleware, appointmentController.getPatientAppointments);
 
+// Detalle completo de una cita (pantalla pre-consulta del doctor)
+router.get('/doctor/:id/detail', authMiddleware, appointmentController.getAppointmentDetail);
+
 module.exports = router;

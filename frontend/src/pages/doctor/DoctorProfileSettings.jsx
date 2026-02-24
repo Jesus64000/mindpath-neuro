@@ -1,32 +1,102 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosConfig';
-import { User, MapPin, Award, BookOpen, Save, Camera, CheckCircle } from 'lucide-react';
+import {
+    User, MapPin, Award, BookOpen, Save, Camera, CheckCircle,
+    GraduationCap, Building2, AlertCircle, ChevronDown, Globe
+} from 'lucide-react';
+
+const BACKEND_URL = 'http://localhost:3000';
+
+// Idiomas predefinidos
+const LANGUAGE_OPTIONS = [
+    'Español', 'Inglés', 'Francés', 'Portugués', 'Italiano',
+    'Alemán', 'Árabe', 'Chino', 'Japonés', 'Ruso'
+];
 
 const DoctorProfileSettings = () => {
     const [formData, setFormData] = useState({
         full_name: '', specialty: '', bio: '', clinic_name: '',
-        clinic_address: '', license_number: '', experience_years: '', consultation_fee: ''
+        clinic_address: '', license_number: '', experience_years: '',
+        education: ''
     });
+    const [selectedLanguages, setSelectedLanguages] = useState([]);
+    const [specialties, setSpecialties] = useState([]);
+    const [profilePicture, setProfilePicture] = useState(null);
+    const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
-        api.get('/doctors/profile/settings').then(res => {
-            setFormData(res.data);
+        Promise.all([
+            api.get('/doctors/profile/settings'),
+            api.get('/doctors/specialties')
+        ]).then(([profileRes, specialtiesRes]) => {
+            const d = profileRes.data;
+            setFormData({
+                full_name:        d.full_name        ?? '',
+                specialty:        d.specialty        ?? '',
+                bio:              d.bio              ?? '',
+                clinic_name:      d.clinic_name      ?? '',
+                clinic_address:   d.clinic_address   ?? '',
+                license_number:   d.license_number   ?? '',
+                experience_years: d.experience_years ?? '',
+                education:        d.education        ?? '',
+            });
+            // Idiomas: parsear CSV guardado
+            if (d.languages) {
+                setSelectedLanguages(d.languages.split(',').map(l => l.trim()).filter(Boolean));
+            }
+            if (d.profile_picture) setProfilePicture(d.profile_picture);
+            setSpecialties(specialtiesRes.data.map(s => s.name));
             setLoading(false);
         }).catch(() => setLoading(false));
     }, []);
 
+    const toggleLanguage = (lang) => {
+        setSelectedLanguages(prev =>
+            prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
+        );
+    };
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploadError('');
+        setPreview(URL.createObjectURL(file));
+        const form = new FormData();
+        form.append('avatar', file);
+        try {
+            const res = await api.post('/upload/profile-picture', form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setProfilePicture(res.data.url);
+        } catch (err) {
+            setUploadError(err.response?.data?.message || 'Error al subir la foto.');
+            setPreview(null);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.put('/doctors/profile/settings', formData);
+            await api.put('/doctors/profile/settings', {
+                ...formData,
+                languages: selectedLanguages.join(', ')
+            });
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
-        } catch (error) {
+        } catch {
             alert('Error al guardar');
         }
     };
+
+    const avatarSrc = preview
+        ? preview
+        : profilePicture
+            ? `${BACKEND_URL}${profilePicture}`
+            : null;
 
     if (loading) return <div className="p-20 text-center font-bold text-mindpath-primary">Cargando tu configuración...</div>;
 
@@ -44,107 +114,178 @@ const DoctorProfileSettings = () => {
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-sans">
-                {/* COLUMNA IZQUIERDA: Foto y Bio */}
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* COLUMNA IZQUIERDA */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm text-center relative overflow-hidden">
-                        <div className="relative inline-block group cursor-pointer">
-                            <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto mb-4 border-4 border-white shadow-md flex items-center justify-center text-4xl font-black text-gray-300">
-                                {formData.full_name ? formData.full_name[0] : 'D'}
-                            </div>
-                            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all mb-4">
-                                <Camera className="text-white" />
+                    {/* Avatar */}
+                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm text-center">
+                        <div className="relative inline-block group cursor-pointer mb-4" onClick={() => fileInputRef.current?.click()}>
+                            {avatarSrc ? (
+                                <img src={avatarSrc} alt="Foto de perfil"
+                                    className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-white shadow-md" />
+                            ) : (
+                                <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto flex items-center justify-center text-4xl font-black text-gray-300 border-4 border-white shadow-md">
+                                    {formData.full_name ? formData.full_name[0].toUpperCase() : 'D'}
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                <Camera className="text-white" size={24}/>
                             </div>
                         </div>
-                        <h2 className="font-black text-lg flex items-center justify-center gap-2"><User size={16}/> {formData.full_name}</h2>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                        <button type="button" onClick={() => fileInputRef.current?.click()}
+                            className="text-xs font-bold text-mindpath-primary hover:underline">
+                            Cambiar foto
+                        </button>
+                        {uploadError && (
+                            <p className="text-xs text-red-500 mt-2 flex items-center justify-center gap-1">
+                                <AlertCircle size={12}/> {uploadError}
+                            </p>
+                        )}
+                        <h2 className="font-black text-lg mt-3">{formData.full_name || 'Doctor'}</h2>
                         <p className="text-mindpath-primary text-sm font-bold uppercase">{formData.specialty}</p>
                     </div>
 
+                    {/* Bio */}
                     <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                         <label className="text-xs font-black text-gray-400 uppercase flex items-center gap-2 mb-3">
                             <BookOpen size={14}/> Biografía Profesional
                         </label>
-                        <textarea 
+                        <textarea
                             value={formData.bio}
-                            onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                            className="w-full h-48 p-4 bg-gray-50 rounded-2xl border-none text-sm leading-relaxed outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                            onChange={e => setFormData({...formData, bio: e.target.value})}
+                            className="w-full h-48 p-4 bg-gray-50 rounded-2xl border-none text-sm leading-relaxed outline-none focus:ring-2 focus:ring-mindpath-primary/20 resize-none"
                             placeholder="Cuéntale a tus pacientes sobre tu trayectoria..."
                         />
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: Formularios */}
+                {/* COLUMNA DERECHA */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Sección: Información Médica */}
+
+                    {/* Credenciales */}
                     <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm space-y-6">
-                        <h3 className="font-black text-xl border-b pb-4 flex items-center gap-2"><Award size={18}/> Credenciales y Experiencia</h3>
+                        <h3 className="font-black text-xl border-b pb-4 flex items-center gap-2">
+                            <Award size={18}/> Credenciales y Experiencia
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Especialidad Principal</label>
-                                <input 
-                                    type="text" value={formData.specialty}
-                                    onChange={(e) => setFormData({...formData, specialty: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                />
+                            {/* Nombre */}
+                            <div className="md:col-span-2 space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-2 flex items-center gap-2">
+                                    <User size={13}/> Nombre Completo
+                                </label>
+                                <input type="text" value={formData.full_name}
+                                    onChange={e => setFormData({...formData, full_name: e.target.value})}
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                    placeholder="Dr. Juan Pérez" />
                             </div>
+
+                            {/* Especialidad — dropdown */}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Número de Licencia (MPPS/CM)</label>
-                                <input 
-                                    type="text" value={formData.license_number}
-                                    onChange={(e) => setFormData({...formData, license_number: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                />
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Especialidad</label>
+                                <div className="relative">
+                                    <select value={formData.specialty}
+                                        onChange={e => setFormData({...formData, specialty: e.target.value})}
+                                        className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none pr-10">
+                                        <option value="">Selecciona...</option>
+                                        {specialties.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                        <option value={formData.specialty && !specialties.includes(formData.specialty) ? formData.specialty : ''} disabled={true}>
+                                            {formData.specialty && !specialties.includes(formData.specialty) ? `${formData.specialty} (actual)` : ''}
+                                        </option>
+                                    </select>
+                                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
+
+                            {/* Licencia */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Nro. Licencia / CMVP</label>
+                                <input type="text" value={formData.license_number}
+                                    onChange={e => setFormData({...formData, license_number: e.target.value})}
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                    placeholder="MPPS / CMVP" />
+                            </div>
+
+                            {/* Años de experiencia */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase ml-2">Años de Experiencia</label>
-                                <input 
-                                    type="number" value={formData.experience_years}
-                                    onChange={(e) => setFormData({...formData, experience_years: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Costo por Consulta ($)</label>
-                                <input 
-                                    type="number" value={formData.consultation_fee}
-                                    onChange={(e) => setFormData({...formData, consultation_fee: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                />
+                                <input type="number" value={formData.experience_years}
+                                    onChange={e => setFormData({...formData, experience_years: e.target.value})}
+                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                    placeholder="0" min={0} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Sección: Ubicación de Consultorio */}
-                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm space-y-6">
+                    {/* Idiomas multi-select */}
+                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
+                        <h3 className="font-black text-xl border-b pb-4 flex items-center gap-2">
+                            <Globe size={18}/> Idiomas que dominas
+                        </h3>
+                        <div className="flex flex-wrap gap-3">
+                            {LANGUAGE_OPTIONS.map(lang => {
+                                const active = selectedLanguages.includes(lang);
+                                return (
+                                    <button
+                                        key={lang}
+                                        type="button"
+                                        onClick={() => toggleLanguage(lang)}
+                                        className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
+                                            active
+                                                ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-md shadow-purple-100'
+                                                : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-mindpath-primary/50'
+                                        }`}
+                                    >
+                                        {lang}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {selectedLanguages.length > 0 && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                Seleccionado: <span className="font-bold text-mindpath-primary">{selectedLanguages.join(', ')}</span>
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Educación */}
+                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
+                        <h3 className="font-black text-xl border-b pb-4 flex items-center gap-2">
+                            <GraduationCap size={18}/> Formación Académica
+                        </h3>
+                        <textarea value={formData.education}
+                            onChange={e => setFormData({...formData, education: e.target.value})}
+                            className="w-full h-32 p-4 bg-gray-50 rounded-2xl border-none text-sm leading-relaxed outline-none focus:ring-2 focus:ring-mindpath-primary/20 resize-none"
+                            placeholder={"Ej. Universidad Central de Venezuela — Medicina, 2015\nHarvard Medical School — Neurología, 2018"} />
+                    </div>
+
+                    {/* Ubicación */}
+                    <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
                         <h3 className="font-black text-xl border-b pb-4 flex items-center gap-2">
                             <MapPin className="text-red-500"/> Ubicación del Consultorio
                         </h3>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Nombre de la Clínica / Hospital</label>
-                                <input 
-                                    type="text" value={formData.clinic_name}
-                                    onChange={(e) => setFormData({...formData, clinic_name: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                    placeholder="Ej: Centro Médico San Francisco"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-2">Dirección Exacta (Piso, Consultorio, Ciudad)</label>
-                                <input 
-                                    type="text" value={formData.clinic_address}
-                                    onChange={(e) => setFormData({...formData, clinic_address: e.target.value})}
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold"
-                                    placeholder="Ej: Calle 72, Piso 4, Cons. 402, Maracaibo"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase ml-2 flex items-center gap-2">
+                                <Building2 size={13}/> Clínica / Hospital
+                            </label>
+                            <input type="text" value={formData.clinic_name}
+                                onChange={e => setFormData({...formData, clinic_name: e.target.value})}
+                                className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                placeholder="Ej: Centro Médico San Francisco" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase ml-2">Dirección Exacta</label>
+                            <input type="text" value={formData.clinic_address}
+                                onChange={e => setFormData({...formData, clinic_address: e.target.value})}
+                                className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                placeholder="Ej: Calle 72, Piso 4, Consultorio 402" />
                         </div>
                     </div>
 
-                    <button 
-                        type="submit"
-                        className="w-full py-5 bg-gray-900 text-white font-black rounded-[1.5rem] hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-gray-200"
-                    >
+                    <button type="submit"
+                        className="w-full py-5 bg-gray-900 text-white font-black rounded-[1.5rem] hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-gray-200">
                         <Save size={20}/> ACTUALIZAR MI PERFIL PÚBLICO
                     </button>
                 </div>

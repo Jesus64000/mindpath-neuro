@@ -16,6 +16,7 @@ const DashboardLayout = () => {
         { name: 'Inicio', path: '/patient/dashboard', icon: LayoutDashboard },
         { name: 'Mis Citas', path: '/patient/appointments', icon: Calendar },
         { name: 'Doctores', path: '/patient/doctors', icon: Users },
+        { name: 'Mi Perfil', path: '/patient/settings', icon: Settings },
     ];
 
     const handleLogout = () => {

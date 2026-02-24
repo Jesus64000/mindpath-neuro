@@ -57,3 +57,32 @@ ALTER TABLE clinical_reports
   DROP COLUMN background,
   DROP COLUMN neurological_findings,
   DROP COLUMN treatment_plan;
+
+-- ─────────────────────────────────────────────
+-- Sprint 21.5: Mejoras de Registro y Perfiles
+-- ─────────────────────────────────────────────
+
+-- 1. Catálogo de especialidades (para dropdown registro + filtro directorio)
+CREATE TABLE IF NOT EXISTS specialties (
+  id   INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE
+);
+
+INSERT IGNORE INTO specialties (name) VALUES
+  ('Neurología'),
+  ('Psiquiatría'),
+  ('Psicología Clínica'),
+  ('Neuropediatría'),
+  ('Neurocirugía'),
+  ('Neuropsicología'),
+  ('Geriatría'),
+  ('Medicina Interna'),
+  ('Medicina General'),
+  ('Psicoanálisis'),
+  ('Terapia Cognitivo-Conductual');
+
+-- 2. Nuevas columnas en patients
+ALTER TABLE patients
+  ADD COLUMN IF NOT EXISTS address         VARCHAR(255) AFTER phone,
+  ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500) AFTER address;
+

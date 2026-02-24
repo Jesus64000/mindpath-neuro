@@ -4,7 +4,7 @@ const db = require('../config/db');
 
 // REGISTRO DE USUARIO
 exports.register = async (req, res) => {
-    const { email, password, full_name, role, specialty, license_number, date_of_birth, gender, phone } = req.body;
+    const { email, password, full_name, role, specialty, license_number, clinic_name, date_of_birth, gender, phone } = req.body;
 
     try {
         // 1. Verificar si el usuario ya existe
@@ -35,8 +35,8 @@ exports.register = async (req, res) => {
                     throw new Error('Especialidad y número de licencia son requeridos para doctores.');
                 }
                 await connection.query(
-                    'INSERT INTO doctors (user_id, specialty, license_number) VALUES (?, ?, ?)',
-                    [userId, specialty, license_number]
+                    'INSERT INTO doctors (user_id, specialty, license_number, clinic_name) VALUES (?, ?, ?, ?)',
+                    [userId, specialty, license_number, clinic_name || null]
                 );
             } else if (role === 'patient') {
                 if (!date_of_birth || !gender) {

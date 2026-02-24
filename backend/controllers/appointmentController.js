@@ -59,7 +59,26 @@ exports.getDoctorDashboardSummary = async (req, res) => {
                     new: safeAnalytics.new_patients || 0,
                     recurrent: safeAnalytics.recurrent_patients || 0
                 },
-                avgPerWeek: 12 // Placeholder; calcular dinámicamente después
+                avgPerWeek: (() => {
+                    // Citas confirmadas/completadas en la semana actual (lun–dom)
+                    const now = new Date();
+                    const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=lun
+                    const weekStart = new Date(now);
+                    weekStart.setDate(now.getDate() - dayOfWeek);
+                    weekStart.setHours(0, 0, 0, 0);
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    weekEnd.setHours(23, 59, 59, 999);
+                    const weekStartISO = weekStart.toISOString().slice(0, 10);
+                    const weekEndISO   = weekEnd.toISOString().slice(0, 10);
+                    const thisWeekTotal = calendar.reduce((sum, row) => {
+                        if (row.appointment_date >= weekStartISO && row.appointment_date <= weekEndISO) {
+                            return sum + Number(row.count);
+                        }
+                        return sum;
+                    }, 0);
+                    return thisWeekTotal;
+                })()
             },
             isBlocked: doctor[0].is_blocked === 1
         });
@@ -240,5 +259,109 @@ exports.getPatientAppointments = async (req, res) => {
     } catch (error) {
         console.error('Error en getPatientAppointments:', error);
         res.status(500).json({ message: 'Error interno al obtener tus citas.' });
+    }
+};
+// Detalle completo de una cita (para la pantalla pre-consulta del doctor)
+exports.getAppointmentDetail = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (!doctorRows.length) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        // 1. Datos de la cita + paciente (solo columnas garantizadas)
+        const [apptRows] = await db.query(`
+            SELECT
+                a.id AS appointment_id,
+                a.appointment_date,
+                a.start_time,
+                a.type,
+                a.status,
+                p.id AS patient_id,
+                p.date_of_birth,
+                p.gender,
+                p.phone,
+                u.full_name AS patient_name,
+                u.email AS patient_email
+            FROM appointments a
+            JOIN patients p ON a.patient_id = p.id
+            JOIN users u ON p.user_id = u.id
+            WHERE a.id = ? AND a.doctor_id = ?
+        `, [id, doctorId]);
+
+        if (!apptRows.length) return res.status(404).json({ message: 'Cita no encontrada.' });
+        const appt = apptRows[0];
+
+        // 2. Columnas opcionales (pueden no existir segun version de la BD)
+        let extraPatientFields = { address: null, profile_picture: null, notes: null };
+        try {
+            const [extra] = await db.query(
+                'SELECT address, profile_picture FROM patients WHERE id = ?',
+                [appt.patient_id]
+            );
+            if (extra.length) extraPatientFields = { ...extraPatientFields, ...extra[0] };
+        } catch (_) { /* columnas aun no migradas */ }
+
+        // 3. Columnas opcionales de la cita (notas del paciente)
+        try {
+            const [apptExtra] = await db.query(
+                'SELECT notes FROM appointments WHERE id = ?', [id]
+            );
+            if (apptExtra.length) extraPatientFields.notes = apptExtra[0].notes;
+        } catch (_) { /* columna notes no existe aun */ }
+
+        // 4. Historial de consultas anteriores del mismo paciente con este doctor
+        let history = [];
+        try {
+            const [rows] = await db.query(`
+                SELECT
+                    a.id AS appt_id,
+                    a.appointment_date,
+                    a.start_time,
+                    a.status,
+                    a.type,
+                    c.id AS consultation_id,
+                    r.diagnostico,
+                    r.tratamiento,
+                    r.motivo_sintomas
+                FROM appointments a
+                LEFT JOIN consultations c ON a.id = c.appointment_id
+                LEFT JOIN clinical_reports r ON c.id = r.consultation_id
+                WHERE a.patient_id = ? AND a.doctor_id = ? AND a.id != ?
+                ORDER BY a.appointment_date DESC
+                LIMIT 5
+            `, [appt.patient_id, doctorId, id]);
+            history = rows;
+        } catch (histErr) {
+            console.warn('No se pudo cargar historial:', histErr.message);
+        }
+
+        // 5. Calcular edad
+        const age = appt.date_of_birth
+            ? Math.floor((Date.now() - new Date(appt.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+            : null;
+
+        res.status(200).json({
+            appointment: {
+                ...appt,
+                notes: extraPatientFields.notes
+            },
+            patient: {
+                id:              appt.patient_id,
+                full_name:       appt.patient_name,
+                email:           appt.patient_email,
+                phone:           appt.phone,
+                address:         extraPatientFields.address,
+                profile_picture: extraPatientFields.profile_picture,
+                gender:          appt.gender,
+                age
+            },
+            history
+        });
+    } catch (error) {
+        console.error('Error en getAppointmentDetail:', error.message);
+        res.status(500).json({ message: 'Error interno.', detail: error.message });
     }
 };

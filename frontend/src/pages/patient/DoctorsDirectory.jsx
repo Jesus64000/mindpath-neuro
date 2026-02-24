@@ -6,31 +6,29 @@ import DoctorCard from '../../components/DoctorCard';
 const DoctorsDirectory = () => {
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [specialties, setSpecialties] = useState(['Todas']);
     
     // Estados para los filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSpecialty, setSelectedSpecialty] = useState('Todas');
 
     useEffect(() => {
-        const fetchDoctors = async () => {
+        const fetchData = async () => {
             try {
-                // Reutilizamos la ruta general que ya hicimos en el Sprint 15
-                const response = await api.get('/doctors');
-                setDoctors(response.data);
+                const [doctorsRes, specialtiesRes] = await Promise.all([
+                    api.get('/doctors'),
+                    api.get('/doctors/specialties')
+                ]);
+                setDoctors(doctorsRes.data);
+                setSpecialties(['Todas', ...specialtiesRes.data.map(s => s.name)]);
             } catch (error) {
                 console.error("Error al cargar el directorio:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchDoctors();
+        fetchData();
     }, []);
-
-    // Extraer especialidades únicas para el filtro desplegable (Select)
-    const specialties = useMemo(() => {
-        const unique = [...new Set(doctors.map(doc => doc.specialty))];
-        return ['Todas', ...unique];
-    }, [doctors]);
 
     // Lógica de Filtrado Inteligente (Cliente)
     const filteredDoctors = useMemo(() => {
