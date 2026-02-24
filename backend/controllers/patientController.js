@@ -26,3 +26,40 @@ exports.getMyDoctors = async (req, res) => {
         res.status(500).json({ message: 'Error interno al cargar tu equipo médico.' });
     }
 };
+
+// Obtener el informe de una cita (solo si el doctor lo compartió)
+exports.getAppointmentReport = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const userId = req.user.id;
+
+        const [patient] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+        if (!patient || patient.length === 0) {
+            return res.status(403).json({ message: "Perfil de paciente no encontrado." });
+        }
+        const patientId = patient[0].id;
+
+        const [report] = await db.query(`
+            SELECT 
+                a.appointment_date, a.start_time, a.type,
+                du.full_name AS doctor_name, d.specialty, d.clinic_name,
+                r.motivo_sintomas, r.antecedentes, r.hallazgos,
+                r.diagnostico, r.tratamiento, r.estudios_observaciones
+            FROM appointments a
+            JOIN doctors d ON a.doctor_id = d.id
+            JOIN users du ON d.user_id = du.id
+            JOIN consultations c ON a.id = c.appointment_id
+            JOIN clinical_reports r ON c.id = r.consultation_id
+            WHERE a.id = ? AND a.patient_id = ? AND r.is_shared = TRUE
+        `, [appointmentId, patientId]);
+
+        if (report.length === 0) {
+            return res.status(404).json({ message: "El informe no está disponible o el doctor no lo ha compartido aún." });
+        }
+
+        res.status(200).json(report[0]);
+    } catch (error) {
+        console.error("Error al obtener informe del paciente:", error);
+        res.status(500).json({ message: "Error al cargar el informe." });
+    }
+};

@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, Activity, Stethoscope, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, Activity, Stethoscope, AlertCircle, ChevronLeft, ChevronRight, FileText, X } from 'lucide-react';
 
 const PatientAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    // Modal del informe
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [isModalOpen,    setIsModalOpen]    = useState(false);
 
     // Paginación
     const [currentPage, setCurrentPage] = useState(1);
@@ -32,8 +35,17 @@ const PatientAppointments = () => {
     }, [currentPage]);
 
     const handleJoinVideoCall = (appointmentId) => {
-        // Redirigir a la sala de espera / videollamada del paciente
-        navigate(`/patient/video-room/${appointmentId}`); 
+        navigate(`/patient/video-room/${appointmentId}`);
+    };
+
+    const handleViewReport = async (appointmentId) => {
+        try {
+            const res = await api.get(`/patients/appointments/${appointmentId}/report`);
+            setSelectedReport(res.data);
+            setIsModalOpen(true);
+        } catch {
+            alert('El informe aún no está disponible o el doctor no lo ha compartido.');
+        }
     };
 
     // Diccionario visual para los estados
@@ -111,7 +123,16 @@ const PatientAppointments = () => {
                                     </div>
 
                                     {/* Acción */}
-                                    <div className="flex w-full md:w-1/3 justify-end shrink-0">
+                                    <div className="flex w-full md:w-1/3 justify-end shrink-0 gap-2 flex-wrap">
+                                        {/* Botón Ver Informe para citas completadas */}
+                                        {app.status === 'completed' && (
+                                            <button
+                                                onClick={() => handleViewReport(app.appointment_id)}
+                                                className="px-4 py-2.5 bg-mindpath-primary/10 text-mindpath-primary font-bold rounded-xl flex items-center hover:bg-mindpath-primary/20 transition-all text-sm"
+                                            >
+                                                <FileText size={16} className="mr-1.5" /> Ver Informe
+                                            </button>
+                                        )}
                                         {app.type === 'virtual' && app.status === 'confirmed' && (
                                             isToday ? (
                                                 <button 
@@ -171,6 +192,63 @@ const PatientAppointments = () => {
                     >
                         Buscar Especialistas
                     </button>
+                </div>
+            )}
+
+            {/* ── MODAL DEL INFORME MÉDICO ── */}
+            {isModalOpen && selectedReport && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
+                    <div
+                        className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 relative shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute top-5 right-5 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        {/* Encabezado del modal */}
+                        <div className="border-b pb-4 mb-6">
+                            <h2 className="text-xl font-black text-mindpath-primary flex items-center">
+                                <FileText className="mr-2" size={20} /> Resumen Médico
+                            </h2>
+                            <p className="text-gray-600 font-bold mt-1">Dr(a). {selectedReport.doctor_name}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                {selectedReport.specialty} &bull; {selectedReport.clinic_name || 'MindPath Online'} &bull;{' '}
+                                {new Date(selectedReport.appointment_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })}
+                            </p>
+                        </div>
+
+                        {/* Campos principales */}
+                        <div className="space-y-5">
+                            <div className="bg-purple-50 border border-purple-100 p-4 rounded-2xl">
+                                <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Diagnóstico</p>
+                                <p className="font-bold text-gray-900">{selectedReport.diagnostico || 'No especificado'}</p>
+                            </div>
+                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
+                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Tratamiento Indicado</p>
+                                <p className="text-gray-800">{selectedReport.tratamiento || 'No especificado'}</p>
+                            </div>
+                            <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estudios y Observaciones</p>
+                                <p className="text-gray-700">{selectedReport.estudios_observaciones || 'Sin indicaciones adicionales'}</p>
+                            </div>
+
+                            {/* Acordeón para el resto */}
+                            <details className="border-t pt-4">
+                                <summary className="cursor-pointer text-sm font-bold text-mindpath-primary hover:underline">
+                                    Ver detalles completos (motivo, antecedentes y hallazgos)
+                                </summary>
+                                <div className="mt-4 space-y-3 text-sm text-gray-700">
+                                    <p><strong className="text-gray-500 block text-xs uppercase">Motivo y Síntomas:</strong> {selectedReport.motivo_sintomas}</p>
+                                    <p><strong className="text-gray-500 block text-xs uppercase">Antecedentes:</strong> {selectedReport.antecedentes}</p>
+                                    <p><strong className="text-gray-500 block text-xs uppercase">Hallazgos:</strong> {selectedReport.hallazgos}</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

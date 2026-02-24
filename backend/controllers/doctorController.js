@@ -88,7 +88,7 @@ exports.getMyPatients = async (req, res) => {
     }
 };
 
-// Obtener expediente clínico de un paciente para el doctor autenticado
+// Obtener expediente clínico completo de un paciente (vista del doctor)
 exports.getPatientFile = async (req, res) => {
     try {
         const { patientId } = req.params;
@@ -104,11 +104,24 @@ exports.getPatientFile = async (req, res) => {
 
         if (patientInfo.length === 0) return res.status(404).json({ message: 'Paciente no encontrado.' });
 
+        // Historial completo con los 6 campos del nuevo esquema
         const [history] = await db.query(`
-            SELECT a.id, a.appointment_date, a.type, a.status, r.summary as report_summary
+            SELECT 
+                a.id AS appointment_id,
+                a.appointment_date,
+                a.type,
+                a.status,
+                r.motivo_sintomas,
+                r.antecedentes,
+                r.hallazgos,
+                r.diagnostico,
+                r.tratamiento,
+                r.estudios_observaciones,
+                r.private_notes
             FROM appointments a
-            LEFT JOIN clinical_reports r ON a.id = r.appointment_id
-            WHERE a.patient_id = ? AND a.doctor_id = ?
+            LEFT JOIN consultations c     ON a.id = c.appointment_id
+            LEFT JOIN clinical_reports r  ON c.id = r.consultation_id
+            WHERE a.patient_id = ? AND a.doctor_id = ? AND a.status = 'completed'
             ORDER BY a.appointment_date DESC
         `, [patientId, doctorId]);
 

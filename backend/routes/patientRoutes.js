@@ -1,9 +1,12 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const patientController = require('../controllers/patientController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware    = require('../middlewares/authMiddleware');
 
-// Ruta: GET /api/patients/my-doctors
+// Equipo médico del paciente
 router.get('/my-doctors', authMiddleware, patientController.getMyDoctors);
+
+// Informe de una cita específica (solo si is_shared = TRUE)
+router.get('/appointments/:appointmentId/report', authMiddleware, patientController.getAppointmentReport);
 
 module.exports = router;
