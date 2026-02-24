@@ -3,8 +3,27 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import {
     FileText, RefreshCw, Save, Lock, Share2, Bot,
-    AlertTriangle, Stethoscope, User, Calendar, ChevronRight, ChevronLeft
+    AlertTriangle, Stethoscope, User, Calendar, ChevronRight, ChevronLeft,
+    CheckCircle, XCircle
 } from 'lucide-react';
+
+// ── Toast ──────────────────────────────────────────────────────
+const Toast = ({ message, type, onClose }) => {
+    useEffect(() => {
+        const t = setTimeout(onClose, 3500);
+        return () => clearTimeout(t);
+    }, [onClose]);
+    const colors = type === 'success'
+        ? 'bg-green-50 border-green-200 text-green-800'
+        : 'bg-red-50 border-red-200 text-red-800';
+    const Icon = type === 'success' ? CheckCircle : XCircle;
+    return (
+        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-xl ${colors} max-w-sm`}>
+            <Icon size={20} className="shrink-0" />
+            <p className="text-sm font-bold">{message}</p>
+        </div>
+    );
+};
 
 // ── Constantes ─────────────────────────────────────────────────────────────
 const CAMPOS = [
@@ -39,8 +58,8 @@ const WrapUp = () => {
     const [isShared,     setIsShared]     = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving,     setIsSaving]     = useState(false);
-    // Panel lateral colapsable
     const [sidebarOpen,  setSidebarOpen]  = useState(true);
+    const [toast,        setToast]        = useState(null);
 
     // Cargar membrete + prevención de cierre accidental
     useEffect(() => {
@@ -55,7 +74,10 @@ const WrapUp = () => {
 
     // Al generar el informe, colapsar el sidebar automáticamente
     const generateAIReport = async () => {
-        if (!rawText.trim()) return alert('El texto de la consulta está vacío.');
+        if (!rawText.trim()) {
+            setToast({ message: 'El texto de la consulta está vacío. Escribe o dicta la transcripción primero.', type: 'error' });
+            return;
+        }
         setIsGenerating(true);
         try {
             const res = await api.post('/ia/generate-report', { text: rawText });
@@ -71,14 +93,17 @@ const WrapUp = () => {
             setSidebarOpen(false); // ← colapsar para dar protagonismo al informe
         } catch (err) {
             console.error(err);
-            alert('Error al conectar con la IA. Revisa que el servidor esté activo.');
+            setToast({ message: 'Error al conectar con la IA. Revisa que el servidor esté activo.', type: 'error' });
         } finally {
             setIsGenerating(false);
         }
     };
 
     const handleSave = async () => {
-        if (!report) return alert('Debes generar el informe antes de guardar.');
+        if (!report) {
+            setToast({ message: 'Debes generar el informe con IA antes de firmar.', type: 'error' });
+            return;
+        }
         setIsSaving(true);
         try {
             await api.post('/reports/wrap-up', {
@@ -87,11 +112,11 @@ const WrapUp = () => {
                 privateNotes,
                 isShared,
             });
-            alert('✅ Historia Clínica guardada y firmada exitosamente.');
-            navigate('/doctor/dashboard');
+            setToast({ message: '✅ Historia Clínica guardada y firmada exitosamente.', type: 'success' });
+            setTimeout(() => navigate('/doctor/dashboard'), 2000);
         } catch (err) {
             console.error(err);
-            alert('Error al guardar. Intenta de nuevo.');
+            setToast({ message: 'Error al guardar. Revisa tu conexión e intenta de nuevo.', type: 'error' });
         } finally {
             setIsSaving(false);
         }
@@ -108,8 +133,15 @@ const WrapUp = () => {
         );
     }
 
+    // Bug #15 Fix: fecha de firma desde el servidor (headerData), no desde el cliente
+    const signatureDate = headerData.appointment_date
+        ? new Date(headerData.appointment_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })
+        : new Date().toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' });
+
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
+            {/* Toast global */}
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* ── SIDEBAR DE TRANSCRIPCIÓN (colapsable) ─────────────────── */}
             <aside
@@ -316,9 +348,7 @@ const WrapUp = () => {
                                             Dr(a). {headerData.doctor_name}
                                         </p>
                                         <p className="text-xs text-gray-400 mt-2">
-                                            Emitido el {new Date().toLocaleDateString('es-VE', {
-                                                day: '2-digit', month: 'long', year: 'numeric'
-                                            })}
+                                            Emitido el {signatureDate}
                                         </p>
                                     </div>
 

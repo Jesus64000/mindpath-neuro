@@ -98,7 +98,7 @@ const DoctorSchedule = () => {
 
     const updateStatus = async (id, newStatus) => {
         try {
-            await api.patch(`/appointments/${id}/status`, { status: newStatus });
+            await api.put(`/appointments/${id}/status`, { status: newStatus });
             // Actualizamos el estado local para no recargar la página completa
             setAppointments(appointments.map(app => 
                 app.appointment_id === id ? { ...app, status: newStatus } : app

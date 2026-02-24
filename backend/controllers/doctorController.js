@@ -108,7 +108,7 @@ exports.getPatientFile = async (req, res) => {
     try {
         const { patientId } = req.params;
         const userId = req.user.id;
-        const [doctor] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        const [doctor] = await db.query('SELECT id, user_id FROM doctors WHERE user_id = ?', [userId]);
         if (doctor.length === 0) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
         const doctorId = doctor[0].id;
 
@@ -119,7 +119,16 @@ exports.getPatientFile = async (req, res) => {
 
         if (patientInfo.length === 0) return res.status(404).json({ message: 'Paciente no encontrado.' });
 
-        // Historial completo con los 6 campos del nuevo esquema
+        // Campos opcionales (columnas que pueden no estar migradas aún)
+        let extraFields = { address: null, profile_picture: null };
+        try {
+            const [extra] = await db.query(
+                'SELECT address, profile_picture FROM patients WHERE id = ?', [patientId]
+            );
+            if (extra.length) extraFields = { ...extraFields, ...extra[0] };
+        } catch (_) { /* no migradas aún */ }
+
+        // Historial completo (consultas completadas)
         const [history] = await db.query(`
             SELECT 
                 a.id AS appointment_id,
@@ -140,12 +149,34 @@ exports.getPatientFile = async (req, res) => {
             ORDER BY a.appointment_date DESC
         `, [patientId, doctorId]);
 
-        res.status(200).json({ info: patientInfo[0], history });
+        // Próximas citas (confirmed o pending, fecha futura o hoy)
+        const [upcoming] = await db.query(`
+            SELECT 
+                a.id AS appointment_id,
+                a.appointment_date,
+                a.start_time,
+                a.type,
+                a.status
+            FROM appointments a
+            WHERE a.patient_id = ? AND a.doctor_id = ?
+              AND a.status IN ('confirmed', 'pending')
+              AND a.appointment_date >= CURDATE()
+            ORDER BY a.appointment_date ASC, a.start_time ASC
+            LIMIT 10
+        `, [patientId, doctorId]);
+
+        res.status(200).json({
+            info: { ...patientInfo[0], ...extraFields },
+            history,
+            upcoming,
+            doctorUserId: doctor[0].user_id
+        });
     } catch (error) {
         console.error('Error al obtener expediente del paciente:', error);
         res.status(500).json({ message: 'Error al obtener expediente' });
     }
 };
+
 
 // Configurar horarios del doctor (sobrescribe y guarda nuevos)
 exports.updateSchedule = async (req, res) => {

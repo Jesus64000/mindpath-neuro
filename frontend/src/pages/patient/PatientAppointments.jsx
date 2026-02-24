@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Calendar as CalendarIcon, Clock, Video, MapPin, Activity, Stethoscope, AlertCircle, ChevronLeft, ChevronRight, FileText, X } from 'lucide-react';
 
+import { BACKEND_URL } from '../../api/constants';
+
 const PatientAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -89,7 +91,7 @@ const PatientAppointments = () => {
                                     <div className="flex items-center w-full md:w-1/3">
                                         <div className="h-16 w-16 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary text-xl font-bold border-2 border-white shadow-sm overflow-hidden mr-4 shrink-0">
                                             {app.profile_picture ? (
-                                                <img src={app.profile_picture} alt={app.doctor_name} className="h-full w-full object-cover" />
+                                                <img src={`${BACKEND_URL}${app.profile_picture}`} alt={app.doctor_name} className="h-full w-full object-cover" />
                                             ) : app.doctor_name?.charAt(0)}
                                         </div>
                                         <div>

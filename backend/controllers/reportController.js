@@ -75,13 +75,21 @@ exports.wrapUpConsultation = async (req, res) => {
             return res.status(403).json({ message: "No tienes permiso para modificar esta cita." });
         }
 
-        // Paso 1: Crear o recuperar el registro de consultations para esta cita
+        // Paso 1: Obtener la fecha y hora real de la cita
+        const [apptRows] = await db.query(
+            'SELECT appointment_date, start_time FROM appointments WHERE id = ?',
+            [appointmentId]
+        );
+        const appt = apptRows[0];
+        const startDatetime = `${appt.appointment_date.toISOString().slice(0, 10)} ${appt.start_time}`;
+
+        // Paso 2: Crear o recuperar el registro de consultations para esta cita
         // (clinical_reports.consultation_id es FK → consultations.id)
         const [consultationRes] = await db.query(
             `INSERT INTO consultations (appointment_id, start_datetime, end_datetime)
-             VALUES (?, NOW() - INTERVAL 1 HOUR, NOW())
+             VALUES (?, ?, NOW())
              ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
-            [appointmentId]
+            [appointmentId, startDatetime]
         );
         const consultationId = consultationRes.insertId;
 

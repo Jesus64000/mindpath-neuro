@@ -1,15 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
-import { Mic, Pause, Play, BrainCircuit, Activity } from 'lucide-react';
+import { Mic, Pause, Play, BrainCircuit, Activity, AlertTriangle } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const VideoRoom = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const doctorName = user?.full_name ? `Dr(a). ${user.full_name}` : 'Dr. Especialista';
 
     // ── Estado de la transcripción ──────────────────────────────────────────
-    const [isListening, setIsListening] = useState(false);
-    const [isPaused, setIsPaused]       = useState(false);
+    const [isListening, setIsListening]   = useState(false);
+    const [isPaused, setIsPaused]         = useState(false);
+    const [speechSupported, setSpeechSupported] = useState(true);
 
     // finalTranscript: texto confirmado por el motor (no se repite)
     const [finalTranscript, setFinalTranscript] = useState('');
@@ -24,7 +28,11 @@ const VideoRoom = () => {
     // Inicializar Web Speech API
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
+        if (!SpeechRecognition) {
+            // Bug #13 fix: avisar al doctor en vez de fallar silenciosamente
+            setSpeechSupported(false);
+            return;
+        }
 
         const recognition = new SpeechRecognition();
         recognition.continuous     = true;
@@ -111,7 +119,7 @@ const VideoRoom = () => {
         const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
 
         const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-            appID, serverSecret, id, Date.now().toString(), 'Dr. Especialista'
+            appID, serverSecret, id, Date.now().toString(), doctorName
         );
 
         const zp = ZegoUIKitPrebuilt.create(kitToken);
@@ -160,6 +168,14 @@ const VideoRoom = () => {
 
                 {/* Cuerpo del panel */}
                 <div className="flex-1 p-5 flex flex-col gap-4 overflow-hidden">
+
+                    {/* Banner Bug #13: navegador no compatible */}
+                    {!speechSupported && (
+                        <div className="flex items-start bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-2xl text-xs font-bold">
+                            <AlertTriangle size={16} className="mr-2 shrink-0 mt-0.5 text-yellow-500" />
+                            Tu navegador no soporta la transcripción de voz. Usa <strong className="mx-1">Google Chrome</strong> o <strong>Microsoft Edge</strong> para habilitarla.
+                        </div>
+                    )}
 
                     {/* Controles del micrófono */}
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">

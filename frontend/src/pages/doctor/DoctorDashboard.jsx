@@ -4,7 +4,7 @@ import api from '../../api/axiosConfig';
 import { useAuthStore } from '../../store/useAuthStore';
 import { 
     Calendar, Clock, Users, Bell, ShieldAlert, 
-    TrendingUp, UserPlus, RefreshCw, XCircle, CheckCircle, CalendarClock 
+    TrendingUp, UserPlus, RefreshCw, XCircle, CheckCircle, CalendarClock, ChevronRight
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
@@ -246,16 +246,28 @@ const DoctorDashboard = () => {
                             <div className="space-y-4">
                                 {data?.pending.length > 0 ? data.pending.map(app => (
                                     <div key={app.id} className="p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-mindpath-primary transition-all group">
-                                        <p className="font-black text-gray-900">{app.patient_name}</p>
-                                        <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-tighter">
-                                            {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString()}
-                                        </p>
+                                        <div
+                                            className="cursor-pointer"
+                                            onClick={() => navigate(`/doctor/appointment/${app.id}`)}
+                                        >
+                                            <p className="font-black text-gray-900 group-hover:text-mindpath-primary transition-colors">{app.patient_name}</p>
+                                            <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-tighter">
+                                                {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString()}
+                                            </p>
+                                        </div>
                                         <div className="flex gap-2 mt-4">
                                             <button 
                                                 onClick={() => handleStatus(app.id, 'confirmed')}
                                                 className="flex-1 py-3 bg-mindpath-primary text-white text-[10px] font-black rounded-xl hover:scale-105 transition-transform"
                                             >
                                                 ACEPTAR
+                                            </button>
+                                            <button 
+                                                onClick={() => navigate(`/doctor/appointment/${app.id}`)}
+                                                className="p-3 bg-white text-gray-400 rounded-xl border border-gray-200 hover:text-mindpath-primary hover:border-mindpath-primary/30 transition-all"
+                                                title="Ver detalle"
+                                            >
+                                                <CalendarClock size={18}/>
                                             </button>
                                             <button 
                                                 onClick={() => handleStatus(app.id, 'cancelled')}
@@ -278,15 +290,24 @@ const DoctorDashboard = () => {
                             <h3 className="font-black text-xl mb-6 flex items-center"><CalendarClock size={22} className="mr-3 text-mindpath-primary"/> Próximas citas</h3>
                             <div className="space-y-4">
                                 {data?.upcoming?.length > 0 ? data.upcoming.map(app => (
-                                    <div key={`up-${app.id}`} className="p-5 bg-gray-50 rounded-[1.25rem] border border-gray-100 flex items-center justify-between">
+                                    <div
+                                        key={`up-${app.id}`}
+                                        onClick={() => navigate(`/doctor/appointment/${app.id}`)}
+                                        className="p-5 bg-gray-50 rounded-[1.25rem] border border-gray-100 flex items-center justify-between cursor-pointer hover:border-mindpath-primary/40 hover:bg-purple-50/30 transition-all group"
+                                    >
                                         <div>
-                                            <p className="font-black text-gray-900">{app.patient_name}</p>
+                                            <p className="font-black text-gray-900 group-hover:text-mindpath-primary transition-colors">{app.patient_name}</p>
                                             <p className="text-xs font-bold text-gray-500 uppercase tracking-tight mt-1">
                                                 {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString()}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">{app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}</p>
                                         </div>
-                                        <span className="text-[10px] font-black text-mindpath-primary bg-purple-50 px-3 py-1 rounded-full border border-purple-100">Confirmada</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-mindpath-primary bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+                                                {app.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
+                                            </span>
+                                            <ChevronRight size={16} className="text-gray-300 group-hover:text-mindpath-primary transition-colors" />
+                                        </div>
                                     </div>
                                 )) : (
                                     <div className="text-center py-8 text-gray-400 text-sm font-bold">No hay próximas citas</div>
