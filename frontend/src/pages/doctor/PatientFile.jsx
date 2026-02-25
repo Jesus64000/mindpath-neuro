@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import {
     ClipboardList, Calendar, ChevronDown, Lock,
     Phone, Mail, MapPin, User, Activity,
     Video, MapPinned, Clock, ChevronRight,
-    FileText, AlertCircle, CalendarPlus
+    FileText, AlertCircle, CalendarPlus, StickyNote, Check
 } from 'lucide-react';
 
+
 import { BACKEND_URL } from '../../api/constants';
+import { PDFExportButton } from '../../components/ReportPDF';
+
 
 const genderLabel = { M: 'Masculino', F: 'Femenino', O: 'Otro', Other: 'Otro' };
 
@@ -26,12 +29,46 @@ const PatientFile = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('history');
 
+    // ── Notas rápidas (Sprint 27) ────────────────────────────────────────────
+    const [notes,        setNotes]       = useState('');
+    const [notesSaved,   setNotesSaved]  = useState(false);
+    const [notesLoaded,  setNotesLoaded] = useState(false);
+    const debounceRef = useRef(null);
+
+    const saveNotes = useCallback(async (text) => {
+        try {
+            await api.put(`/doctors/patient/${id}/notes`, { notes: text });
+            setNotesSaved(true);
+            setTimeout(() => setNotesSaved(false), 2000);
+        } catch (err) {
+            console.error('Error guardando notas:', err);
+        }
+    }, [id]);
+
+    const handleNotesChange = (e) => {
+        const val = e.target.value;
+        setNotes(val);
+        setNotesSaved(false);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => saveNotes(val), 1500);
+    };
+
+
     useEffect(() => {
         api.get(`/doctors/patient/${id}`)
             .then(res => setData(res.data))
             .catch(console.error)
             .finally(() => setLoading(false));
+
+        // Cargar notas del paciente
+        api.get(`/doctors/patient/${id}/notes`)
+            .then(res => {
+                setNotes(res.data.notes || '');
+                setNotesLoaded(true);
+            })
+            .catch(() => setNotesLoaded(true));
     }, [id]);
+
 
     if (loading) {
         return (
@@ -191,7 +228,31 @@ const PatientFile = () => {
                         <CalendarPlus size={16} />
                         Agendar nueva cita
                     </button>
+
+                    {/* Notas rápidas — Sprint 27 */}
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
+                        <h3 className="font-black text-base mb-3 text-gray-900 dark:text-white flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-2">
+                                <StickyNote size={16} className="text-mindpath-primary" /> Notas Rápidas
+                            </span>
+                            {notesSaved && (
+                                <span className="flex items-center gap-1 text-green-500 text-xs font-bold">
+                                    <Check size={12} /> Guardado
+                                </span>
+                            )}
+                        </h3>
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">Privado • solo tú lo ves</p>
+                        <textarea
+                            disabled={!notesLoaded}
+                            value={notes}
+                            onChange={handleNotesChange}
+                            rows={5}
+                            placeholder="Observaciones personales sobre este paciente..."
+                            className="w-full resize-none rounded-xl bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 p-3 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mindpath-primary/50 transition"
+                        />
+                    </div>
                 </div>
+
 
                 {/* ── COLUMNA DERECHA: Tabs ───────────────────────────────── */}
                 <div className="lg:col-span-8 space-y-4">
@@ -308,10 +369,25 @@ const PatientFile = () => {
                                                                 <p className="text-gray-300 text-xs italic">{h.private_notes}</p>
                                                             </div>
                                                         )}
+                                                        <div className="md:col-span-2 flex justify-end mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
+                                                            <PDFExportButton 
+                                                                reportData={{
+                                                                    patientName: info.full_name,
+                                                                    motivo_sintomas: h.motivo_sintomas,
+                                                                    antecedentes: h.antecedentes,
+                                                                    hallazgos: h.hallazgos,
+                                                                    diagnostico: h.diagnostico,
+                                                                    tratamiento: h.tratamiento,
+                                                                    estudios_observaciones: h.estudios_observaciones,
+                                                                    privateNotes: h.private_notes
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         ) : (
+
                                             <div className="p-6 text-center text-gray-400 dark:text-slate-500 italic text-sm border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-slate-700/20">
                                                 No se redactó historia clínica para esta consulta.
                                             </div>

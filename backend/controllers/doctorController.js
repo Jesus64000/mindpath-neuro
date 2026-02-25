@@ -269,3 +269,135 @@ exports.updateProfileSettings = async (req, res) => {
         res.status(500).json({ message: 'Error al actualizar perfil' });
     }
 };
+
+// ── Sprint 27: Notas Rápidas por Paciente ────────────────────────────────────
+
+// GET /api/doctors/patient/:patientId/notes
+exports.getPatientNotes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { patientId } = req.params;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [rows] = await db.query(
+            'SELECT notes, updated_at FROM doctor_patient_notes WHERE doctor_id = ? AND patient_id = ?',
+            [doctorId, patientId]
+        );
+        res.status(200).json({ notes: rows[0]?.notes || '', updatedAt: rows[0]?.updated_at || null });
+    } catch (error) {
+        console.error('Error en getPatientNotes:', error);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// PUT /api/doctors/patient/:patientId/notes
+exports.savePatientNotes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { patientId } = req.params;
+        const { notes } = req.body;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        await db.query(
+            `INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes)
+             VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE notes = VALUES(notes)`,
+            [doctorId, patientId, notes]
+        );
+        res.status(200).json({ message: 'Notas guardadas.' });
+    } catch (error) {
+        console.error('Error en savePatientNotes:', error);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// ── Sprint 27: Estadísticas Personales del Doctor ────────────────────────────
+
+// GET /api/doctors/my-stats
+exports.getMyStats = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        // Citas por mes (últimos 6 meses)
+        const [byMonth] = await db.query(`
+            SELECT
+                DATE_FORMAT(appointment_date, '%Y-%m') AS month,
+                COUNT(*) AS total
+            FROM appointments
+            WHERE doctor_id = ?
+              AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY month
+            ORDER BY month ASC
+        `, [doctorId]);
+
+        // Totales por estado
+        const [byStatus] = await db.query(`
+            SELECT status, COUNT(*) AS total
+            FROM appointments
+            WHERE doctor_id = ?
+            GROUP BY status
+        `, [doctorId]);
+
+        // Pacientes únicos
+        const [uniquePatients] = await db.query(`
+            SELECT COUNT(DISTINCT patient_id) AS total
+            FROM appointments
+            WHERE doctor_id = ?
+        `, [doctorId]);
+
+        // Nuevos vs recurrentes
+        const [retention] = await db.query(`
+            SELECT
+                SUM(CASE WHEN cnt = 1 THEN 1 ELSE 0 END) AS new_patients,
+                SUM(CASE WHEN cnt > 1  THEN 1 ELSE 0 END) AS recurrent_patients
+            FROM (
+                SELECT COUNT(*) AS cnt
+                FROM appointments
+                WHERE doctor_id = ?
+                GROUP BY patient_id
+            ) AS sub
+        `, [doctorId]);
+
+        // Distribución virtual vs presencial
+        const [byType] = await db.query(`
+            SELECT type, COUNT(*) AS total
+            FROM appointments
+            WHERE doctor_id = ? AND status = 'completed'
+            GROUP BY type
+        `, [doctorId]);
+
+        // Rating promedio
+        const [ratingRow] = await db.query(`
+            SELECT ROUND(AVG(rating), 1) AS avg_rating, COUNT(*) AS rating_count
+            FROM doctor_ratings
+            WHERE doctor_id = ?
+        `, [doctorId]);
+
+        const statusMap = {};
+        byStatus.forEach(r => { statusMap[r.status] = r.total; });
+
+        res.status(200).json({
+            byMonth,
+            byStatus: statusMap,
+            uniquePatients: uniquePatients[0]?.total || 0,
+            retention: retention[0] || { new_patients: 0, recurrent_patients: 0 },
+            byType,
+            avgRating: ratingRow[0]?.avg_rating || null,
+            ratingCount: ratingRow[0]?.rating_count || 0,
+        });
+    } catch (error) {
+        console.error('Error en getMyStats:', error);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};
+

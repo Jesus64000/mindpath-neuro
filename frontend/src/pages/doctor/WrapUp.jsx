@@ -6,6 +6,8 @@ import {
     AlertTriangle, Stethoscope, User, Calendar, ChevronRight, ChevronLeft,
     CheckCircle, XCircle
 } from 'lucide-react';
+import { PDFExportButton } from '../../components/ReportPDF';
+
 
 // ── Toast ──────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => {
@@ -375,6 +377,17 @@ const WrapUp = () => {
                                         </span>
                                     </label>
 
+                                    {/* Botón PDF — Sprint 27 */}
+                                    {report && (
+                                        <div className="flex justify-center">
+                                            <PDFExportButton
+                                                report={{ ...report, private_notes: privateNotes }}
+                                                header={headerData}
+                                                className="w-full justify-center"
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Botón de guardado */}
                                     <button
                                         onClick={handleSave}
@@ -386,6 +399,7 @@ const WrapUp = () => {
                                             : <><Save size={18} className="mr-2" /> FIRMAR DOCUMENTO Y FINALIZAR</>
                                         }
                                     </button>
+
                                 </div>
                             </div>
                         </div>

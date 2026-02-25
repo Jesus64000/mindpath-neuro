@@ -365,3 +365,48 @@ exports.getAppointmentDetail = async (req, res) => {
         res.status(500).json({ message: 'Error interno.', detail: error.message });
     }
 };
+
+// ── Sprint 27: Sala de Espera Virtual ─────────────────────────────────────────
+
+// GET /api/appointments/:id/room-status
+// Paciente consulta si el doctor ya entró a la sala
+exports.getRoomStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.query(
+            'SELECT doctor_ready FROM appointments WHERE id = ?',
+            [id]
+        );
+        if (rows.length === 0) return res.status(404).json({ message: 'Cita no encontrada.' });
+        res.status(200).json({ doctorReady: rows[0].doctor_ready === 1 });
+    } catch (error) {
+        console.error('Error en getRoomStatus:', error.message);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// PATCH /api/appointments/:id/doctor-ready
+// Doctor activa la sala al entrar al VideoRoom
+exports.setDoctorReady = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const [doctorRows] = await db.query(
+            'SELECT id FROM doctors WHERE user_id = ?', [userId]
+        );
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'UPDATE appointments SET doctor_ready = TRUE WHERE id = ? AND doctor_id = ?',
+            [id, doctorId]
+        );
+        if (result.affectedRows === 0) return res.status(403).json({ message: 'Sin acceso.' });
+
+        res.status(200).json({ message: 'Sala activada.' });
+    } catch (error) {
+        console.error('Error en setDoctorReady:', error.message);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};

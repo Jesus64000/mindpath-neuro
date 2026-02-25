@@ -3,12 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 import { Mic, Pause, Play, BrainCircuit, Activity, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import api from '../../api/axiosConfig';
 
 const VideoRoom = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const doctorName = user?.full_name ? `Dr(a). ${user.full_name}` : 'Dr. Especialista';
+
+    // ── Sprint 27: Activar sala cuando el doctor entra ───────────────────────
+    useEffect(() => {
+        api.patch(`/appointments/${id}/doctor-ready`)
+            .catch(err => console.warn('No se pudo activar sala:', err.message));
+    }, [id]);
 
     // ── Estado de la transcripción ──────────────────────────────────────────
     const [isListening, setIsListening]   = useState(false);

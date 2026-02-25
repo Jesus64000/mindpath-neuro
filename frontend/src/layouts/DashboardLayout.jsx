@@ -4,8 +4,9 @@ import { useAuthStore } from '../store/useAuthStore';
 import useSettingsStore from '../store/useSettingsStore';
 import {
     LayoutDashboard, Calendar, Users, Settings, LogOut,
-    BrainCircuit, Sun, Moon, ShieldCheck, FileText
+    BrainCircuit, Sun, Moon, ShieldCheck, FileText, BarChart3
 } from 'lucide-react';
+
 
 const DashboardLayout = () => {
     const { user, logout } = useAuthStore();
@@ -34,11 +35,13 @@ const DashboardLayout = () => {
     // ── Menú dinámico por rol ──────────────────────────────────────────────────
     const menuByRole = {
         doctor: [
-            { name: 'Panel',     path: '/doctor/dashboard',        icon: LayoutDashboard },
-            { name: 'Pacientes', path: '/doctor/patients',          icon: Users },
-            { name: 'Agenda',    path: '/doctor/schedule',          icon: Calendar },
-            { name: 'Perfil',    path: '/doctor/profile-settings',  icon: Settings },
+            { name: 'Panel',          path: '/doctor/dashboard',        icon: LayoutDashboard },
+            { name: 'Pacientes',      path: '/doctor/patients',          icon: Users },
+            { name: 'Agenda',         path: '/doctor/schedule',          icon: Calendar },
+            { name: 'Estadísticas',   path: '/doctor/stats',             icon: BarChart3 },
+            { name: 'Perfil',         path: '/doctor/profile-settings',  icon: Settings },
         ],
+
         patient: [
             { name: 'Inicio',    path: '/patient/dashboard',    icon: LayoutDashboard },
             { name: 'Mis Citas', path: '/patient/appointments', icon: Calendar },

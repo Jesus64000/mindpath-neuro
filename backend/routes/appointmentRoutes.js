@@ -15,4 +15,9 @@ router.get('/patient', authMiddleware, appointmentController.getPatientAppointme
 // Detalle completo de una cita (pantalla pre-consulta del doctor)
 router.get('/doctor/:id/detail', authMiddleware, appointmentController.getAppointmentDetail);
 
+// Sprint 27: Sala de Espera Virtual
+router.get('/:id/room-status', authMiddleware, appointmentController.getRoomStatus);
+router.patch('/:id/doctor-ready', authMiddleware, appointmentController.setDoctorReady);
+
 module.exports = router;
+

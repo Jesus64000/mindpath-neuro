@@ -25,7 +25,9 @@ import ConsultationRoom from './pages/doctor/ConsultationRoom';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminSetup from './pages/admin/SuperAdminSetup';
 import MyHistory from './pages/patient/MyHistory';
+import DoctorStats from './pages/doctor/DoctorStats';
 import useSettingsStore from './store/useSettingsStore';
+
 import api from './api/axiosConfig';
 
 const Unauthorized = () => <div className="p-8 text-2xl font-bold text-red-600">🚫 Acceso Denegado</div>;
@@ -74,7 +76,9 @@ function App() {
               <Route path="/doctor/patient/:id" element={<PatientFile />} />
               <Route path="/doctor/ia-lab" element={<AILab />} />
               <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
+              <Route path="/doctor/stats" element={<DoctorStats />} />
             </Route>
+
 
             {/* Rutas específicas para Pacientes */}
             <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
