@@ -21,8 +21,10 @@ import PatientSettings from './pages/patient/PatientSettings';
 import AppointmentDetail from './pages/doctor/AppointmentDetail';
 import AILab from './pages/doctor/AILab';
 import WrapUp from './pages/doctor/WrapUp';
+import ConsultationRoom from './pages/doctor/ConsultationRoom';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminSetup from './pages/admin/SuperAdminSetup';
+import MyHistory from './pages/patient/MyHistory';
 import useSettingsStore from './store/useSettingsStore';
 import api from './api/axiosConfig';
 
@@ -54,9 +56,10 @@ function App() {
 
         {/* Rutas Privadas envueltas en el Layout */}
         <Route element={<ProtectedRoute />}>
-          {/* Ruta inmersiva de Telemedicina (Sin Sidebar) */}
+          {/* Rutas inmersivas (Sin Sidebar) */}
           <Route path="/doctor/video-room/:id" element={<VideoRoom />} />
           <Route path="/doctor/wrap-up/:appointmentId" element={<WrapUp />} />
+          <Route path="/doctor/consultation/:appointmentId" element={<ConsultationRoom />} />
           <Route path="/patient/video-room/:id" element={<PatientVideoRoom />} />
 
           <Route element={<DashboardLayout />}>
@@ -79,11 +82,12 @@ function App() {
               <Route path="/patient/doctors" element={<DoctorsDirectory />} />
               <Route path="/patient/doctor/:id" element={<DoctorProfile />} />
               <Route path="/patient/appointments" element={<PatientAppointments />} />
+              <Route path="/patient/history" element={<MyHistory />} />
               <Route path="/patient/settings" element={<PatientSettings />} />
             </Route>
 
-            {/* Rutas específicas para Administradores */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            {/* Rutas para Admin y Supervisor */}
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'supervisor']} />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
             </Route>
           </Route>

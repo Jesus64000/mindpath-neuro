@@ -1,10 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import useSettingsStore from '../store/useSettingsStore';
 import {
     LayoutDashboard, Calendar, Users, Settings, LogOut,
-    BrainCircuit, Sun, Moon, ShieldCheck
+    BrainCircuit, Sun, Moon, ShieldCheck, FileText
 } from 'lucide-react';
 
 const DashboardLayout = () => {
@@ -29,28 +29,28 @@ const DashboardLayout = () => {
         }
     };
 
-    // Sincronizar al montar (por si se cambió en otra pestaña)
-    useEffect(() => {
-        const saved = localStorage.getItem('mindpath_theme');
-        setIsDark(saved === 'dark');
-    }, []);
+
 
     // ── Menú dinámico por rol ──────────────────────────────────────────────────
     const menuByRole = {
         doctor: [
-            { name: 'Panel',    path: '/doctor/dashboard',       icon: LayoutDashboard },
-            { name: 'Pacientes',path: '/doctor/patients',        icon: Users },
-            { name: 'Agenda',   path: '/doctor/schedule',        icon: Calendar },
-            { name: 'Perfil',   path: '/doctor/profile-settings',icon: Settings },
+            { name: 'Panel',     path: '/doctor/dashboard',        icon: LayoutDashboard },
+            { name: 'Pacientes', path: '/doctor/patients',          icon: Users },
+            { name: 'Agenda',    path: '/doctor/schedule',          icon: Calendar },
+            { name: 'Perfil',    path: '/doctor/profile-settings',  icon: Settings },
         ],
         patient: [
-            { name: 'Inicio',   path: '/patient/dashboard',  icon: LayoutDashboard },
-            { name: 'Mis Citas',path: '/patient/appointments',icon: Calendar },
-            { name: 'Doctores', path: '/patient/doctors',    icon: Users },
-            { name: 'Mi Perfil',path: '/patient/settings',   icon: Settings },
+            { name: 'Inicio',    path: '/patient/dashboard',    icon: LayoutDashboard },
+            { name: 'Mis Citas', path: '/patient/appointments', icon: Calendar },
+            { name: 'Doctores',  path: '/patient/doctors',      icon: Users },
+            { name: 'Historial', path: '/patient/history',      icon: FileText },
+            { name: 'Mi Perfil', path: '/patient/settings',     icon: Settings },
         ],
         admin: [
-            { name: 'Admin Panel',path: '/admin/dashboard',  icon: ShieldCheck },
+            { name: 'Admin Panel', path: '/admin/dashboard', icon: ShieldCheck },
+        ],
+        supervisor: [
+            { name: 'Panel Admin', path: '/admin/dashboard', icon: ShieldCheck },
         ],
     };
 

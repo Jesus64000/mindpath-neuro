@@ -12,10 +12,14 @@ exports.getAllDoctors = async (req, res) => {
                 d.specialty,
                 d.profile_picture,
                 d.bio,
-                d.is_verified
+                d.is_verified,
+                ROUND(AVG(dr.rating), 1) AS avg_rating,
+                COUNT(dr.id) AS rating_count
             FROM doctors d
             JOIN users u ON d.user_id = u.id
+            LEFT JOIN doctor_ratings dr ON dr.doctor_id = d.id
             WHERE u.role = 'doctor' AND d.is_verified = TRUE
+            GROUP BY d.id, u.id, u.full_name, d.specialty, d.profile_picture, d.bio, d.is_verified
         `);
 
         res.status(200).json(doctors);

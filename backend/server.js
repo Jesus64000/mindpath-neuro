@@ -27,6 +27,7 @@ app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/ratings', require('./routes/ratingRoutes'));
 
 // Servir archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

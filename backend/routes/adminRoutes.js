@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const authMiddleware = require('../middlewares/authMiddleware');
-const isAdmin = require('../middlewares/isAdminMiddleware');
+const authMiddleware   = require('../middlewares/authMiddleware');
+const isStaff          = require('../middlewares/isStaffMiddleware');
+const isSuperAdmin     = require('../middlewares/isSuperAdminMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -17,7 +18,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage,
-    limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB máximo
+    limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
         const allowed = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
         if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
@@ -25,31 +26,28 @@ const upload = multer({
     }
 });
 
-// ── Ruta pública: leer configuración del sistema (theming) ────────────────────
-router.get('/settings', adminController.getSettings);
-
-// ── Bootstrap: crear primer admin (público — solo si no existe ningún admin) ──
+// ── Rutas públicas ────────────────────────────────────────────────────────────
+router.get('/settings',   adminController.getSettings);
 router.post('/bootstrap', adminController.bootstrapAdmin);
 
-// ── Rutas protegidas (authMiddleware + isAdmin) ───────────────────────────────
-router.use(authMiddleware, isAdmin);
+// ── Solo Super Admin (admin) ──────────────────────────────────────────────────
+router.get('/stats',              authMiddleware, isSuperAdmin, adminController.getStats);
+router.put('/settings',           authMiddleware, isSuperAdmin, adminController.updateSettings);
+router.post('/upload/logo',       authMiddleware, isSuperAdmin, upload.single('logo'), adminController.uploadLogo);
+router.post('/create-supervisor', authMiddleware, isSuperAdmin, adminController.createSupervisor);
+router.put('/users/:id/role',     authMiddleware, isSuperAdmin, adminController.changeUserRole);
 
-// Métricas globales
-router.get('/stats', adminController.getStats);
+// ── Staff (admin + supervisor) ────────────────────────────────────────────────
+router.get('/doctors/pending',    authMiddleware, isStaff, adminController.getPendingDoctors);
+router.put('/doctors/:id/verify', authMiddleware, isStaff, adminController.verifyDoctor);
+router.put('/doctors/:id/reject', authMiddleware, isStaff, adminController.rejectDoctor);
 
-// Verificación de doctores
-router.get('/doctors/pending',         adminController.getPendingDoctors);
-router.put('/doctors/:id/verify',      adminController.verifyDoctor);
-router.put('/doctors/:id/reject',      adminController.rejectDoctor);
+router.get('/specialties',        authMiddleware, isStaff, adminController.getSpecialties);
+router.post('/specialties',       authMiddleware, isStaff, adminController.createSpecialty);
+router.put('/specialties/:id',    authMiddleware, isStaff, adminController.updateSpecialty);
+router.delete('/specialties/:id', authMiddleware, isStaff, adminController.deleteSpecialty);
 
-// Catálogo de especialidades
-router.get('/specialties',             adminController.getSpecialties);
-router.post('/specialties',            adminController.createSpecialty);
-router.put('/specialties/:id',         adminController.updateSpecialty);
-router.delete('/specialties/:id',      adminController.deleteSpecialty);
-
-// Configuración del sistema
-router.put('/settings',                adminController.updateSettings);
-router.post('/upload/logo',            upload.single('logo'), adminController.uploadLogo);
+router.get('/users',              authMiddleware, isStaff, adminController.getUsers);
+router.put('/users/:id/toggle',   authMiddleware, isStaff, adminController.toggleUserActive);
 
 module.exports = router;

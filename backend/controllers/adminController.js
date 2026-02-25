@@ -263,7 +263,6 @@ exports.uploadLogo = async (req, res) => {
 
         const logoUrl = `/uploads/logos/${req.file.filename}`;
 
-        // Guardar la URL del logo en system_settings también
         await db.query(`
             INSERT INTO system_settings (id, logo_url) VALUES (1, ?)
             ON DUPLICATE KEY UPDATE logo_url = VALUES(logo_url)
@@ -275,3 +274,111 @@ exports.uploadLogo = async (req, res) => {
         res.status(500).json({ message: 'Error al subir el logo.' });
     }
 };
+
+// ── Gestión de usuarios ────────────────────────────────────────────────────────
+exports.getUsers = async (req, res) => {
+    try {
+        const { search = '', role = '' } = req.query;
+        let sql = `
+            SELECT
+                u.id, u.email, u.full_name, u.role,
+                COALESCE(u.is_active, 1) AS is_active,
+                u.created_at,
+                d.specialty,
+                d.is_verified,
+                d.license_number
+            FROM users u
+            LEFT JOIN doctors d ON d.user_id = u.id
+            WHERE u.role != 'admin'
+        `;
+        const params = [];
+        if (search.trim()) {
+            sql += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
+            params.push(`%${search}%`, `%${search}%`);
+        }
+        if (role) {
+            sql += ' AND u.role = ?';
+            params.push(role);
+        }
+        sql += ' ORDER BY u.created_at DESC LIMIT 200';
+
+        const [users] = await db.query(sql, params);
+        res.status(200).json(users);
+    } catch (error) {
+        console.error('Error en getUsers:', error);
+        res.status(500).json({ message: 'Error al cargar usuarios.' });
+    }
+};
+
+exports.toggleUserActive = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // No suspenderse a sí mismo ni a otro admin
+        const [target] = await db.query('SELECT role FROM users WHERE id = ?', [id]);
+        if (!target.length) return res.status(404).json({ message: 'Usuario no encontrado.' });
+        if (['admin', 'supervisor'].includes(target[0].role) && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'No puedes suspender a otro staff.' });
+        }
+        if (target[0].role === 'admin') {
+            return res.status(403).json({ message: 'No se puede suspender al Super Admin.' });
+        }
+
+        await db.query(
+            'UPDATE users SET is_active = NOT COALESCE(is_active, 1) WHERE id = ?',
+            [id]
+        );
+        const [updated] = await db.query('SELECT is_active FROM users WHERE id = ?', [id]);
+        res.status(200).json({ message: 'Estado actualizado.', is_active: updated[0].is_active });
+    } catch (error) {
+        console.error('Error en toggleUserActive:', error);
+        res.status(500).json({ message: 'Error al actualizar estado.' });
+    }
+};
+
+exports.changeUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        const allowedRoles = ['doctor', 'patient', 'supervisor'];
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({ message: 'Rol inválido.' });
+        }
+        const [target] = await db.query('SELECT role FROM users WHERE id = ?', [id]);
+        if (!target.length) return res.status(404).json({ message: 'Usuario no encontrado.' });
+        if (target[0].role === 'admin') {
+            return res.status(403).json({ message: 'No se puede cambiar el rol del Super Admin.' });
+        }
+
+        await db.query('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+        res.status(200).json({ message: `Rol actualizado a ${role}.` });
+    } catch (error) {
+        console.error('Error en changeUserRole:', error);
+        res.status(500).json({ message: 'Error al cambiar rol.' });
+    }
+};
+
+exports.createSupervisor = async (req, res) => {
+    try {
+        const { email, full_name, password } = req.body;
+        if (!email || !full_name || !password) {
+            return res.status(400).json({ message: 'Email, nombre y contraseña son requeridos.' });
+        }
+        const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) return res.status(409).json({ message: 'El email ya está registrado.' });
+
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
+
+        const [result] = await db.query(
+            "INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, 'supervisor')",
+            [email, password_hash, full_name]
+        );
+        res.status(201).json({ message: `Supervisor ${full_name} creado.`, id: result.insertId });
+    } catch (error) {
+        console.error('Error en createSupervisor:', error);
+        res.status(500).json({ message: 'Error al crear supervisor.' });
+    }
+};
+

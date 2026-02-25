@@ -7,7 +7,7 @@ import {
     ChevronUp, CheckCircle, XCircle, Stethoscope
 } from 'lucide-react';
 
-const BACKEND_URL = 'http://localhost:3000';
+import { BACKEND_URL } from '../../api/constants';
 
 const genderLabel = { M: 'Masculino', F: 'Femenino', O: 'Otro' };
 
@@ -115,6 +115,12 @@ const AppointmentDetail = () => {
                         <button onClick={() => navigate(`/doctor/video-room/${id}`)}
                             className="flex items-center gap-2 px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black rounded-2xl shadow-lg shadow-purple-100 transition-all">
                             <Video size={20}/> INICIAR LLAMADA
+                        </button>
+                    )}
+                    {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'presencial' && (
+                        <button onClick={() => navigate(`/doctor/consultation/${id}`)}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-2xl shadow-lg shadow-teal-100 transition-all">
+                            <Stethoscope size={20}/> INICIAR CONSULTA
                         </button>
                     )}
                 </div>

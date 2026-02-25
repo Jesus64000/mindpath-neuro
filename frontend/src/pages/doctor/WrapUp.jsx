@@ -51,7 +51,16 @@ const WrapUp = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [rawText,      setRawText]      = useState(location.state?.initialText || '');
+    const [rawText,      setRawText]      = useState(() => {
+        // Prioridad: state de navegación (telemedicina) > sessionStorage (presencial) > vacío
+        if (location.state?.initialText) return location.state.initialText;
+        const saved = sessionStorage.getItem(`transcription_${appointmentId}`);
+        if (saved) {
+            sessionStorage.removeItem(`transcription_${appointmentId}`);
+            return saved;
+        }
+        return '';
+    });
     const [headerData,   setHeaderData]   = useState(null);
     const [report,       setReport]       = useState(null);
     const [privateNotes, setPrivateNotes] = useState('');

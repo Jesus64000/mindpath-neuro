@@ -107,3 +107,46 @@ exports.getAppointmentReport = async (req, res) => {
         res.status(500).json({ message: "Error al cargar el informe." });
     }
 };
+// ── Historial clínico completo del paciente (informes compartidos) ────────────
+exports.getMyHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [rows] = await db.query(`
+            SELECT
+                a.id          AS appointment_id,
+                a.appointment_date,
+                a.start_time,
+                a.type,
+                du.full_name  AS doctor_name,
+                d.specialty,
+                d.clinic_name,
+                d.profile_picture,
+                r.id          AS report_id,
+                r.motivo_sintomas,
+                r.antecedentes,
+                r.hallazgos,
+                r.diagnostico,
+                r.tratamiento,
+                r.estudios_observaciones,
+                r.is_shared,
+                dr.rating     AS my_rating,
+                dr.comment    AS my_comment
+            FROM appointments a
+            JOIN patients p    ON a.patient_id = p.id
+            JOIN users pu      ON p.user_id = pu.id
+            JOIN doctors d     ON a.doctor_id = d.id
+            JOIN users du      ON d.user_id = du.id
+            JOIN consultations c       ON c.appointment_id = a.id
+            JOIN clinical_reports r    ON r.consultation_id = c.id
+            LEFT JOIN doctor_ratings dr ON dr.appointment_id = a.id AND dr.patient_id = p.id
+            WHERE pu.id = ? AND r.is_shared = TRUE AND a.status = 'completed'
+            ORDER BY a.appointment_date DESC
+        `, [userId]);
+
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error en getMyHistory:', error);
+        res.status(500).json({ message: 'Error al cargar historial clínico.' });
+    }
+};

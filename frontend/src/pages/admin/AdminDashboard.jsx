@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../api/axiosConfig';
 import useSettingsStore from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { BACKEND_URL } from '../../api/constants';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -9,16 +10,22 @@ import {
 import {
     Users, UserCheck, UserX, Calendar, CheckCircle2, XCircle,
     TrendingUp, Stethoscope, ShieldCheck, ShieldX, Palette,
-    Upload, Save, RefreshCw, Plus, Pencil, Trash2, AlertTriangle
+    Upload, Save, RefreshCw, Plus, Pencil, Trash2, AlertTriangle,
+    ToggleLeft, ToggleRight, Search, ChevronDown
 } from 'lucide-react';
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
-const TABS = ['📊 Métricas', '🩺 Verificación', '🗂️ Catálogos', '🎨 Theming'];
 const CHART_COLORS = ['#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE'];
-
 const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-// ── Componente Toast ──────────────────────────────────────────────────────────
+const ROLE_LABEL = {
+    admin: { label: 'Admin', color: 'text-violet-700 bg-violet-100' },
+    supervisor: { label: 'Supervisor', color: 'text-blue-700 bg-blue-100' },
+    doctor: { label: 'Doctor', color: 'text-green-700 bg-green-100' },
+    patient: { label: 'Paciente', color: 'text-gray-700 bg-gray-100' },
+};
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
 const Toast = ({ msg, type, onClose }) => {
     useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
     return (
@@ -44,37 +51,65 @@ const KpiCard = ({ icon: Icon, label, value, color = 'text-mindpath-primary', bg
 
 // ══════════════════════════════════════════════════════════════════════════════
 const AdminDashboard = () => {
-    const [activeTab, setActiveTab]     = useState(0);
+    const { user } = useAuthStore();
+    const isAdmin = user?.role === 'admin';
+
+    // ── Tabs dinámicos según rol ───────────────────────────────────────────────
+    const TABS = [
+        ...(isAdmin ? ['📊 Métricas'] : []),
+        '🩺 Verificación',
+        '🗂️ Catálogos',
+        '👥 Usuarios',
+        ...(isAdmin ? ['🎨 Theming'] : []),
+    ];
+    // Índices lógicos (invariantes)
+    const TAB = {
+        metrics:      isAdmin ? 0 : -1,
+        verification: isAdmin ? 1 : 0,
+        catalogs:     isAdmin ? 2 : 1,
+        users:        isAdmin ? 3 : 2,
+        theming:      isAdmin ? 4 : -1,
+    };
+
+    const [activeTab, setActiveTab]     = useState(TAB.verification);
     const [stats, setStats]             = useState(null);
     const [pending, setPending]         = useState([]);
     const [specialties, setSpecialties] = useState([]);
     const [toast, setToast]             = useState(null);
-    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true });
+    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true });
     const { clinicName, logoUrl, primaryColor, primaryHover, applySettings } = useSettingsStore();
 
-    // Theming form state
-    const [theme, setTheme]     = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
+    // Theming
+    const [theme, setTheme]       = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
     const [logoFile, setLogoFile] = useState(null);
     const [savingTheme, setSavingTheme] = useState(false);
 
-    // Specialties form
-    const [newSpe, setNewSpe]   = useState('');
-    const [editSpe, setEditSpe] = useState(null); // { id, name }
+    // Specialties
+    const [newSpe, setNewSpe]     = useState('');
+    const [editSpe, setEditSpe]   = useState(null);
 
-    // Modal rechazo
+    // Verificación modal
     const [rejectTarget, setRejectTarget] = useState(null);
     const [rejectNotes, setRejectNotes]   = useState('');
+
+    // Usuarios
+    const [users, setUsers]         = useState([]);
+    const [userSearch, setUserSearch] = useState('');
+    const [userRoleFilter, setUserRoleFilter] = useState('');
+    const [changingRole, setChangingRole]     = useState(null); // id en proceso
+    const [roleDropdown, setRoleDropdown]     = useState(null); // id del dropdown abierto
 
     const showToast = (msg, type = 'success') => setToast({ msg, type });
 
     // ── Data Fetching ──────────────────────────────────────────────────────────
     const loadStats = useCallback(async () => {
+        if (!isAdmin) return;
         try {
             const res = await api.get('/admin/stats');
             setStats(res.data);
         } catch { showToast('Error al cargar métricas.', 'error'); }
         finally { setLoading(p => ({ ...p, stats: false })); }
-    }, []);
+    }, [isAdmin]);
 
     const loadPending = useCallback(async () => {
         try {
@@ -92,10 +127,21 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, spe: false })); }
     }, []);
 
+    const loadUsers = useCallback(async () => {
+        try {
+            const params = new URLSearchParams();
+            if (userSearch) params.set('search', userSearch);
+            if (userRoleFilter) params.set('role', userRoleFilter);
+            const res = await api.get(`/admin/users?${params.toString()}`);
+            setUsers(res.data);
+        } catch { showToast('Error al cargar usuarios.', 'error'); }
+        finally { setLoading(p => ({ ...p, users: false })); }
+    }, [userSearch, userRoleFilter]);
+
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties();
+        loadStats(); loadPending(); loadSpecialties(); loadUsers();
         setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
-    }, [loadStats, loadPending, loadSpecialties, clinicName, logoUrl, primaryColor, primaryHover]);
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, clinicName, logoUrl, primaryColor, primaryHover]);
 
     // ── Verificación ───────────────────────────────────────────────────────────
     const verifyDoctor = async (id) => {
@@ -146,6 +192,26 @@ const AdminDashboard = () => {
         } catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
     };
 
+    // ── Gestión de Usuarios ────────────────────────────────────────────────────
+    const toggleUserActive = async (userId, currentlyActive) => {
+        try {
+            await api.put(`/admin/users/${userId}/toggle`);
+            setUsers(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u));
+            showToast(currentlyActive ? 'Cuenta suspendida.' : 'Cuenta reactivada.');
+        } catch { showToast('Error al cambiar estado del usuario.', 'error'); }
+    };
+
+    const changeUserRole = async (userId, newRole) => {
+        if (!isAdmin) return;
+        setChangingRole(userId);
+        try {
+            await api.put(`/admin/users/${userId}/role`, { role: newRole });
+            setUsers(p => p.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            showToast(`Rol actualizado a ${ROLE_LABEL[newRole]?.label || newRole}.`);
+        } catch { showToast('Error al cambiar rol.', 'error'); }
+        finally { setChangingRole(null); setRoleDropdown(null); }
+    };
+
     // ── Theming ────────────────────────────────────────────────────────────────
     const previewColor = (field, value) => {
         setTheme(p => ({ ...p, [field]: value }));
@@ -173,7 +239,6 @@ const AdminDashboard = () => {
         finally { setSavingTheme(false); }
     };
 
-    // ── Datos del gráfico de citas por mes ────────────────────────────────────
     const chartData = stats?.apptsByMonth?.map(r => ({
         name: MONTH_NAMES[(r.month || 1) - 1],
         Citas: r.total,
@@ -188,15 +253,17 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Panel de Administración</h1>
-                    <p className="text-gray-500 dark:text-[var(--text-muted)] text-sm mt-1">Control total de MindPath Neuro</p>
+                    <p className="text-gray-500 dark:text-[var(--text-muted)] text-sm mt-1">
+                        {isAdmin ? 'Control total de MindPath Neuro' : 'Panel del Supervisor'}
+                    </p>
                 </div>
-                <button onClick={() => { loadStats(); loadPending(); }} className="flex items-center gap-2 text-sm text-mindpath-primary hover:underline font-medium">
+                <button onClick={() => { loadStats(); loadPending(); loadUsers(); }} className="flex items-center gap-2 text-sm text-mindpath-primary hover:underline font-medium">
                     <RefreshCw size={15}/> Actualizar
                 </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-gray-100 dark:bg-[var(--bg-card)] p-1 rounded-2xl w-fit">
+            <div className="flex gap-1 bg-gray-100 dark:bg-[var(--bg-card)] p-1 rounded-2xl w-fit flex-wrap">
                 {TABS.map((tab, i) => (
                     <button key={tab} onClick={() => setActiveTab(i)}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === i ? 'bg-white dark:bg-slate-700 shadow text-mindpath-primary' : 'text-gray-500 dark:text-[var(--text-muted)] hover:text-gray-700'}`}>
@@ -205,8 +272,8 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
-            {/* ── TAB 1: MÉTRICAS ─────────────────────────────────────────────── */}
-            {activeTab === 0 && (
+            {/* ── TAB: MÉTRICAS (solo admin) ────────────────────────────────────── */}
+            {activeTab === TAB.metrics && isAdmin && (
                 <div className="space-y-6">
                     {loading.stats ? (
                         <p className="text-gray-400 animate-pulse">Cargando métricas...</p>
@@ -223,9 +290,7 @@ const AdminDashboard = () => {
                                 <KpiCard icon={TrendingUp} label="Tasa Confirmación"     value={`${stats?.kpis.confirmationRate}%`} color="text-indigo-600" bg="bg-indigo-50" />
                             </div>
 
-                            {/* Gráficos */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Barras: citas por mes */}
                                 <div className="md:col-span-2 bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-6">
                                     <h3 className="font-bold text-gray-800 dark:text-white mb-4 text-sm uppercase tracking-wide">Citas por Mes (últimos 12 meses)</h3>
                                     <ResponsiveContainer width="100%" height={220}>
@@ -238,7 +303,6 @@ const AdminDashboard = () => {
                                     </ResponsiveContainer>
                                 </div>
 
-                                {/* Donut: especialidades */}
                                 <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-6">
                                     <h3 className="font-bold text-gray-800 dark:text-white mb-4 text-sm uppercase tracking-wide">Especialidades</h3>
                                     <ResponsiveContainer width="100%" height={220}>
@@ -255,7 +319,6 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Top 5 doctores */}
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-6">
                                 <h3 className="font-bold text-gray-800 dark:text-white mb-4 text-sm uppercase tracking-wide">🏆 Top 5 Doctores</h3>
                                 <div className="space-y-3">
@@ -280,8 +343,8 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* ── TAB 2: VERIFICACIÓN ─────────────────────────────────────────── */}
-            {activeTab === 1 && (
+            {/* ── TAB: VERIFICACIÓN ─────────────────────────────────────────────── */}
+            {activeTab === TAB.verification && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="font-bold text-gray-800 dark:text-white">
@@ -327,7 +390,6 @@ const AdminDashboard = () => {
                         ))
                     )}
 
-                    {/* Modal rechazo */}
                     {rejectTarget && (
                         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
@@ -346,12 +408,11 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* ── TAB 3: CATÁLOGOS ────────────────────────────────────────────── */}
-            {activeTab === 2 && (
+            {/* ── TAB: CATÁLOGOS ────────────────────────────────────────────────── */}
+            {activeTab === TAB.catalogs && (
                 <div className="space-y-4">
                     <h2 className="font-bold text-gray-800 dark:text-white">Gestión de Especialidades</h2>
 
-                    {/* Agregar nueva */}
                     <div className="flex gap-3">
                         <input value={newSpe} onChange={e => setNewSpe(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && createSpe()}
@@ -362,7 +423,6 @@ const AdminDashboard = () => {
                         </button>
                     </div>
 
-                    {/* Lista */}
                     <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] overflow-hidden">
                         {loading.spe ? (
                             <p className="p-6 text-gray-400 animate-pulse">Cargando especialidades...</p>
@@ -399,22 +459,127 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* ── TAB 4: THEMING ──────────────────────────────────────────────── */}
-            {activeTab === 3 && (
+            {/* ── TAB: USUARIOS ─────────────────────────────────────────────────── */}
+            {activeTab === TAB.users && (
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                        <h2 className="font-bold text-gray-800 dark:text-white">
+                            Gestión de Usuarios
+                            <span className="ml-2 text-xs font-normal text-gray-400">({users.length} resultados)</span>
+                        </h2>
+                        <div className="flex gap-2 flex-wrap">
+                            {/* Búsqueda */}
+                            <div className="relative">
+                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    value={userSearch}
+                                    onChange={e => setUserSearch(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && loadUsers()}
+                                    placeholder="Buscar nombre o email..."
+                                    className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-[var(--border-color)] rounded-xl focus:outline-none focus:border-mindpath-primary dark:bg-[var(--bg-card)] dark:text-white w-52"
+                                />
+                            </div>
+                            {/* Filtro por rol */}
+                            <select
+                                value={userRoleFilter}
+                                onChange={e => setUserRoleFilter(e.target.value)}
+                                className="px-3 py-2 text-sm border border-gray-200 dark:border-[var(--border-color)] rounded-xl focus:outline-none focus:border-mindpath-primary dark:bg-[var(--bg-card)] dark:text-white"
+                            >
+                                <option value="">Todos los roles</option>
+                                <option value="admin">Admin</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="doctor">Doctor</option>
+                                <option value="patient">Paciente</option>
+                            </select>
+                            <button onClick={loadUsers} className="px-4 py-2 bg-mindpath-primary text-white text-sm font-bold rounded-xl hover:bg-mindpath-primaryHover transition-colors">
+                                Buscar
+                            </button>
+                        </div>
+                    </div>
+
+                    {loading.users ? (
+                        <p className="text-gray-400 animate-pulse">Cargando usuarios...</p>
+                    ) : users.length === 0 ? (
+                        <div className="text-center py-16 bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)]">
+                            <Users size={40} className="text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 dark:text-slate-400">No se encontraron usuarios.</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] overflow-hidden">
+                            {users.map((u, i) => {
+                                const roleInfo = ROLE_LABEL[u.role] || { label: u.role, color: 'text-gray-600 bg-gray-100' };
+                                const isSelf = u.id === user?.id;
+                                return (
+                                    <div key={u.id} className={`flex items-center gap-4 px-5 py-4 ${i !== 0 ? 'border-t border-gray-50 dark:border-[var(--border-color)]' : ''} ${!u.is_active ? 'opacity-60' : ''}`}>
+                                        {/* Avatar */}
+                                        <div className="h-10 w-10 rounded-full bg-mindpath-light flex items-center justify-center text-mindpath-primary font-bold text-sm shrink-0">
+                                            {u.full_name?.charAt(0) || '?'}
+                                        </div>
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{u.full_name}</p>
+                                                {isSelf && <span className="text-[10px] text-violet-500 font-black">(Tú)</span>}
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleInfo.color}`}>{roleInfo.label}</span>
+                                                {!u.is_active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Suspendido</span>}
+                                            </div>
+                                            <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{u.email}</p>
+                                        </div>
+                                        {/* Acciones */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {/* Cambiar rol (solo admin, no para uno mismo) */}
+                                            {isAdmin && !isSelf && (
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setRoleDropdown(prev => prev === u.id ? null : u.id)}
+                                                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-xl hover:border-mindpath-primary text-gray-600 dark:text-slate-300 transition-colors"
+                                                    >
+                                                        {changingRole === u.id ? '…' : 'Rol'} <ChevronDown size={12}/>
+                                                    </button>
+                                                    {roleDropdown === u.id && (
+                                                        <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 z-20 overflow-hidden">
+                                                            {Object.entries(ROLE_LABEL).filter(([r]) => r !== u.role).map(([r, info]) => (
+                                                                <button key={r} onClick={() => changeUserRole(u.id, r)}
+                                                                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 transition-colors">
+                                                                    {info.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* Toggle activo/suspendido (no para uno mismo) */}
+                                            {!isSelf && (
+                                                <button
+                                                    onClick={() => toggleUserActive(u.id, u.is_active)}
+                                                    title={u.is_active ? 'Suspender cuenta' : 'Reactivar cuenta'}
+                                                    className={`p-2 rounded-xl transition-colors ${u.is_active ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                                >
+                                                    {u.is_active ? <ToggleRight size={22}/> : <ToggleLeft size={22}/>}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── TAB: THEMING (solo admin) ─────────────────────────────────────── */}
+            {activeTab === TAB.theming && isAdmin && (
                 <div className="space-y-6">
                     <h2 className="font-bold text-gray-800 dark:text-white">Motor de Personalización</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Columna Izquierda: Controles */}
                         <div className="space-y-5">
-                            {/* Nombre clínica */}
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Nombre de la Clínica</label>
                                 <input value={theme.clinic_name} onChange={e => setTheme(p => ({ ...p, clinic_name: e.target.value }))}
                                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
                             </div>
 
-                            {/* Color primario */}
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Colores del Sistema</label>
                                 <div className="space-y-4">
@@ -439,7 +604,6 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Logo */}
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Logo</label>
                                 <div className="space-y-3">
@@ -463,11 +627,9 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Columna Derecha: Preview */}
                         <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Vista Previa</h3>
                             <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-slate-600">
-                                {/* Mini sidebar */}
                                 <div className="flex">
                                     <div className="w-28 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 p-3 flex flex-col gap-2">
                                         <div className="flex items-center gap-1.5 mb-2">
@@ -485,22 +647,20 @@ const AdminDashboard = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    {/* Mini contenido */}
                                     <div className="flex-1 bg-gray-50 dark:bg-slate-900 p-3 space-y-2">
                                         <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
                                         <div className="h-2 bg-gray-100 dark:bg-slate-800 rounded w-1/2" />
-                                        <button className="text-xs text-white px-3 py-1.5 rounded-lg font-bold mt-1 transition-colors"
+                                        <button className="text-xs text-white px-3 py-1.5 rounded-lg font-bold mt-1"
                                             style={{ backgroundColor: theme.primary_color }}>
                                             Botón primario
                                         </button>
-                                        <button className="text-xs text-white px-3 py-1.5 rounded-lg font-bold transition-colors"
+                                        <button className="text-xs text-white px-3 py-1.5 rounded-lg font-bold"
                                             style={{ backgroundColor: theme.primary_hover }}>
                                             Botón hover
                                         </button>
                                     </div>
                                 </div>
                             </div>
-
                             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
                                 <p className="text-xs text-yellow-700 font-medium">
                                     💡 Los cambios de color son visibles en tiempo real en todo el sistema. Guarda para que persistan en todos los usuarios.
