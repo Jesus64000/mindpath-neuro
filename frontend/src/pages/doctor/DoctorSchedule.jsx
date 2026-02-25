@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
-// Month helpers
+// ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
     const d = new Date(date);
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -17,7 +17,7 @@ const shiftMonth = (date, delta) => {
 
 const getMonthDays = (monthStart) => {
     const start = new Date(monthStart);
-    const firstDay = start.getDay() === 0 ? 6 : start.getDay() - 1; // lunes como inicio
+    const firstDay = start.getDay() === 0 ? 6 : start.getDay() - 1;
     const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
     const cells = [];
     for (let i = 0; i < firstDay; i++) cells.push(null);
@@ -35,6 +35,15 @@ const toLocalISO = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+// ─── Config de estados ────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+    pending:   { label: 'Pendiente',  color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-500/30' },
+    confirmed: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-500/30' },
+    completed: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-500/30' },
+    cancelled: { label: 'Cancelada',  color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-500/30' },
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 const DoctorSchedule = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,11 +54,10 @@ const DoctorSchedule = () => {
     const [calendarCount, setCalendarCount] = useState({});
     const navigate = useNavigate();
 
-    // Calcular edad a partir de la fecha de nacimiento (YYYY-MM-DD)
     const calculateAge = (dob) => {
+        if (!dob) return '?';
         const diffMs = Date.now() - new Date(dob).getTime();
-        const ageDt = new Date(diffMs); 
-        return Math.abs(ageDt.getUTCFullYear() - 1970);
+        return Math.abs(new Date(diffMs).getUTCFullYear() - 1970);
     };
 
     const fetchCalendar = async () => {
@@ -94,32 +102,19 @@ const DoctorSchedule = () => {
 
     useEffect(() => {
         fetchDayAppointments(selectedDate);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate]);
 
     const updateStatus = async (id, newStatus) => {
         try {
             await api.put(`/appointments/${id}/status`, { status: newStatus });
-            // Actualizamos el estado local para no recargar la página completa
-            setAppointments(appointments.map(app => 
+            setAppointments(appointments.map(app =>
                 app.appointment_id === id ? { ...app, status: newStatus } : app
             ));
             fetchCalendar();
-        } catch (err) {
+        } catch {
             alert('No se pudo actualizar el estado de la cita.');
         }
-    };
-
-    const handleStartVideoCall = (appointmentId) => {
-        // Redirigiremos a la sala de videollamada en el próximo sprint
-        navigate(`/doctor/video-room/${appointmentId}`);
-    };
-
-    // Diccionario visual para los estados
-    const statusConfig = {
-        pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-        confirmed: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-        completed: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200' },
-        cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 border-red-200' }
     };
 
     const monthDays = useMemo(() => getMonthDays(monthStart), [monthStart]);
@@ -131,19 +126,20 @@ const DoctorSchedule = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+        <div className="max-w-7xl mx-auto space-y-6 pb-10">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Agenda Médica</h1>
-                    <p className="text-gray-500 mt-1">Calendario mensual y citas del día.</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Agenda Médica</h1>
+                    <p className="text-gray-500 dark:text-slate-400 mt-1">Calendario mensual y citas del día.</p>
                 </div>
-                <div className="bg-mindpath-light text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-violet-100 flex items-center">
-                    <CalendarIcon size={20} className="mr-2" />
+                <div className="bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-violet-100 dark:border-purple-500/30 flex items-center text-sm">
+                    <CalendarIcon size={18} className="mr-2" />
                     Hoy: {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </div>
             </div>
 
-            {error && <div className="p-4 bg-red-50 text-red-700 rounded-xl">{error}</div>}
+            {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-500/30">{error}</div>}
 
             {loading ? (
                 <div className="flex justify-center items-center h-64">
@@ -151,20 +147,41 @@ const DoctorSchedule = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-5">
-                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                    
+                    {/* Calendario Mensual */}
+                    <div className="lg:col-span-4 xl:col-span-5">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm sticky top-4">
+                            {/* Navegación del mes */}
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-black text-lg flex items-center"><CalendarIcon className="mr-2 text-mindpath-primary"/> Calendario mensual</h3>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => handleMonthChange(-1)} className="p-2 rounded-full bg-gray-100 text-gray-600 hover:text-mindpath-primary"><ChevronLeft size={18} /></button>
-                                    <span className="text-sm font-bold text-gray-700">{monthStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
-                                    <button onClick={() => handleMonthChange(1)} className="p-2 rounded-full bg-gray-100 text-gray-600 hover:text-mindpath-primary"><ChevronRight size={18} /></button>
+                                <h3 className="font-black text-base text-gray-900 dark:text-white flex items-center">
+                                    <CalendarIcon className="mr-2 text-mindpath-primary" size={18}/> Calendario
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => handleMonthChange(-1)}
+                                        className="p-2 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-mindpath-primary hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <span className="text-sm font-bold text-gray-700 dark:text-slate-200 min-w-[110px] text-center capitalize">
+                                        {monthStart.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <button
+                                        onClick={() => handleMonthChange(1)}
+                                        className="p-2 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-mindpath-primary hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-400 mb-2">
+
+                            {/* Encabezado días de la semana */}
+                            <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-gray-400 dark:text-slate-500 mb-2">
                                 {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => <span key={d}>{d}</span>)}
                             </div>
-                            <div className="grid grid-cols-7 gap-2">
+
+                            {/* Grid del mes */}
+                            <div className="grid grid-cols-7 gap-1">
                                 {monthDays.map((day, idx) => {
                                     if (!day) return <div key={`blank-${idx}`} />;
                                     const iso = toLocalISO(day);
@@ -175,10 +192,16 @@ const DoctorSchedule = () => {
                                         <button
                                             key={iso}
                                             onClick={() => setSelectedDate(day)}
-                                            className={`p-3 rounded-xl border text-sm transition-all ${isSelected ? 'border-mindpath-primary bg-purple-50' : 'border-gray-100 bg-gray-50 hover:border-mindpath-primary/50'} ${isToday ? 'ring-1 ring-mindpath-primary/40' : ''}`}
+                                            className={`p-2 rounded-xl border text-sm transition-all text-center ${
+                                                isSelected
+                                                    ? 'border-mindpath-primary bg-purple-50 dark:bg-purple-900/40'
+                                                    : 'border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-slate-700/30 hover:border-mindpath-primary/50'
+                                            } ${isToday ? 'ring-1 ring-mindpath-primary/40' : ''}`}
                                         >
-                                            <div className="font-bold text-gray-700">{day.getDate()}</div>
-                                            <div className={`h-1.5 w-1.5 mx-auto rounded-full mt-2 ${hasEvents ? 'bg-mindpath-primary' : 'bg-transparent'}`}></div>
+                                            <div className={`font-bold text-xs ${isSelected ? 'text-mindpath-primary' : 'text-gray-700 dark:text-slate-200'}`}>
+                                                {day.getDate()}
+                                            </div>
+                                            <div className={`h-1 w-1 mx-auto rounded-full mt-1 ${hasEvents ? 'bg-mindpath-primary' : 'bg-transparent'}`}></div>
                                         </button>
                                     );
                                 })}
@@ -186,13 +209,16 @@ const DoctorSchedule = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-7 space-y-4">
+                    {/* Lista de citas del día */}
+                    <div className="lg:col-span-8 xl:col-span-7 space-y-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold uppercase text-gray-400">Citas del día</p>
-                                <p className="text-lg font-black text-gray-800">{selectedDate.toLocaleDateString()}</p>
+                                <p className="text-xs font-bold uppercase text-gray-400 dark:text-slate-500">Citas del día</p>
+                                <p className="text-lg font-black text-gray-800 dark:text-white capitalize">
+                                    {selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </p>
                             </div>
-                            <div className="text-sm text-gray-500">{appointments.length} cita(s)</div>
+                            <div className="text-sm text-gray-500 dark:text-slate-400 font-medium">{appointments.length} cita(s)</div>
                         </div>
 
                         {dayLoading ? (
@@ -201,82 +227,90 @@ const DoctorSchedule = () => {
                             </div>
                         ) : appointments.length > 0 ? (
                             <div className="grid grid-cols-1 gap-4">
-                                {appointments.map((app) => (
-                                    <div key={app.appointment_id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center w-full md:w-1/3">
-                                            <div className="h-14 w-14 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 mr-4 shrink-0">
-                                                <User size={28} />
+                                {appointments.map((app) => {
+                                    const sc = STATUS_CONFIG[app.status] || STATUS_CONFIG.pending;
+                                    return (
+                                        <div
+                                            key={app.appointment_id}
+                                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:shadow-md dark:hover:border-purple-500/20 transition-all"
+                                        >
+                                            {/* Info paciente */}
+                                            <div className="flex items-center w-full md:w-auto">
+                                                <div className="h-12 w-12 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-gray-500 dark:text-slate-400 mr-4 shrink-0">
+                                                    <User size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">{app.patient_name}</h3>
+                                                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                                                        {app.gender === 'M' ? 'Masculino' : app.gender === 'F' ? 'Femenino' : 'Otro'}, {calculateAge(app.date_of_birth)} años
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-gray-900">{app.patient_name}</h3>
-                                                <p className="text-sm text-gray-500">
-                                                    {app.gender === 'M' ? 'Masculino' : app.gender === 'F' ? 'Femenino' : 'Otro'}, {calculateAge(app.date_of_birth)} años
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex flex-col w-full md:w-1/3 space-y-2">
-                                            <div className="flex items-center text-gray-700 font-medium">
-                                                <Clock size={18} className="text-mindpath-primary mr-2" />
-                                                {new Date(app.appointment_date).toLocaleDateString('es-ES')} a las {app.start_time.slice(0, 5)}
-                                            </div>
-                                            <div className="flex items-center text-sm font-bold text-gray-500">
-                                                {app.type === 'virtual' ? (
-                                                    <><Video size={16} className="text-blue-500 mr-2" /> Telemedicina (Online Mind)</>
-                                                ) : (
-                                                    <><MapPin size={16} className="text-green-500 mr-2" /> Consulta Presencial</>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <span className={`text-xs px-2.5 py-1 rounded-full border font-bold ${statusConfig[app.status].color}`}>
-                                                    {statusConfig[app.status].label}
+                                            {/* Detalles de la cita */}
+                                            <div className="flex flex-col space-y-1.5 flex-1">
+                                                <div className="flex items-center text-gray-700 dark:text-slate-300 font-medium text-sm">
+                                                    <Clock size={16} className="text-mindpath-primary mr-2 shrink-0" />
+                                                    {new Date(app.appointment_date).toLocaleDateString('es-ES')} a las {app.start_time.slice(0, 5)}
+                                                </div>
+                                                <div className="flex items-center text-sm font-bold text-gray-500 dark:text-slate-400">
+                                                    {app.type === 'virtual' ? (
+                                                        <><Video size={14} className="text-blue-500 mr-2" />Telemedicina</>
+                                                    ) : (
+                                                        <><MapPin size={14} className="text-green-500 mr-2" />Presencial</>
+                                                    )}
+                                                </div>
+                                                <span className={`text-xs px-2.5 py-1 rounded-full border font-bold inline-block self-start ${sc.color}`}>
+                                                    {sc.label}
                                                 </span>
                                             </div>
-                                        </div>
 
-                                        <div className="flex w-full md:w-1/3 justify-end gap-2 shrink-0">
-                                            {app.status === 'pending' && (
-                                                <>
-                                                    <button onClick={() => updateStatus(app.appointment_id, 'confirmed')} className="p-2.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-colors" title="Confirmar Cita">
-                                                        <CheckCircle size={22} />
+                                            {/* Acciones */}
+                                            <div className="flex gap-2 shrink-0">
+                                                {app.status === 'pending' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => updateStatus(app.appointment_id, 'confirmed')}
+                                                            className="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-xl transition-colors border border-green-100 dark:border-green-500/30"
+                                                            title="Confirmar"
+                                                        >
+                                                            <CheckCircle size={20} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => updateStatus(app.appointment_id, 'cancelled')}
+                                                            className="p-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-500/30"
+                                                            title="Cancelar"
+                                                        >
+                                                            <XCircle size={20} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {(app.status === 'pending' || app.status === 'confirmed') && (
+                                                    <button
+                                                        onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}
+                                                        className="px-4 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-bold rounded-xl flex items-center transition-colors text-sm"
+                                                    >
+                                                        <FileText size={16} className="mr-1.5" />Ver Cita
                                                     </button>
-                                                    <button onClick={() => updateStatus(app.appointment_id, 'cancelled')} className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors" title="Cancelar Cita">
-                                                        <XCircle size={22} />
+                                                )}
+                                                {(app.status === 'confirmed' || app.status === 'pending') && app.type === 'virtual' && (
+                                                    <button
+                                                        onClick={() => navigate(`/doctor/video-room/${app.appointment_id}`)}
+                                                        className="px-4 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm text-sm"
+                                                    >
+                                                        <Video size={16} className="mr-1.5" />Iniciar
                                                     </button>
-                                                </>
-                                            )}
-
-                                            {/* Botón: Ver Cita (siempre visible si no está cancelada/completada) */}
-                                            {(app.status === 'pending' || app.status === 'confirmed') && (
-                                                <button
-                                                    onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}
-                                                    className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex items-center transition-colors"
-                                                    title="Ver detalle de la cita"
-                                                >
-                                                    <FileText size={18} className="mr-2" />
-                                                    Ver Cita
-                                                </button>
-                                            )}
-
-                                            {/* Botón: Iniciar Consulta (directo al video) */}
-                                            {(app.status === 'confirmed' || app.status === 'pending') && app.type === 'virtual' && (
-                                                <button 
-                                                    onClick={() => handleStartVideoCall(app.appointment_id)}
-                                                    className="px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm"
-                                                >
-                                                    <Video size={18} className="mr-2" />
-                                                    Iniciar
-                                                </button>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center">
-                                <CalendarIcon size={48} className="mx-auto text-gray-300 mb-4" />
-                                <h3 className="text-xl font-bold text-gray-700 mb-2">No hay citas en esta fecha</h3>
-                                <p className="text-gray-500">Selecciona otro día en el calendario para revisar tu agenda.</p>
+                            <div className="bg-gray-50 dark:bg-slate-800 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl p-12 text-center">
+                                <CalendarIcon size={48} className="mx-auto text-gray-200 dark:text-slate-600 mb-4" />
+                                <h3 className="text-xl font-bold text-gray-700 dark:text-slate-300 mb-2">No hay citas en esta fecha</h3>
+                                <p className="text-gray-500 dark:text-slate-400">Selecciona otro día en el calendario para revisar tu agenda.</p>
                             </div>
                         )}
                     </div>

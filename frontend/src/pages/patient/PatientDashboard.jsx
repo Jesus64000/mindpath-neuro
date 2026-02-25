@@ -5,27 +5,29 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import DoctorCard from '../../components/DoctorCard';
 
+const statusConfig = {
+    confirmed: { label: 'Confirmada', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+    pending:   { label: 'Pendiente',  cls: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
+};
+
 const PatientDashboard = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
     
     const [loading, setLoading] = useState(true);
-    const [nextAppointment, setNextAppointment] = useState(null); // La cita de HOY (Urgente)
-    const [upcomingAppointments, setUpcomingAppointments] = useState([]); // Próximas citas (Mini-lista)
-    const [myDoctors, setMyDoctors] = useState([]); // El equipo médico del paciente
+    const [nextAppointment, setNextAppointment] = useState(null);
+    const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+    const [myDoctors, setMyDoctors] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // 1. Cargamos TODAS las citas del paciente
                 const appsResponse = await api.get('/appointments/patient?limit=50');
-                // La API devuelve { data: [], pagination: {} } — extraemos el array
                 const appointments = Array.isArray(appsResponse.data)
                     ? appsResponse.data
                     : (appsResponse.data?.data ?? []);
                 const today = new Date().toDateString();
 
-                // Separar la cita de HOY (si existe)
                 const todayApp = appointments.find(app =>
                     new Date(app.appointment_date).toDateString() === today &&
                     app.status === 'confirmed' &&
@@ -33,7 +35,6 @@ const PatientDashboard = () => {
                 );
                 if (todayApp) setNextAppointment(todayApp);
 
-                // Separar las PRÓXIMAS citas
                 const futureApps = appointments
                     .filter(app =>
                         new Date(app.appointment_date) >= new Date() &&
@@ -43,18 +44,15 @@ const PatientDashboard = () => {
                     .slice(0, 3);
                 setUpcomingAppointments(futureApps);
 
-                // 2. Cargamos "Mi Equipo Médico" (Idealmente, el backend hará esta lógica, 
-                // pero por ahora hacemos una petición a una ruta que crearemos luego)
                 try {
                     const doctorsResponse = await api.get('/patients/my-doctors');
                     setMyDoctors(doctorsResponse.data);
-                } catch (error) {
-                    console.warn("Ruta /my-doctors aún no existe en el backend, usando arreglo vacío por ahora.");
-                    setMyDoctors([]); // Fallback temporal
+                } catch {
+                    setMyDoctors([]);
                 }
 
             } catch (error) {
-                console.error("Error cargando datos del dashboard", error);
+                console.error('Error cargando datos del dashboard', error);
             } finally {
                 setLoading(false);
             }
@@ -73,9 +71,9 @@ const PatientDashboard = () => {
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-10">
             
-            {/* 🚨 WIDGET 1: LA CITA DE HOY (El más importante) */}
+            {/* WIDGET 1: Cita de HOY */}
             {nextAppointment ? (
-                <div className="bg-gradient-to-r from-mindpath-primary to-purple-600 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-purple-500/20 animate-fade-in border border-purple-400">
+                <div className="bg-gradient-to-r from-mindpath-primary to-purple-600 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-purple-500/20 border border-purple-400">
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center mr-6 backdrop-blur-sm">
                             <Video size={32} className="text-white animate-pulse" />
@@ -95,12 +93,12 @@ const PatientDashboard = () => {
                     </button>
                 </div>
             ) : (
-                <div className="bg-white rounded-3xl p-8 flex justify-between items-center border border-gray-100 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 flex justify-between items-center border border-gray-100 dark:border-white/10 shadow-sm">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                             ¡Hola, {user?.full_name?.split(' ')[0] || 'Paciente'}! 👋
                         </h1>
-                        <p className="text-gray-500">
+                        <p className="text-gray-500 dark:text-slate-400">
                             Bienvenido a tu centro de salud mental. ¿Cómo te sientes hoy?
                         </p>
                     </div>
@@ -109,10 +107,10 @@ const PatientDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                {/* ⬅️ COLUMNA IZQUIERDA: Mi Equipo Médico (Ocupa 2/3 del espacio) */}
+                {/* COLUMNA IZQUIERDA: Mi Equipo Médico */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex justify-between items-end">
-                        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
                             <Users size={24} className="text-mindpath-primary mr-2"/>
                             Mi Equipo Médico
                         </h3>
@@ -126,17 +124,17 @@ const PatientDashboard = () => {
                             {myDoctors.map(doc => <DoctorCard key={doc.doctor_id} doctor={doc} />)}
                         </div>
                     ) : (
-                        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-10 text-center flex flex-col items-center justify-center">
-                            <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                                <PlusCircle size={32} className="text-gray-300" />
+                        <div className="bg-gray-50 dark:bg-slate-800 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl p-10 text-center flex flex-col items-center justify-center">
+                            <div className="h-16 w-16 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm mb-4">
+                                <PlusCircle size={32} className="text-gray-300 dark:text-slate-500" />
                             </div>
-                            <h4 className="text-lg font-bold text-gray-700 mb-2">Aún no tienes médicos asignados</h4>
-                            <p className="text-gray-500 mb-6 max-w-sm">
-                                Explora nuestro directorio de especialistas verificados y agenda tu primera consulta para empezar a construir tu equipo médico.
+                            <h4 className="text-lg font-bold text-gray-700 dark:text-slate-200 mb-2">Aún no tienes médicos asignados</h4>
+                            <p className="text-gray-500 dark:text-slate-400 mb-6 max-w-sm">
+                                Explora nuestro directorio de especialistas verificados y agenda tu primera consulta.
                             </p>
                             <button 
                                 onClick={() => navigate('/patient/doctors')}
-                                className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-md"
+                                className="px-6 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl transition-colors shadow-md"
                             >
                                 Buscar Especialista
                             </button>
@@ -144,50 +142,56 @@ const PatientDashboard = () => {
                     )}
                 </div>
 
-                {/* ➡️ COLUMNA DERECHA: Mini-Lista de Próximas Citas (Ocupa 1/3 del espacio) */}
+                {/* COLUMNA DERECHA: Próximas Citas */}
                 <div className="space-y-6">
                     <div className="flex justify-between items-end">
-                        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
                             <Calendar size={24} className="text-mindpath-primary mr-2"/>
                             Próximas Citas
                         </h3>
                     </div>
 
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm p-6">
                         {upcomingAppointments.length > 0 ? (
-                            <div className="space-y-4">
-                                {upcomingAppointments.map(app => (
-                                    <div key={app.appointment_id} className="flex items-start p-3 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100 cursor-pointer" onClick={() => navigate('/patient/appointments')}>
-                                        <div className="h-10 w-10 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
-                                            <Clock size={20} />
+                            <div className="space-y-3">
+                                {upcomingAppointments.map(app => {
+                                    const sc = statusConfig[app.status] || statusConfig.pending;
+                                    return (
+                                        <div
+                                            key={app.appointment_id}
+                                            className="flex items-start p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/10 cursor-pointer"
+                                            onClick={() => navigate('/patient/appointments')}
+                                        >
+                                            <div className="h-10 w-10 bg-mindpath-light dark:bg-purple-900/40 rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
+                                                <Clock size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">Dr(a). {app.doctor_name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-slate-400">
+                                                    {new Date(app.appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
+                                                </p>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${sc.cls}`}>
+                                                    {sc.label}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-gray-900 line-clamp-1">Dr(a). {app.doctor_name}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {new Date(app.appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
-                                            </p>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${app.status === 'confirmed' ? 'bg-blue-50 text-blue-600' : 'bg-yellow-50 text-yellow-600'}`}>
-                                                {app.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 <button 
                                     onClick={() => navigate('/patient/appointments')}
-                                    className="w-full mt-4 py-2 text-sm font-bold text-mindpath-primary bg-mindpath-light rounded-xl hover:bg-purple-100 transition-colors"
+                                    className="w-full mt-2 py-2.5 text-sm font-bold text-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
                                 >
                                     Ver todas mis citas
                                 </button>
                             </div>
                         ) : (
                             <div className="text-center py-8">
-                                <Calendar size={32} className="mx-auto text-gray-300 mb-3" />
-                                <p className="text-sm font-medium text-gray-500">No tienes citas programadas próximamente.</p>
+                                <Calendar size={32} className="mx-auto text-gray-200 dark:text-gray-600 mb-3" />
+                                <p className="text-sm font-medium text-gray-500 dark:text-slate-400">No tienes citas programadas próximamente.</p>
                             </div>
                         )}
                     </div>
                 </div>
-
             </div>
         </div>
     );
