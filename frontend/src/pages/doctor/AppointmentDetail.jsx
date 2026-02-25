@@ -58,10 +58,10 @@ const AppointmentDetail = () => {
     );
 
     if (error) return (
-        <div className="max-w-lg mx-auto mt-20 p-8 bg-red-50 rounded-3xl text-center">
+        <div className="max-w-lg mx-auto mt-20 p-8 bg-red-50 dark:bg-red-900/20 rounded-3xl text-center">
             <AlertCircle size={40} className="mx-auto text-red-400 mb-4" />
-            <p className="font-bold text-red-700">{error}</p>
-            <button onClick={() => navigate(-1)} className="mt-4 text-sm text-mindpath-primary font-bold hover:underline">
+            <p className="font-bold text-red-700 dark:text-red-400">{error}</p>
+            <button onClick={() => navigate(-1)} className="mt-4 text-sm text-mindpath-primary dark:text-purple-400 font-bold hover:underline">
                 ← Volver a la agenda
             </button>
         </div>
@@ -78,20 +78,20 @@ const AppointmentDetail = () => {
         <div className="max-w-6xl mx-auto space-y-6 pb-12">
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate(-1)}
-                        className="p-3 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">
-                        <ArrowLeft size={20} className="text-gray-600" />
+                        className="p-3 bg-gray-100 dark:bg-slate-700 rounded-2xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                        <ArrowLeft size={20} className="text-gray-600 dark:text-slate-300" />
                     </button>
                     <div>
-                        <p className="text-xs font-bold text-gray-400 uppercase">Cita con</p>
-                        <h1 className="text-2xl font-black text-gray-900">{patient.full_name}</h1>
+                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase">Cita con</p>
+                        <h1 className="text-2xl font-black text-gray-900 dark:text-white">{patient.full_name}</h1>
                         <div className="flex items-center gap-2 mt-1">
                             <span className={`inline-flex items-center text-xs px-3 py-1 rounded-full border font-bold ${sc.color}`}>
                                 {sc.label}
                             </span>
-                            <span className="text-xs text-gray-500 font-bold">
+                            <span className="text-xs text-gray-500 dark:text-slate-400 font-bold">
                                 {appt.type === 'virtual' ? '🎥 Telemedicina' : '🏥 Presencial'}
                             </span>
                         </div>
@@ -132,22 +132,22 @@ const AppointmentDetail = () => {
                 <div className="lg:col-span-2 space-y-5">
 
                     {/* Datos del paciente */}
-                    <div className="bg-white p-7 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <h2 className="font-black text-lg mb-5 flex items-center gap-2 border-b pb-4">
+                    <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
+                        <h2 className="font-black text-lg text-gray-900 dark:text-white mb-5 flex items-center gap-2 border-b dark:border-white/10 pb-4">
                             <User size={18} className="text-mindpath-primary"/> Datos del Paciente
                         </h2>
                         <div className="flex items-center gap-4 mb-5">
                             {avatarSrc ? (
                                 <img src={avatarSrc} alt={patient.full_name}
-                                    className="w-16 h-16 rounded-full object-cover border-4 border-white shadow" />
+                                    className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow" />
                             ) : (
-                                <div className="w-16 h-16 bg-mindpath-light rounded-full flex items-center justify-center text-2xl font-black text-mindpath-primary border-4 border-white shadow">
+                                <div className="w-16 h-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-2xl font-black text-mindpath-primary dark:text-purple-400 border-4 border-white dark:border-slate-800 shadow">
                                     {patient.full_name?.[0] || 'P'}
                                 </div>
                             )}
                             <div>
-                                <p className="font-black text-gray-900 text-lg">{patient.full_name}</p>
-                                <p className="text-sm text-gray-500">
+                                <p className="font-black text-gray-900 dark:text-white text-lg">{patient.full_name}</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">
                                     {genderLabel[patient.gender] || '—'}
                                     {patient.age ? ` • ${patient.age} años` : ''}
                                 </p>
@@ -157,59 +157,59 @@ const AppointmentDetail = () => {
                         <div className="space-y-3">
                             {patient.email && (
                                 <div className="flex items-center gap-3 text-sm">
-                                    <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                                        <Mail size={15} className="text-gray-500"/>
+                                    <div className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center shrink-0">
+                                        <Mail size={15} className="text-gray-500 dark:text-slate-400"/>
                                     </div>
-                                    <span className="text-gray-700 font-medium truncate">{patient.email}</span>
+                                    <span className="text-gray-700 dark:text-slate-300 font-medium truncate">{patient.email}</span>
                                 </div>
                             )}
                             {patient.phone && (
                                 <div className="flex items-center gap-3 text-sm">
-                                    <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                                        <Phone size={15} className="text-gray-500"/>
+                                    <div className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center shrink-0">
+                                        <Phone size={15} className="text-gray-500 dark:text-slate-400"/>
                                     </div>
-                                    <span className="text-gray-700 font-medium">{patient.phone}</span>
+                                    <span className="text-gray-700 dark:text-slate-300 font-medium">{patient.phone}</span>
                                 </div>
                             )}
                             {patient.address && (
                                 <div className="flex items-start gap-3 text-sm">
-                                    <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
-                                        <MapPin size={15} className="text-gray-500"/>
+                                    <div className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                                        <MapPin size={15} className="text-gray-500 dark:text-slate-400"/>
                                     </div>
-                                    <span className="text-gray-700 font-medium">{patient.address}</span>
+                                    <span className="text-gray-700 dark:text-slate-300 font-medium">{patient.address}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Detalles de la cita */}
-                    <div className="bg-white p-7 rounded-[2rem] border border-gray-100 shadow-sm space-y-4">
-                        <h2 className="font-black text-lg mb-4 flex items-center gap-2 border-b pb-4">
+                    <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
+                        <h2 className="font-black text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2 border-b dark:border-white/10 pb-4">
                             <Calendar size={18} className="text-mindpath-primary"/> Detalles de la Cita
                         </h2>
                         <div className="flex items-center gap-3 text-sm">
-                            <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
-                                <Calendar size={15} className="text-blue-500"/>
+                            <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/40 rounded-xl flex items-center justify-center">
+                                <Calendar size={15} className="text-blue-500 dark:text-blue-400"/>
                             </div>
-                            <span className="font-bold text-gray-700">
+                            <span className="font-bold text-gray-700 dark:text-slate-300">
                                 {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
                                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                                 })}
                             </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
-                            <div className="w-8 h-8 bg-purple-50 rounded-xl flex items-center justify-center">
-                                <Clock size={15} className="text-purple-500"/>
+                            <div className="w-8 h-8 bg-purple-50 dark:bg-purple-900/40 rounded-xl flex items-center justify-center">
+                                <Clock size={15} className="text-purple-500 dark:text-purple-400"/>
                             </div>
-                            <span className="font-bold text-gray-700">
+                            <span className="font-bold text-gray-700 dark:text-slate-300">
                                 {appt.start_time?.slice(0, 5)}
                                 {appt.end_time ? ` — ${appt.end_time.slice(0, 5)}` : ''}
                             </span>
                         </div>
                         {appt.notes && (
-                            <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-2xl">
-                                <p className="text-xs font-bold text-yellow-700 uppercase mb-1">Notas del paciente</p>
-                                <p className="text-sm text-yellow-800">{appt.notes}</p>
+                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50 p-4 rounded-2xl">
+                                <p className="text-xs font-bold text-yellow-700 dark:text-yellow-500 uppercase mb-1">Notas del paciente</p>
+                                <p className="text-sm text-yellow-800 dark:text-yellow-200/80">{appt.notes}</p>
                             </div>
                         )}
                     </div>
@@ -217,16 +217,16 @@ const AppointmentDetail = () => {
 
                 {/* COLUMNA DERECHA: Historial */}
                 <div className="lg:col-span-3">
-                    <div className="bg-white p-7 rounded-[2rem] border border-gray-100 shadow-sm h-full">
-                        <h2 className="font-black text-lg mb-5 flex items-center gap-2 border-b pb-4">
+                    <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm h-full">
+                        <h2 className="font-black text-lg text-gray-900 dark:text-white mb-5 flex items-center gap-2 border-b dark:border-white/10 pb-4">
                             <Stethoscope size={18} className="text-mindpath-primary"/> Historial con este Paciente
                         </h2>
 
                         {history.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <FileText size={48} className="text-gray-200 mb-4" />
-                                <p className="font-bold text-gray-400">Primera cita con este paciente</p>
-                                <p className="text-sm text-gray-400 mt-1">No hay historial previo.</p>
+                                <FileText size={48} className="text-gray-200 dark:text-slate-600 mb-4" />
+                                <p className="font-bold text-gray-400 dark:text-slate-400">Primera cita con este paciente</p>
+                                <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">No hay historial previo.</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -235,17 +235,17 @@ const AppointmentDetail = () => {
                                     const hsc = statusConfig[h.status] || statusConfig.completed;
                                     return (
                                         <div key={h.appt_id}
-                                            className="border border-gray-100 rounded-2xl overflow-hidden hover:border-mindpath-primary/30 transition-all">
+                                            className="border border-gray-100 dark:border-white/10 rounded-2xl overflow-hidden hover:border-mindpath-primary/30 transition-all">
                                             <button
                                                 type="button"
                                                 onClick={() => setExpandedHistory(isOpen ? null : idx)}
-                                                className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors">
+                                                className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-mindpath-light rounded-xl flex items-center justify-center text-xs font-black text-mindpath-primary shrink-0">
+                                                    <div className="w-10 h-10 bg-mindpath-light dark:bg-slate-700/50 rounded-xl flex items-center justify-center text-xs font-black text-mindpath-primary shrink-0">
                                                         {new Date(h.appointment_date).getDate()}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-800 text-sm">
+                                                        <p className="font-bold text-gray-800 dark:text-slate-200 text-sm">
                                                             {new Date(h.appointment_date).toLocaleDateString('es-ES', {
                                                                 weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
                                                             })}
@@ -255,7 +255,7 @@ const AppointmentDetail = () => {
                                                                 {hsc.label}
                                                             </span>
                                                             {h.diagnostico && (
-                                                                <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                                                                <span className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[150px]">
                                                                     {h.diagnostico}
                                                                 </span>
                                                             )}
@@ -266,34 +266,34 @@ const AppointmentDetail = () => {
                                             </button>
 
                                             {isOpen && (
-                                                <div className="px-4 pb-4 bg-gray-50/50 space-y-3">
+                                                <div className="px-4 pb-4 bg-gray-50/50 dark:bg-slate-700/30 space-y-3">
                                                     {h.motivo_sintomas && (
-                                                        <div className="bg-white rounded-xl p-3">
-                                                            <p className="text-xs font-black text-gray-400 uppercase mb-1">Motivo / Síntomas</p>
-                                                            <p className="text-sm text-gray-700">{h.motivo_sintomas}</p>
+                                                        <div className="bg-white dark:bg-slate-800 rounded-xl p-3">
+                                                            <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase mb-1">Motivo / Síntomas</p>
+                                                            <p className="text-sm text-gray-700 dark:text-slate-300">{h.motivo_sintomas}</p>
                                                         </div>
                                                     )}
                                                     {h.diagnostico && (
-                                                        <div className="bg-white rounded-xl p-3">
-                                                            <p className="text-xs font-black text-gray-400 uppercase mb-1">Diagnóstico</p>
-                                                            <p className="text-sm text-gray-700">{h.diagnostico}</p>
+                                                        <div className="bg-white dark:bg-slate-800 rounded-xl p-3">
+                                                            <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase mb-1">Diagnóstico</p>
+                                                            <p className="text-sm text-gray-700 dark:text-slate-300">{h.diagnostico}</p>
                                                         </div>
                                                     )}
                                                     {h.tratamiento && (
-                                                        <div className="bg-white rounded-xl p-3">
-                                                            <p className="text-xs font-black text-gray-400 uppercase mb-1">Tratamiento</p>
-                                                            <p className="text-sm text-gray-700">{h.tratamiento}</p>
+                                                        <div className="bg-white dark:bg-slate-800 rounded-xl p-3">
+                                                            <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase mb-1">Tratamiento</p>
+                                                            <p className="text-sm text-gray-700 dark:text-slate-300">{h.tratamiento}</p>
                                                         </div>
                                                     )}
                                                     {h.consultation_id && (
                                                         <button
                                                             onClick={() => navigate(`/doctor/wrap-up/${h.appt_id}`)}
-                                                            className="text-xs font-bold text-mindpath-primary hover:underline flex items-center gap-1 mt-2">
+                                                            className="text-xs font-bold text-mindpath-primary dark:text-purple-400 hover:underline flex items-center gap-1 mt-2">
                                                             <FileText size={13}/> Ver informe completo
                                                         </button>
                                                     )}
                                                     {!h.diagnostico && !h.motivo_sintomas && (
-                                                        <p className="text-xs text-gray-400 py-2 text-center">Sin informe clínico registrado.</p>
+                                                        <p className="text-xs text-gray-400 dark:text-slate-500 py-2 text-center">Sin informe clínico registrado.</p>
                                                     )}
                                                 </div>
                                             )}

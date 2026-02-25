@@ -56,18 +56,18 @@ const DoctorsDirectory = () => {
             </div>
 
             {/* Barra de Búsqueda y Filtros */}
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row gap-4">
                 
                 {/* Buscador de Texto */}
                 <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search size={20} className="text-gray-400" />
+                        <Search size={20} className="text-gray-400 dark:text-slate-500" />
                     </div>
                     <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none text-gray-700 transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-700/50 border border-transparent rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none text-gray-700 dark:text-white transition-all placeholder-gray-400 dark:placeholder-slate-500"
                         placeholder="Buscar por nombre o especialidad..."
                     />
                 </div>
@@ -75,12 +75,12 @@ const DoctorsDirectory = () => {
                 {/* Filtro por Especialidad */}
                 <div className="relative w-full md:w-64 shrink-0">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Filter size={20} className="text-gray-400" />
+                        <Filter size={20} className="text-gray-400 dark:text-slate-500" />
                     </div>
                     <select
                         value={selectedSpecialty}
                         onChange={(e) => setSelectedSpecialty(e.target.value)}
-                        className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none text-gray-700 appearance-none cursor-pointer font-medium"
+                        className="w-full pl-12 pr-10 py-3 bg-gray-50 dark:bg-slate-700/50 border border-transparent rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none text-gray-700 dark:text-white appearance-none cursor-pointer font-medium"
                     >
                         {specialties.map(spec => (
                             <option key={spec} value={spec}>{spec}</option>
@@ -92,7 +92,7 @@ const DoctorsDirectory = () => {
             {/* Resultados (Cuadrícula de Doctores) */}
             <div>
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                         {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Especialista encontrado' : 'Especialistas encontrados'}
                     </h2>
                 </div>
@@ -108,15 +108,15 @@ const DoctorsDirectory = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-16 text-center flex flex-col items-center">
-                        <UserX size={48} className="text-gray-300 mb-4" />
-                        <h3 className="text-xl font-bold text-gray-700 mb-2">No hay resultados</h3>
-                        <p className="text-gray-500 max-w-md">
+                    <div className="bg-gray-50 dark:bg-slate-800 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl p-16 text-center flex flex-col items-center">
+                        <UserX size={48} className="text-gray-300 dark:text-slate-600 mb-4" />
+                        <h3 className="text-xl font-bold text-gray-700 dark:text-white mb-2">No hay resultados</h3>
+                        <p className="text-gray-500 dark:text-slate-400 max-w-md">
                             No pudimos encontrar especialistas que coincidan con tu búsqueda. Intenta usar otros términos o quitar el filtro de especialidad.
                         </p>
                         <button 
                             onClick={() => { setSearchTerm(''); setSelectedSpecialty('Todas'); }}
-                            className="mt-6 px-6 py-2.5 text-mindpath-primary font-bold bg-mindpath-light rounded-xl hover:bg-purple-100 transition-colors"
+                            className="mt-6 px-6 py-2.5 text-mindpath-primary dark:text-purple-400 font-bold bg-mindpath-light dark:bg-purple-900/40 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors"
                         >
                             Limpiar filtros
                         </button>

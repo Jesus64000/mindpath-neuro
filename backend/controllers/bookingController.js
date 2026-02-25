@@ -20,20 +20,18 @@ exports.getAvailability = async (req, res) => {
         const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayOfWeekEnum = daysMap[requestDate.getUTCDay()];
 
-        // Buscar la regla de horario en doctor_schedules
+        // Buscar *todas* las reglas de horario en doctor_schedules para ese día
         const [schedules] = await db.query(
-            `SELECT start_time, end_time 
+            `SELECT start_time, end_time, slot_duration 
              FROM doctor_schedules 
-             WHERE doctor_id = ? AND day_of_week = ?`,
+             WHERE doctor_id = ? AND day_of_week = ?
+             ORDER BY start_time`,
             [doctorId, dayOfWeekEnum]
         );
 
         if (schedules.length === 0) {
             return res.status(200).json([]);
         }
-
-        const rule = schedules[0];
-        const SLOT_DURATION = 30; // minutos
 
         // Citas ya agendadas ese día
         const [bookedAppointments] = await db.query(
@@ -45,20 +43,28 @@ exports.getAvailability = async (req, res) => {
 
         const bookedTimes = bookedAppointments.map(app => app.start_time.substring(0, 5));
 
-        // Generar slots de 30 min dentro del rango
+        // Generar slots para cada bloque de horario
         const slots = [];
-        let currentSlot = new Date(`1970-01-01T${rule.start_time}Z`);
-        const endTime = new Date(`1970-01-01T${rule.end_time}Z`);
+        
+        schedules.forEach(rule => {
+            const slotDuration = rule.slot_duration || 30; // 30 min por defecto
+            let currentSlot = new Date(`1970-01-01T${rule.start_time}Z`);
+            const endTime = new Date(`1970-01-01T${rule.end_time}Z`);
 
-        while (currentSlot < endTime) {
-            const timeString = currentSlot.toISOString().substring(11, 16); // HH:MM
+            while (currentSlot < endTime) {
+                const timeString = currentSlot.toISOString().substring(11, 16); // HH:MM
 
-            if (!bookedTimes.includes(timeString)) {
-                slots.push(timeString);
+                // Evitar solapamientos (ej. si dos reglas se tocan o si ya estaba ocupado)
+                if (!bookedTimes.includes(timeString) && !slots.includes(timeString)) {
+                    slots.push(timeString);
+                }
+
+                currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + slotDuration);
             }
+        });
 
-            currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + SLOT_DURATION);
-        }
+        // Ordenar los slots en caso de que los bloques tuvieran desorden (aunque SQL ya ordenó)
+        slots.sort();
 
         res.status(200).json(slots);
 

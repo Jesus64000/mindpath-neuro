@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus } from 'lucide-react';
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
@@ -52,6 +52,20 @@ const DoctorSchedule = () => {
     const [selectedDate, setSelectedDate] = useState(() => new Date());
     const [monthStart, setMonthStart] = useState(() => getMonthStart(new Date()));
     const [calendarCount, setCalendarCount] = useState({});
+    
+    // UI State para Pestañas (Mis Citas vs Mi Disponibilidad)
+    const [activeTab, setActiveTab] = useState('appointments'); // 'appointments' | 'availability'
+
+    // --- Estado para "Mi Disponibilidad" ---
+    const [schedules, setSchedules] = useState([]);
+    const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [formSchedule, setFormSchedule] = useState({
+        day_of_week: 'Monday',
+        start_time: '08:00',
+        end_time: '12:00',
+        slot_duration: '30'
+    });
+
     const navigate = useNavigate();
 
     const calculateAge = (dob) => {
@@ -70,6 +84,18 @@ const DoctorSchedule = () => {
             setCalendarCount(map);
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const fetchSchedules = async () => {
+        setScheduleLoading(true);
+        try {
+            const res = await api.get('/doctors/schedules');
+            setSchedules(res.data);
+        } catch (err) {
+            console.error("Error cargando disponibilidad:", err);
+        } finally {
+            setScheduleLoading(false);
         }
     };
 
@@ -94,7 +120,7 @@ const DoctorSchedule = () => {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate)]);
+            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate), fetchSchedules()]);
         };
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,6 +151,34 @@ const DoctorSchedule = () => {
         setSelectedDate(next);
     };
 
+    // --- Controladores para Pestaña de Disponibilidad ---
+    const handleAddSchedule = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/doctors/schedules', formSchedule);
+            fetchSchedules();
+            // Reset form but keep the day
+            setFormSchedule(prev => ({ ...prev, start_time: '08:00', end_time: '12:00' }));
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error al guardar el horario');
+        }
+    };
+
+    const handleDeleteSchedule = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar este bloque de horario?')) return;
+        try {
+            await api.delete(`/doctors/schedules/${id}`);
+            fetchSchedules();
+        } catch {
+            alert('Error al eliminar el horario');
+        }
+    };
+
+    const dayLabels = {
+        'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-10">
             {/* Header */}
@@ -141,11 +195,35 @@ const DoctorSchedule = () => {
 
             {error && <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-500/30">{error}</div>}
 
+            {/* Pestañas de Navegación */}
+            <div className="flex border-b border-gray-200 dark:border-white/10 mt-6 mb-8">
+                <button
+                    onClick={() => setActiveTab('appointments')}
+                    className={`pb-4 px-6 font-bold text-sm transition-colors flex items-center border-b-2 ${
+                        activeTab === 'appointments'
+                            ? 'border-mindpath-primary text-mindpath-primary dark:text-purple-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <CalendarIcon size={18} className="mr-2" /> Mis Citas
+                </button>
+                <button
+                    onClick={() => setActiveTab('availability')}
+                    className={`pb-4 px-6 font-bold text-sm transition-colors flex items-center border-b-2 ${
+                        activeTab === 'availability'
+                            ? 'border-mindpath-primary text-mindpath-primary dark:text-purple-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <Clock size={18} className="mr-2" /> Mi Disponibilidad
+                </button>
+            </div>
+
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <Activity className="animate-spin text-mindpath-primary" size={40} />
                 </div>
-            ) : (
+            ) : activeTab === 'appointments' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
                     {/* Calendario Mensual */}
@@ -313,6 +391,137 @@ const DoctorSchedule = () => {
                                 <p className="text-gray-500 dark:text-slate-400">Selecciona otro día en el calendario para revisar tu agenda.</p>
                             </div>
                         )}
+                    </div>
+                </div>
+            ) : (
+                // --- PESTAÑA: MI DISPONIBILIDAD ---
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
+                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">Configurar Disponibilidad</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mb-8 max-w-2xl">
+                        Define los días y horas que estás disponible para que los pacientes agenden sus consultas. Puedes agregar múltiples bloques en un mismo día (ej. Mañana y Tarde).
+                    </p>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        {/* Formulario */}
+                        <div>
+                            <form onSubmit={handleAddSchedule} className="space-y-5 bg-gray-50 dark:bg-slate-700/30 p-6 rounded-3xl border border-gray-100 dark:border-white/5">
+                                <h3 className="font-bold text-gray-800 dark:text-white pb-3 border-b border-gray-200 dark:border-white/10 mb-4">Añadir Nuevo Bloque</h3>
+                                
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Día de la Semana</label>
+                                    <select 
+                                        value={formSchedule.day_of_week}
+                                        onChange={e => setFormSchedule({...formSchedule, day_of_week: e.target.value})}
+                                        className="w-full p-3.5 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-mindpath-primary/30 text-gray-800 dark:text-white shadow-sm font-medium"
+                                    >
+                                        <option value="Monday">Lunes</option>
+                                        <option value="Tuesday">Martes</option>
+                                        <option value="Wednesday">Miércoles</option>
+                                        <option value="Thursday">Jueves</option>
+                                        <option value="Friday">Viernes</option>
+                                        <option value="Saturday">Sábado</option>
+                                        <option value="Sunday">Domingo</option>
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Hora Inicio</label>
+                                        <input 
+                                            type="time" 
+                                            value={formSchedule.start_time}
+                                            onChange={e => setFormSchedule({...formSchedule, start_time: e.target.value})}
+                                            className="w-full p-3.5 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-mindpath-primary/30 text-gray-800 dark:text-white shadow-sm font-medium"
+                                            required 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Hora Fin</label>
+                                        <input 
+                                            type="time" 
+                                            value={formSchedule.end_time}
+                                            onChange={e => setFormSchedule({...formSchedule, end_time: e.target.value})}
+                                            className="w-full p-3.5 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-mindpath-primary/30 text-gray-800 dark:text-white shadow-sm font-medium"
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Duración de cada Consulta</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" value="30" checked={formSchedule.slot_duration === '30'} onChange={e => setFormSchedule({...formSchedule, slot_duration: e.target.value})} className="accent-mindpath-primary w-4 h-4" />
+                                            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">30 minutos</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" value="60" checked={formSchedule.slot_duration === '60'} onChange={e => setFormSchedule({...formSchedule, slot_duration: e.target.value})} className="accent-mindpath-primary w-4 h-4" />
+                                            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">1 hora</span>
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+                                        El sistema dividirá automáticamente esta franja en ranuras de <span className="font-bold text-mindpath-primary dark:text-purple-400">{formSchedule.slot_duration} minutos</span>.
+                                    </p>
+                                </div>
+
+                                <button 
+                                    type="submit"
+                                    className="w-full mt-4 py-3.5 bg-mindpath-primary text-white font-bold rounded-2xl flex justify-center items-center hover:bg-mindpath-primaryHover transition-all shadow-md shadow-purple-500/20"
+                                >
+                                    <Plus size={18} className="mr-2" /> Agregar Franja Horaria
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Visualización */}
+                        <div>
+                            <h3 className="font-bold text-gray-800 dark:text-white mb-4">Tus Horarios Configurados</h3>
+                            
+                            {scheduleLoading ? (
+                                <div className="flex justify-center p-8"><Activity className="animate-spin text-mindpath-primary" size={30} /></div>
+                            ) : schedules.length > 0 ? (
+                                <div className="space-y-3">
+                                    {Object.keys(dayLabels).map(dayKey => {
+                                        const daySchedules = schedules.filter(s => s.day_of_week === dayKey);
+                                        if (daySchedules.length === 0) return null;
+                                        
+                                        return (
+                                            <div key={dayKey} className="bg-gray-50 dark:bg-slate-700/30 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
+                                                <h4 className="font-black text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-white/10 uppercase">
+                                                    <CalendarIcon size={14} className="text-mindpath-primary dark:text-purple-400" /> {dayLabels[dayKey]}
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {daySchedules.map(slot => (
+                                                        <div key={slot.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
+                                                                    {slot.start_time.substring(0, 5)} - {slot.end_time.substring(0, 5)}
+                                                                </span>
+                                                                <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-mindpath-primary dark:text-purple-400 px-2.5 py-1 rounded-md font-bold">
+                                                                    {slot.slot_duration} min
+                                                                </span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleDeleteSchedule(slot.id)}
+                                                                className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                title="Eliminar Franja"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center p-10 bg-gray-50 dark:bg-slate-700/30 rounded-3xl border border-dashed border-gray-200 dark:border-slate-600">
+                                    <Settings size={40} className="mx-auto text-gray-300 dark:text-slate-600 mb-3" />
+                                    <p className="text-gray-500 dark:text-slate-400 text-sm">Aún no has configurado disponibilidad.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

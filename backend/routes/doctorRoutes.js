@@ -17,6 +17,12 @@ router.put('/patient/:patientId/notes', authMiddleware, doctorController.savePat
 // Configuración de horarios del doctor
 router.post('/update-schedule', authMiddleware, doctorController.updateSchedule);
 
+// Sprint 28: Disponibilidad Dinámica de Doctores
+const scheduleController = require('../controllers/scheduleController');
+router.get('/schedules', authMiddleware, scheduleController.getMySchedules);
+router.post('/schedules', authMiddleware, scheduleController.addSchedule);
+router.delete('/schedules/:id', authMiddleware, scheduleController.deleteSchedule);
+
 // Perfil profesional del doctor
 router.get('/profile/settings', authMiddleware, doctorController.getProfileSettings);
 router.put('/profile/settings', authMiddleware, doctorController.updateProfileSettings);

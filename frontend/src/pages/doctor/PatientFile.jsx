@@ -371,18 +371,23 @@ const PatientFile = () => {
                                                         )}
                                                         <div className="md:col-span-2 flex justify-end mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
                                                             <PDFExportButton 
-                                                                reportData={{
-                                                                    patientName: info.full_name,
-                                                                    motivo_sintomas: h.motivo_sintomas,
-                                                                    antecedentes: h.antecedentes,
-                                                                    hallazgos: h.hallazgos,
-                                                                    diagnostico: h.diagnostico,
-                                                                    tratamiento: h.tratamiento,
-                                                                    estudios_observaciones: h.estudios_observaciones,
-                                                                    privateNotes: h.private_notes
+                                                                report={{
+                                                                    motivo_sintomas: h.motivo_sintomas || '',
+                                                                    antecedentes: h.antecedentes || '',
+                                                                    hallazgos: h.hallazgos || '',
+                                                                    diagnostico: h.diagnostico || '',
+                                                                    tratamiento: h.tratamiento || '',
+                                                                    estudios_observaciones: h.estudios_observaciones || '',
+                                                                    private_notes: h.private_notes || ''
+                                                                }}
+                                                                header={{
+                                                                    patient_name: info.full_name,
+                                                                    appointment_date: h.appointment_date,
+                                                                    type: h.type
                                                                 }}
                                                             />
                                                         </div>
+
                                                     </div>
                                                 </div>
                                             </div>

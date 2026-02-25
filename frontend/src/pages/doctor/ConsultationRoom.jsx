@@ -27,7 +27,8 @@ const ConsultationRoom = () => {
 
     // ── Cargar datos de la cita ────────────────────────────────────────────────
     useEffect(() => {
-        api.get(`/appointments/${appointmentId}`)
+        api.get(`/appointments/doctor/${appointmentId}/detail`)
+
             .then(res => setAppointment(res.data))
             .catch(() => setError('No se pudo cargar la cita.'));
     }, [appointmentId]);
