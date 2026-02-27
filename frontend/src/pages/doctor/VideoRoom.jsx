@@ -119,8 +119,13 @@ const VideoRoom = () => {
     // handleEndCall se mantiene para ser llamado desde onLeaveRoom de ZegoCloud
 
     // ── ZegoCloud ──────────────────────────────────────────────────────────
+    const joinedRef = useRef(false);
+    const [isJoining, setIsJoining] = useState(false);
+
     const myMeeting = async (element) => {
-        if (!element) return;
+        if (!element || joinedRef.current) return;
+        joinedRef.current = true;
+        setIsJoining(true);
 
         const appID        = Number(import.meta.env.VITE_ZEGO_APP_ID);
         const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
@@ -129,12 +134,22 @@ const VideoRoom = () => {
             appID, serverSecret, id, Date.now().toString(), doctorName
         );
 
+        // Si se trabó y no conectó en 5 segundos, forzamos recarga
+        const reloadTimeout = setTimeout(() => {
+            console.warn('ZEGOCLOUD tardó demasiado, forzando recarga...');
+            window.location.reload();
+        }, 5000);
+
         const zp = ZegoUIKitPrebuilt.create(kitToken);
         zp.joinRoom({
             container: element,
             scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
             showScreenSharingButton: false,
             showPreJoinView: false,
+            onJoinRoom: () => {
+                clearTimeout(reloadTimeout);
+                setIsJoining(false);
+            },
             onLeaveRoom: () => {
                 // Al colgar desde el botón de ZegoCloud también vamos a WrapUp
                 if (recognitionRef.current) recognitionRef.current.stop();
@@ -145,30 +160,39 @@ const VideoRoom = () => {
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex h-screen bg-gray-900 font-sans overflow-hidden">
+        <div className="flex h-screen bg-gray-900 dark:bg-black font-sans overflow-hidden">
             {/* Video de ZegoCloud (ocupa todo el espacio izquierdo) */}
-            <div className="flex-1 relative" ref={myMeeting}></div>
+            <div className="flex-1 relative bg-gray-900 dark:bg-black flex items-center justify-center">
+                {isJoining && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10 text-white">
+                        <Activity size={40} className="animate-spin text-mindpath-primary mb-4" />
+                        <p className="font-bold">Conectando a la sala de espera...</p>
+                        <p className="text-sm text-gray-400 mt-2">Si demora más de 5 segundos, se recargará automáticamente.</p>
+                    </div>
+                )}
+                <div className="w-full h-full" ref={myMeeting}></div>
+            </div>
 
             {/* Panel lateral de transcripción */}
-            <div className="w-80 md:w-96 bg-white border-l border-gray-200 flex flex-col shadow-2xl z-20">
+            <div className="w-80 md:w-96 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-white/10 flex flex-col shadow-2xl z-20">
 
                 {/* Header del panel */}
-                <div className="p-5 border-b border-gray-100 bg-mindpath-light/30 flex items-center justify-between">
+                <div className="p-5 border-b border-gray-100 dark:border-white/10 bg-mindpath-light/30 dark:bg-purple-900/10 flex items-center justify-between">
                     <div>
-                        <h2 className="font-bold text-gray-800 flex items-center">
+                        <h2 className="font-bold text-gray-800 dark:text-white flex items-center">
                             <BrainCircuit size={20} className="text-mindpath-primary mr-2" />
                             Mindpath AI
                         </h2>
-                        <p className="text-xs text-gray-500 mt-1">Asistente de Transcripción</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Asistente de Transcripción</p>
                     </div>
                     {isListening && !isPaused && (
-                        <div className="flex items-center text-red-500 text-xs font-bold animate-pulse bg-red-50 px-2 py-1 rounded-full">
+                        <div className="flex items-center text-red-500 dark:text-red-400 text-xs font-bold animate-pulse bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-full">
                             <Activity size={12} className="mr-1" /> EN VIVO
                         </div>
                     )}
                     {isPaused && (
-                        <div className="flex items-center text-yellow-600 text-xs font-bold bg-yellow-50 px-2 py-1 rounded-full">
-                            ⏸ PAUSADO
+                        <div className="flex items-center text-yellow-600 dark:text-yellow-400 text-xs font-bold bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded-full">
+                            <Pause size={12} className="mr-1" /> PAUSADO
                         </div>
                     )}
                 </div>
@@ -178,15 +202,15 @@ const VideoRoom = () => {
 
                     {/* Banner Bug #13: navegador no compatible */}
                     {!speechSupported && (
-                        <div className="flex items-start bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-2xl text-xs font-bold">
-                            <AlertTriangle size={16} className="mr-2 shrink-0 mt-0.5 text-yellow-500" />
-                            Tu navegador no soporta la transcripción de voz. Usa <strong className="mx-1">Google Chrome</strong> o <strong>Microsoft Edge</strong> para habilitarla.
+                        <div className="flex items-start bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-500/30 text-yellow-800 dark:text-yellow-300 p-4 rounded-2xl text-xs font-bold">
+                            <AlertTriangle size={16} className="mr-2 shrink-0 mt-0.5 text-yellow-500 dark:text-yellow-400" />
+                            Tu navegador no soporta la transcripción de voz. Usa <strong className="mx-1">Google Chrome</strong> 
                         </div>
                     )}
 
                     {/* Controles del micrófono */}
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                        <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-100 dark:border-white/10 shadow-sm">
+                        <h3 className="text-sm font-bold text-gray-700 dark:text-slate-200 mb-4 flex items-center">
                             <Mic size={15} className="mr-2 text-mindpath-primary" />
                             Transcripción en Vivo
                         </h3>
@@ -194,7 +218,7 @@ const VideoRoom = () => {
                         {!isListening ? (
                             <button
                                 onClick={handleStart}
-                                className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center hover:bg-black transition-all"
+                                className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl flex items-center justify-center hover:bg-black dark:hover:bg-gray-100 transition-all shadow-sm"
                             >
                                 <Mic size={16} className="mr-2" /> Iniciar Transcripción
                             </button>
@@ -203,14 +227,14 @@ const VideoRoom = () => {
                                 {isPaused ? (
                                     <button
                                         onClick={handleResume}
-                                        className="flex-1 py-2 bg-yellow-100 text-yellow-700 font-bold rounded-xl flex items-center justify-center hover:bg-yellow-200 transition-all"
+                                        className="flex-1 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-bold rounded-xl flex items-center justify-center hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
                                     >
                                         <Play size={16} className="mr-1" /> Reanudar
                                     </button>
                                 ) : (
                                     <button
                                         onClick={handlePause}
-                                        className="w-full py-2 bg-orange-100 text-orange-700 font-bold rounded-xl flex items-center justify-center hover:bg-orange-200 transition-all"
+                                        className="w-full py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 font-bold rounded-xl flex items-center justify-center hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-all"
                                     >
                                         <Pause size={16} className="mr-1" /> Pausar
                                     </button>
@@ -220,18 +244,18 @@ const VideoRoom = () => {
                     </div>
 
                     {/* Texto transcrito */}
-                    <div className="flex-1 bg-gray-50 rounded-2xl border border-gray-100 p-4 overflow-y-auto flex flex-col">
-                        <p className="text-xs font-bold text-gray-400 uppercase mb-2">Texto capturado</p>
-                        <div className="flex-1 text-sm text-gray-700 leading-relaxed">
+                    <div className="flex-1 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-white/5 p-4 overflow-y-auto flex flex-col">
+                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase mb-2">Texto capturado</p>
+                        <div className="flex-1 text-sm text-gray-700 dark:text-slate-300 leading-relaxed">
                             {/* Texto confirmado por el motor */}
                             <span>{finalTranscript}</span>
                             {/* Texto en proceso (atenuado) */}
                             {interimTranscript && (
-                                <span className="text-gray-400 italic">{interimTranscript}</span>
+                                <span className="text-gray-400 dark:text-slate-500 italic">{interimTranscript}</span>
                             )}
                             {/* Estado vacío */}
                             {!finalTranscript && !interimTranscript && (
-                                <span className="italic text-gray-400">
+                                <span className="italic text-gray-400 dark:text-slate-500">
                                     Presiona "Iniciar Transcripción" y comienza a hablar...
                                 </span>
                             )}
@@ -239,7 +263,7 @@ const VideoRoom = () => {
                     </div>
 
                     {isListening && (
-                        <p className="text-xs text-center text-gray-400 pb-1">
+                        <p className="text-xs text-center text-gray-400 dark:text-slate-500 pb-1">
                             Al <strong>colgar la llamada</strong> se guardará el expediente automáticamente.
                         </p>
                     )}

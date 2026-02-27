@@ -97,7 +97,7 @@ const MyHistory = () => {
                                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                                         <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
                                             <Calendar size={12} />
-                                            {date.toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                            {rec.appointment_date ? new Date(rec.appointment_date).toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Fecha no disponible'}
                                         </span>
                                         <span className="text-xs text-gray-400 dark:text-slate-500">{type}</span>
                                         {rec.my_rating && <StarDisplay rating={rec.my_rating} />}
@@ -116,25 +116,25 @@ const MyHistory = () => {
 
                             {/* Detalle expandible */}
                             {isOpen && (
-                                <div className="border-t border-gray-100 dark:border-white/10 p-5 space-y-4 bg-gray-50/50 dark:bg-white/3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {[
-                                            { label: 'Motivo / Síntomas',        value: rec.motivo_sintomas },
-                                            { label: 'Antecedentes',             value: rec.antecedentes },
-                                            { label: 'Hallazgos Neurológicos',   value: rec.hallazgos },
-                                            { label: 'Diagnóstico',              value: rec.diagnostico, bold: true },
-                                            { label: 'Tratamiento',              value: rec.tratamiento },
-                                            { label: 'Estudios / Observaciones', value: rec.estudios_observaciones },
-                                        ].filter(f => f.value).map(field => (
-                                            <div key={field.label}
-                                                className={`bg-white dark:bg-slate-700/60 rounded-xl p-4 border border-gray-100 dark:border-white/10 ${field.bold ? 'sm:col-span-2 border-violet-200 dark:border-violet-500/30 bg-violet-50/50 dark:bg-violet-900/20' : ''}`}>
-                                                <p className="text-xs font-black uppercase text-gray-400 dark:text-slate-500 mb-1">{field.label}</p>
-                                                <p className={`text-sm text-gray-800 dark:text-slate-100 leading-relaxed ${field.bold ? 'font-bold text-violet-700 dark:text-violet-300' : ''}`}>
-                                                    {field.value}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="border-t border-gray-100 dark:border-white/10 p-5 space-y-4 bg-gray-50/50 dark:bg-slate-800/50">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {[
+                                                { label: 'Motivo / Síntomas',        value: rec.motivo_sintomas },
+                                                { label: 'Antecedentes',             value: rec.antecedentes },
+                                                { label: 'Hallazgos Neurológicos',   value: rec.hallazgos },
+                                                { label: 'Diagnóstico',              value: rec.diagnostico, bold: true },
+                                                { label: 'Tratamiento',              value: rec.tratamiento },
+                                                { label: 'Estudios / Observaciones', value: rec.estudios_observaciones },
+                                            ].filter(f => f.value).map(field => (
+                                                <div key={field.label}
+                                                    className={`bg-white dark:bg-slate-700/60 rounded-xl p-4 border border-gray-100 dark:border-white/10 ${field.bold ? 'sm:col-span-2 border-violet-200 dark:border-violet-500/30 bg-violet-50/50 dark:bg-violet-900/30' : ''}`}>
+                                                    <p className="text-xs font-black uppercase text-gray-400 dark:text-slate-400 mb-1">{field.label}</p>
+                                                    <p className={`text-sm text-gray-800 dark:text-slate-200 leading-relaxed ${field.bold ? 'font-bold text-violet-700 dark:text-violet-300' : ''}`}>
+                                                        {field.value}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
 
                                     {/* Pie con valoración y acciones */}
                                     <div className="flex items-center justify-between pt-2 flex-wrap gap-3">

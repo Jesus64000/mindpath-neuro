@@ -1,16 +1,16 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import {
     ClipboardList, Calendar, ChevronDown, Lock,
     Phone, Mail, MapPin, User, Activity,
-    Video, MapPinned, Clock, ChevronRight,
-    FileText, AlertCircle, CalendarPlus, StickyNote, Check
+    Video, MapPinned, Clock, ChevronRight, ChevronLeft,
+    FileText, AlertCircle, CalendarPlus, StickyNote, Check, X
 } from 'lucide-react';
-
 
 import { BACKEND_URL } from '../../api/constants';
 import { PDFExportButton } from '../../components/ReportPDF';
+import { useAuthStore } from '../../store/useAuthStore';
 
 
 const genderLabel = { M: 'Masculino', F: 'Femenino', O: 'Otro', Other: 'Otro' };
@@ -28,6 +28,7 @@ const PatientFile = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('history');
+    const { user } = useAuthStore(); // Necesario para el doctor_id
 
     // ── Notas rápidas (Sprint 27) ────────────────────────────────────────────
     const [notes,        setNotes]       = useState('');
@@ -51,6 +52,105 @@ const PatientFile = () => {
         setNotesSaved(false);
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => saveNotes(val), 1500);
+    };
+
+    // ── Agendamiento por Doctor (Sprint 28) ──────────────────────────────────
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [modality, setModality] = useState('virtual');
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const d2 = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d2}`;
+    });
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [selectedSlot, setSelectedSlot] = useState(null);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+
+    const [currentMonth, setCurrentMonth] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    });
+
+    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const getFirstDayOfMonth = (year, month) => {
+        const day = new Date(year, month, 1).getDay();
+        return day === 0 ? 6 : day - 1; // Lunes = 0, Domingo = 6
+    };
+
+    const calendarDays = useMemo(() => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const daysInMonth = getDaysInMonth(year, month);
+        const firstDay = getFirstDayOfMonth(year, month);
+
+        const days = [];
+        // Huecos en blanco (días del mes anterior en la primera semana)
+        for (let i = 0; i < firstDay; i++) {
+            days.push(null);
+        }
+        // Días reales del mes
+        for (let i = 1; i <= daysInMonth; i++) {
+            const d = new Date(year, month, i);
+            const yStr = d.getFullYear();
+            const mStr = String(d.getMonth() + 1).padStart(2, '0');
+            const dStr = String(d.getDate()).padStart(2, '0');
+            days.push({ 
+                date: d, 
+                dateString: `${yStr}-${mStr}-${dStr}`,
+                dayNum: i,
+                isPast: d < new Date(new Date().setHours(0,0,0,0))
+            });
+        }
+        return days;
+    }, [currentMonth]);
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    };
+
+    // Cargar disponibilidad al cambiar fecha
+    useEffect(() => {
+        if (!showScheduleModal || !user?.id) return;
+        const fetchAvailability = async () => {
+            setLoadingSlots(true);
+            setSelectedSlot(null);
+            try {
+                const res = await api.get(`/bookings/availability?doctorId=${user.id}&date=${selectedDate}`);
+                setAvailableSlots(res.data);
+            } catch (error) {
+                console.error('Error obteniendo horarios:', error);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+        fetchAvailability();
+    }, [selectedDate, showScheduleModal, user?.id]);
+
+    const handleBooking = async () => {
+        if (!selectedSlot) return;
+        try {
+            await api.post('/bookings/book', {
+                doctor_id: user.id,
+                patient_id: id,
+                appointment_date: selectedDate,
+                start_time: `${selectedSlot}:00`,
+                type: modality,
+            });
+            setShowScheduleModal(false);
+            
+            // Recargar datos para mostrar la nueva cita
+            api.get(`/doctors/patient/${id}`).then(res => setData(res.data));
+            
+        } catch (error) {
+            alert(error.response?.data?.message || 'Error al agendar la cita.');
+            console.error(error);
+        }
     };
 
 
@@ -222,7 +322,7 @@ const PatientFile = () => {
 
                     {/* Botón agendar */}
                     <button
-                        onClick={() => navigate('/doctor/schedule')}
+                        onClick={() => setShowScheduleModal(true)}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-2xl transition-colors shadow-sm shadow-purple-200 text-sm"
                     >
                         <CalendarPlus size={16} />
@@ -457,6 +557,136 @@ const PatientFile = () => {
                     )}
                 </div>
             </div>
+
+            {/* ── MODAL AGENDAR CITA ──────────────────────────────────────────────── */}
+            {showScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-white/10 animate-in fade-in zoom-in duration-200">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-white/10">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <CalendarPlus size={20} className="text-mindpath-primary" />
+                                Agendar Cita
+                            </h2>
+                            <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            {/* Modalidad */}
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <button 
+                                    onClick={() => setModality('virtual')}
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'virtual' ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
+                                >
+                                    <Video size={24} className="mb-2" />
+                                    <span className="font-bold text-sm">Telemedicina</span>
+                                </button>
+                                <button 
+                                    onClick={() => setModality('presencial')}
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'presencial' ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
+                                >
+                                    <MapPin size={24} className="mb-2" />
+                                    <span className="font-bold text-sm">Presencial</span>
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                {/* Fecha - COMPACT MONTH CALENDAR */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Fecha</h3>
+                                        
+                                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-700/50 rounded-xl p-1">
+                                            <button onClick={handlePrevMonth} className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-600 text-gray-500 hover:text-mindpath-primary transition-colors">
+                                                <ChevronLeft size={16} />
+                                            </button>
+                                            <span className="text-xs font-bold text-gray-700 dark:text-slate-200 capitalize w-24 text-center">
+                                                {currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                                            </span>
+                                            <button onClick={handleNextMonth} className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-600 text-gray-500 hover:text-mindpath-primary transition-colors">
+                                                <ChevronRight size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-50 dark:bg-slate-700/30 rounded-2xl p-4 border border-gray-100 dark:border-white/5">
+                                        <div className="grid grid-cols-7 gap-1 mb-2">
+                                            {['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'].map(day => (
+                                                <div key={day} className="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase">
+                                                    {day}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {calendarDays.map((dayObj, i) => {
+                                                if (!dayObj) return <div key={`empty-${i}`} className="p-2" />;
+                                                
+                                                const isSelected = selectedDate === dayObj.dateString;
+                                                return (
+                                                    <button 
+                                                        key={dayObj.dateString}
+                                                        disabled={dayObj.isPast}
+                                                        onClick={() => setSelectedDate(dayObj.dateString)}
+                                                        className={`
+                                                            aspect-square flex items-center justify-center rounded-xl text-sm font-bold transition-all
+                                                            ${dayObj.isPast ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : ''}
+                                                            ${!dayObj.isPast && !isSelected ? 'text-gray-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 hover:shadow-sm' : ''}
+                                                            ${isSelected ? 'bg-mindpath-primary text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30 ring-2 ring-mindpath-primary ring-offset-2 dark:ring-offset-slate-800' : ''}
+                                                        `}
+                                                    >
+                                                        {dayObj.dayNum}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Horarios */}
+                                <div className="flex flex-col h-full">
+                                    <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">Horarios Disponibles</h3>
+                                    {loadingSlots ? (
+                                        <div className="py-10 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-700/30 rounded-2xl border border-gray-100 dark:border-white/5 flex-1">
+                                            <Activity size={32} className="animate-spin text-mindpath-primary mb-2"/>
+                                            <p className="text-sm text-gray-500 dark:text-slate-400 font-bold">Buscando horarios...</p>
+                                        </div>
+                                    ) : availableSlots.length > 0 ? (
+                                        <div className="bg-gray-50 dark:bg-slate-700/30 rounded-2xl p-4 border border-gray-100 dark:border-white/5 flex-1 overflow-y-auto max-h-[280px]">
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {availableSlots.map(time => (
+                                                    <button
+                                                        key={time}
+                                                        onClick={() => setSelectedSlot(time)}
+                                                        className={`p-3 rounded-xl font-bold text-sm transition-all border ${selectedSlot === time ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'}`}
+                                                    >
+                                                        {time}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="py-10 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-500/30 flex-1">
+                                            <p className="text-sm text-red-500 dark:text-red-400 font-bold text-center px-4">
+                                                No tienes horarios creados para este día en "Mi Disponibilidad".
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Confirmar */}
+                            <button 
+                                onClick={handleBooking}
+                                disabled={!selectedSlot}
+                                className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:text-gray-500 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-purple-500/30 transition-all flex justify-center items-center"
+                            >
+                                Confirmar Agendamiento <ChevronRight size={20} className="ml-1" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

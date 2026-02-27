@@ -59,6 +59,7 @@ const AdminDashboard = () => {
         ...(isAdmin ? ['📊 Métricas'] : []),
         '🩺 Verificación',
         '🗂️ Catálogos',
+        ...(isAdmin ? ['🛡️ Equipo'] : []),
         '👥 Usuarios',
         ...(isAdmin ? ['🎨 Theming'] : []),
     ];
@@ -67,8 +68,9 @@ const AdminDashboard = () => {
         metrics:      isAdmin ? 0 : -1,
         verification: isAdmin ? 1 : 0,
         catalogs:     isAdmin ? 2 : 1,
-        users:        isAdmin ? 3 : 2,
-        theming:      isAdmin ? 4 : -1,
+        staff:        isAdmin ? 3 : -1,
+        users:        isAdmin ? 4 : 2,
+        theming:      isAdmin ? 5 : -1,
     };
 
     const [activeTab, setActiveTab]     = useState(TAB.verification);
@@ -76,7 +78,7 @@ const AdminDashboard = () => {
     const [pending, setPending]         = useState([]);
     const [specialties, setSpecialties] = useState([]);
     const [toast, setToast]             = useState(null);
-    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true });
+    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
     const { clinicName, logoUrl, primaryColor, primaryHover, applySettings } = useSettingsStore();
 
     // Theming
@@ -93,6 +95,7 @@ const AdminDashboard = () => {
     const [rejectNotes, setRejectNotes]   = useState('');
 
     // Usuarios
+    const [staff, setStaff]         = useState([]);
     const [users, setUsers]         = useState([]);
     const [userSearch, setUserSearch] = useState('');
     const [userRoleFilter, setUserRoleFilter] = useState('');
@@ -138,10 +141,18 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, users: false })); }
     }, [userSearch, userRoleFilter]);
 
+    const loadStaff = useCallback(async () => {
+        try {
+            const res = await api.get('/admin/users?role=staff');
+            setStaff(res.data);
+        } catch { showToast('Error al cargar equipo.', 'error'); }
+        finally { setLoading(p => ({ ...p, staff: false })); }
+    }, []);
+
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties(); loadUsers();
+        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff();
         setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
-    }, [loadStats, loadPending, loadSpecialties, loadUsers, clinicName, logoUrl, primaryColor, primaryHover]);
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, clinicName, logoUrl, primaryColor, primaryHover]);
 
     // ── Verificación ───────────────────────────────────────────────────────────
     const verifyDoctor = async (id) => {
@@ -197,6 +208,7 @@ const AdminDashboard = () => {
         try {
             await api.put(`/admin/users/${userId}/toggle`);
             setUsers(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u));
+            setStaff(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u));
             showToast(currentlyActive ? 'Cuenta suspendida.' : 'Cuenta reactivada.');
         } catch { showToast('Error al cambiar estado del usuario.', 'error'); }
     };
@@ -206,7 +218,11 @@ const AdminDashboard = () => {
         setChangingRole(userId);
         try {
             await api.put(`/admin/users/${userId}/role`, { role: newRole });
-            setUsers(p => p.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            
+            // Recargar ambas listas
+            loadUsers();
+            loadStaff();
+            
             showToast(`Rol actualizado a ${ROLE_LABEL[newRole]?.label || newRole}.`);
         } catch { showToast('Error al cambiar rol.', 'error'); }
         finally { setChangingRole(null); setRoleDropdown(null); }
@@ -244,6 +260,62 @@ const AdminDashboard = () => {
         Citas: r.total,
     })) || [];
 
+    const renderUserList = (listToRender) => (
+        <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)]">
+            {listToRender.map((u, i) => {
+                const roleInfo = ROLE_LABEL[u.role] || { label: u.role, color: 'text-gray-600 bg-gray-100' };
+                const isSelf = u.id === user?.id;
+                return (
+                    <div key={u.id} className={`flex items-center gap-4 px-5 py-4 ${i !== 0 ? 'border-t border-gray-50 dark:border-[var(--border-color)]' : ''} ${!u.is_active ? 'opacity-60' : ''}`}>
+                        <div className="h-10 w-10 rounded-full bg-mindpath-light flex items-center justify-center text-mindpath-primary font-bold text-sm shrink-0">
+                            {u.full_name?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{u.full_name}</p>
+                                {isSelf && <span className="text-[10px] text-violet-500 font-black">(Tú)</span>}
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleInfo.color}`}>{roleInfo.label}</span>
+                                {!u.is_active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Suspendido</span>}
+                            </div>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{u.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            {isAdmin && !isSelf && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setRoleDropdown(prev => prev === u.id ? null : u.id)}
+                                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-xl hover:border-mindpath-primary text-gray-600 dark:text-slate-300 transition-colors"
+                                    >
+                                        {changingRole === u.id ? '…' : 'Rol'} <ChevronDown size={12}/>
+                                    </button>
+                                    {roleDropdown === u.id && (
+                                        <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 z-20 overflow-hidden">
+                                            {Object.entries(ROLE_LABEL).filter(([r]) => r !== u.role).map(([r, info]) => (
+                                                <button key={r} onClick={() => changeUserRole(u.id, r)}
+                                                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 transition-colors">
+                                                    {info.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {!isSelf && (
+                                <button
+                                    onClick={() => toggleUserActive(u.id, u.is_active)}
+                                    title={u.is_active ? 'Suspender cuenta' : 'Reactivar cuenta'}
+                                    className={`p-2 rounded-xl transition-colors ${u.is_active ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                >
+                                    {u.is_active ? <ToggleRight size={22}/> : <ToggleLeft size={22}/>}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-20">
@@ -257,7 +329,7 @@ const AdminDashboard = () => {
                         {isAdmin ? 'Control total de MindPath Neuro' : 'Panel del Supervisor'}
                     </p>
                 </div>
-                <button onClick={() => { loadStats(); loadPending(); loadUsers(); }} className="flex items-center gap-2 text-sm text-mindpath-primary hover:underline font-medium">
+                <button onClick={() => { loadStats(); loadPending(); loadUsers(); loadStaff(); }} className="flex items-center gap-2 text-sm text-mindpath-primary hover:underline font-medium">
                     <RefreshCw size={15}/> Actualizar
                 </button>
             </div>
@@ -459,6 +531,29 @@ const AdminDashboard = () => {
                 </div>
             )}
 
+            {/* ── TAB: EQUIPO (STAFF) ─────────────────────────────────────────────────── */}
+            {activeTab === TAB.staff && (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="font-bold text-gray-800 dark:text-white">
+                            Equipo del Sistema
+                            <span className="ml-2 text-xs font-normal text-gray-400">({staff.length} resultados)</span>
+                        </h2>
+                    </div>
+
+                    {loading.staff ? (
+                        <p className="text-gray-400 animate-pulse">Cargando equipo...</p>
+                    ) : staff.length === 0 ? (
+                        <div className="text-center py-16 bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)]">
+                            <ShieldCheck size={40} className="text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 dark:text-slate-400">No se encontraron administradores o supervisores.</p>
+                        </div>
+                    ) : (
+                        renderUserList(staff)
+                    )}
+                </div>
+            )}
+
             {/* ── TAB: USUARIOS ─────────────────────────────────────────────────── */}
             {activeTab === TAB.users && (
                 <div className="space-y-4">
@@ -505,64 +600,7 @@ const AdminDashboard = () => {
                             <p className="text-gray-500 dark:text-slate-400">No se encontraron usuarios.</p>
                         </div>
                     ) : (
-                        <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] overflow-hidden">
-                            {users.map((u, i) => {
-                                const roleInfo = ROLE_LABEL[u.role] || { label: u.role, color: 'text-gray-600 bg-gray-100' };
-                                const isSelf = u.id === user?.id;
-                                return (
-                                    <div key={u.id} className={`flex items-center gap-4 px-5 py-4 ${i !== 0 ? 'border-t border-gray-50 dark:border-[var(--border-color)]' : ''} ${!u.is_active ? 'opacity-60' : ''}`}>
-                                        {/* Avatar */}
-                                        <div className="h-10 w-10 rounded-full bg-mindpath-light flex items-center justify-center text-mindpath-primary font-bold text-sm shrink-0">
-                                            {u.full_name?.charAt(0) || '?'}
-                                        </div>
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{u.full_name}</p>
-                                                {isSelf && <span className="text-[10px] text-violet-500 font-black">(Tú)</span>}
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleInfo.color}`}>{roleInfo.label}</span>
-                                                {!u.is_active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Suspendido</span>}
-                                            </div>
-                                            <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{u.email}</p>
-                                        </div>
-                                        {/* Acciones */}
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {/* Cambiar rol (solo admin, no para uno mismo) */}
-                                            {isAdmin && !isSelf && (
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={() => setRoleDropdown(prev => prev === u.id ? null : u.id)}
-                                                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-xl hover:border-mindpath-primary text-gray-600 dark:text-slate-300 transition-colors"
-                                                    >
-                                                        {changingRole === u.id ? '…' : 'Rol'} <ChevronDown size={12}/>
-                                                    </button>
-                                                    {roleDropdown === u.id && (
-                                                        <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-100 dark:border-slate-700 z-20 overflow-hidden">
-                                                            {Object.entries(ROLE_LABEL).filter(([r]) => r !== u.role).map(([r, info]) => (
-                                                                <button key={r} onClick={() => changeUserRole(u.id, r)}
-                                                                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 transition-colors">
-                                                                    {info.label}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {/* Toggle activo/suspendido (no para uno mismo) */}
-                                            {!isSelf && (
-                                                <button
-                                                    onClick={() => toggleUserActive(u.id, u.is_active)}
-                                                    title={u.is_active ? 'Suspender cuenta' : 'Reactivar cuenta'}
-                                                    className={`p-2 rounded-xl transition-colors ${u.is_active ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
-                                                >
-                                                    {u.is_active ? <ToggleRight size={22}/> : <ToggleLeft size={22}/>}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        renderUserList(users)
                     )}
                 </div>
             )}

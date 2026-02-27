@@ -76,16 +76,31 @@ exports.getAvailability = async (req, res) => {
 
 // 2. Crear la cita médica
 exports.bookAppointment = async (req, res) => {
-    const { doctor_id, appointment_date, start_time, type } = req.body;
+    const { doctor_id, appointment_date, start_time, type, patient_id } = req.body;
 
     try {
-        const patientId = await getPatientId(req.user.id);
-        if (!patientId) return res.status(403).json({ message: 'Solo los pacientes pueden agendar citas.' });
+        let finalPatientId = null;
+
+        if (req.user.role === 'doctor') {
+            // El doctor está agendando para un paciente específico
+            if (!patient_id) {
+                return res.status(400).json({ message: 'Se requiere el ID del paciente para agendar.' });
+            }
+            finalPatientId = patient_id;
+        } else if (req.user.role === 'patient') {
+            // Es un paciente agendando para sí mismo
+            finalPatientId = await getPatientId(req.user.id);
+            if (!finalPatientId) {
+                return res.status(403).json({ message: 'No se encontró tu perfil de paciente.' });
+            }
+        } else {
+            return res.status(403).json({ message: 'Rol no autorizado para agendar citas.' });
+        }
 
         // Inserción directa en la BD (El estado por defecto en SQL es 'pending')
         const [result] = await db.query(
             'INSERT INTO appointments (doctor_id, patient_id, appointment_date, start_time, type) VALUES (?, ?, ?, ?, ?)',
-            [doctor_id, patientId, appointment_date, start_time, type]
+            [doctor_id, finalPatientId, appointment_date, start_time, type]
         );
 
         res.status(201).json({ message: 'Cita agendada con éxito.', appointment_id: result.insertId });
