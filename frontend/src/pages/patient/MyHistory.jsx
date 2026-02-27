@@ -72,7 +72,6 @@ const MyHistory = () => {
             <div className="space-y-3">
                 {records.map((rec) => {
                     const isOpen = expanded === rec.appointment_id;
-                    const date = new Date(rec.appointment_date + 'T00:00:00');
                     const type = rec.type === 'virtual' ? '💻 Telemedicina' : '🏥 Presencial';
 
                     return (

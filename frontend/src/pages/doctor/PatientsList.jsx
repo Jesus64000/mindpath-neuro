@@ -5,7 +5,6 @@ import { User, Search, ChevronRight, Users } from 'lucide-react';
 
 const PatientsList = () => {
     const [patients, setPatients] = useState([]);
-    const [filtered, setFiltered] = useState([]);
     const [query, setQuery] = useState('');
     const navigate = useNavigate();
 
@@ -14,7 +13,6 @@ const PatientsList = () => {
             try {
                 const res = await api.get('/doctors/my-patients');
                 setPatients(res.data);
-                setFiltered(res.data);
             } catch (e) {
                 console.error('Error cargando pacientes', e);
             }
@@ -22,11 +20,8 @@ const PatientsList = () => {
         load();
     }, []);
 
-    useEffect(() => {
-        const q = query.toLowerCase();
-        const next = patients.filter(p => p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
-        setFiltered(next);
-    }, [query, patients]);
+    const q = query.toLowerCase();
+    const filtered = patients.filter(p => p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
 
     const formatDate = (value) => {
         if (!value) return 'Sin visitas';

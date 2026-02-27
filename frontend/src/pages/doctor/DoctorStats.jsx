@@ -164,12 +164,12 @@ const DoctorStats = () => {
                         </div>
                         <div className="text-center">
                             <div className="text-5xl font-black text-gray-900 dark:text-white mb-1">
-                                {data.avgRating ? data.avgRating.toFixed(1) : '—'}
+                                {data.avgRating ? Number(data.avgRating).toFixed(1) : '—'}
                             </div>
                             <div className="flex justify-center mb-2">
                                 {[1,2,3,4,5].map(i => (
                                     <Star key={i} size={16}
-                                        className={i <= Math.round(data.avgRating || 0)
+                                        className={i <= Math.round(Number(data.avgRating) || 0)
                                             ? 'text-yellow-400 fill-yellow-400'
                                             : 'text-gray-200 dark:text-slate-600'}
                                     />
