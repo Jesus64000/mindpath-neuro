@@ -46,6 +46,7 @@ Abre una terminal, navega a la carpeta del backend y ejecuta el comando de insta
 ```bash
 cd backend
 npm install
+npm install groq-sdk
 ```
 
 ### 2.2. Variables de Entorno (.env)
