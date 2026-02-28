@@ -177,7 +177,7 @@ const VideoRoom = () => {
             <div className="w-80 md:w-96 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-white/10 flex flex-col shadow-2xl z-20">
 
                 {/* Header del panel */}
-                <div className="p-5 border-b border-gray-100 dark:border-white/10 bg-mindpath-light/30 dark:bg-purple-900/10 flex items-center justify-between">
+                <div className="p-5 border-b border-gray-100 dark:border-white/10 bg-mindpath-light/30 dark:bg-mindpath-primary/10 flex items-center justify-between">
                     <div>
                         <h2 className="font-bold text-gray-800 dark:text-white flex items-center">
                             <BrainCircuit size={20} className="text-mindpath-primary mr-2" />

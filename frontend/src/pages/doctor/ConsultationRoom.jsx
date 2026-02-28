@@ -161,7 +161,7 @@ const ConsultationRoom = () => {
       {/* Header */}
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <BrainCircuit size={24} className="text-violet-400" />
+          <BrainCircuit size={24} className="text-mindpath-primary" />
           <div>
             <p className="font-bold text-white text-sm">Consulta Presencial</p>
             {appointment && (
@@ -228,8 +228,8 @@ const ConsultationRoom = () => {
         <div className="w-72 border-l border-white/10 p-5 flex flex-col gap-5">
           <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-10 w-10 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <User size={18} className="text-violet-400" />
+              <div className="h-10 w-10 rounded-full bg-mindpath-primary/20 flex items-center justify-center">
+                <User size={18} className="text-mindpath-primary" />
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
@@ -266,7 +266,7 @@ const ConsultationRoom = () => {
             <button
               onClick={endConsultation}
               disabled={!finalText.trim() && !interimText.trim()}
-              className="flex items-center justify-center gap-2 w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-colors"
+              className="flex items-center justify-center gap-2 w-full bg-mindpath-primary hover:bg-mindpath-primary disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-colors"
             >
               <StopCircle size={18} /> Finalizar consulta
             </button>

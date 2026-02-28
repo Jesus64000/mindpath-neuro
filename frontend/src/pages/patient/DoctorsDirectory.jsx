@@ -45,8 +45,8 @@ const DoctorsDirectory = () => {
         <div className="max-w-7xl mx-auto space-y-8 pb-12">
             
         {/* Header del Directorio */}
-            <div className="bg-mindpath-dark rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+            <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-mindpath-light0 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="relative z-10">
                     <h1 className="text-3xl md:text-4xl font-bold mb-3">Directorio Médico</h1>
                     <p className="text-gray-300 max-w-2xl text-lg">
@@ -116,7 +116,7 @@ const DoctorsDirectory = () => {
                         </p>
                         <button 
                             onClick={() => { setSearchTerm(''); setSelectedSpecialty('Todas'); }}
-                            className="mt-6 px-6 py-2.5 text-mindpath-primary dark:text-purple-400 font-bold bg-mindpath-light dark:bg-purple-900/40 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors"
+                            className="mt-6 px-6 py-2.5 text-mindpath-primary dark:text-mindpath-primary font-bold bg-mindpath-light dark:bg-mindpath-primary/40 rounded-xl hover:bg-mindpath-light dark:hover:bg-mindpath-primary/60 transition-colors"
                         >
                             Limpiar filtros
                         </button>

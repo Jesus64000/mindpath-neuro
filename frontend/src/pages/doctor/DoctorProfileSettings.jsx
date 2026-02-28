@@ -143,7 +143,7 @@ const DoctorProfileSettings = () => {
                             </p>
                         )}
                         <h2 className="font-black text-lg mt-3 text-gray-900 dark:text-white">{formData.full_name || 'Doctor'}</h2>
-                        <p className="text-mindpath-primary dark:text-purple-400 text-sm font-bold uppercase">{formData.specialty}</p>
+                        <p className="text-mindpath-primary dark:text-mindpath-primary text-sm font-bold uppercase">{formData.specialty}</p>
                     </div>
 
                     {/* Bio */}
@@ -166,7 +166,7 @@ const DoctorProfileSettings = () => {
                     {/* Credenciales */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-6">
                         <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
-                            <Award size={18} className="text-mindpath-primary dark:text-purple-400"/> Credenciales y Experiencia
+                            <Award size={18} className="text-mindpath-primary dark:text-mindpath-primary"/> Credenciales y Experiencia
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Nombre */}
@@ -222,7 +222,7 @@ const DoctorProfileSettings = () => {
                     {/* Idiomas multi-select */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
                         <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
-                            <Globe size={18} className="text-mindpath-primary dark:text-purple-400"/> Idiomas que dominas
+                            <Globe size={18} className="text-mindpath-primary dark:text-mindpath-primary"/> Idiomas que dominas
                         </h3>
                         <div className="flex flex-wrap gap-3">
                             {LANGUAGE_OPTIONS.map(lang => {
@@ -234,7 +234,7 @@ const DoctorProfileSettings = () => {
                                         onClick={() => toggleLanguage(lang)}
                                         className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
                                             active
-                                                ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-md shadow-purple-100 dark:shadow-purple-900/20'
+                                                ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-md shadow-mindpath-primary dark:shadow-mindpath-primary/20'
                                                 : 'bg-gray-50 dark:bg-slate-700/50 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-600 hover:border-mindpath-primary/50'
                                         }`}
                                     >
@@ -245,7 +245,7 @@ const DoctorProfileSettings = () => {
                         </div>
                         {selectedLanguages.length > 0 && (
                             <p className="text-xs text-gray-400 mt-2">
-                                Seleccionado: <span className="font-bold text-mindpath-primary dark:text-purple-400">{selectedLanguages.join(', ')}</span>
+                                Seleccionado: <span className="font-bold text-mindpath-primary dark:text-mindpath-primary">{selectedLanguages.join(', ')}</span>
                             </p>
                         )}
                     </div>
@@ -253,7 +253,7 @@ const DoctorProfileSettings = () => {
                     {/* Educación */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
                         <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
-                            <GraduationCap size={18} className="text-mindpath-primary dark:text-purple-400"/> Formación Académica
+                            <GraduationCap size={18} className="text-mindpath-primary dark:text-mindpath-primary"/> Formación Académica
                         </h3>
                         <textarea value={formData.education}
                             onChange={e => setFormData({...formData, education: e.target.value})}

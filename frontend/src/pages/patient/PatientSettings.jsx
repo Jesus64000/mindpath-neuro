@@ -97,7 +97,7 @@ const PatientSettings = () => {
                             <img src={avatarSrc} alt="Foto de perfil"
                                 className="w-28 h-28 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg" />
                         ) : (
-                            <div className="w-28 h-28 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-4xl font-black text-mindpath-primary dark:text-purple-400 border-4 border-white dark:border-slate-700 shadow-lg">
+                            <div className="w-28 h-28 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-4xl font-black text-mindpath-primary dark:text-mindpath-primary border-4 border-white dark:border-slate-700 shadow-lg">
                                 {formData.full_name ? formData.full_name[0].toUpperCase() : 'P'}
                             </div>
                         )}
@@ -111,7 +111,7 @@ const PatientSettings = () => {
                         <p className="text-gray-500 dark:text-slate-400 text-sm">{formData.email}</p>
                         <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{genderLabel[formData.gender]} • {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
                         <button type="button" onClick={() => fileInputRef.current?.click()}
-                            className="mt-3 text-sm font-bold text-mindpath-primary dark:text-purple-400 hover:underline flex items-center gap-1">
+                            className="mt-3 text-sm font-bold text-mindpath-primary dark:text-mindpath-primary hover:underline flex items-center gap-1">
                             <Camera size={14}/> Cambiar foto de perfil
                         </button>
                         {uploadError && (
@@ -122,7 +122,7 @@ const PatientSettings = () => {
 
                 {/* Información personal */}
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-6">
-                    <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2"><User size={18} className="text-mindpath-primary dark:text-purple-400"/> Información Personal</h3>
+                    <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2"><User size={18} className="text-mindpath-primary dark:text-mindpath-primary"/> Información Personal</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Nombre */}

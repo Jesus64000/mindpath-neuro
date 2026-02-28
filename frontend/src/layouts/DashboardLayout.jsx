@@ -83,7 +83,7 @@ const DashboardLayout = () => {
                     ) : (
                         <BrainCircuit className="text-mindpath-primary mr-2 shrink-0" size={26} />
                     )}
-                    <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-mindpath-dark'}`}>
+                    <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {clinicName}
                     </span>
                 </div>
@@ -153,7 +153,7 @@ const DashboardLayout = () => {
                             </span>
                             <span className="text-xs text-mindpath-primary capitalize">{user?.role}</span>
                         </div>
-                        <div className="h-9 w-9 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary font-bold border border-violet-100">
+                        <div className="h-9 w-9 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary font-bold border border-mindpath-light">
                             {user?.full_name?.charAt(0).toUpperCase()}
                         </div>
                     </div>

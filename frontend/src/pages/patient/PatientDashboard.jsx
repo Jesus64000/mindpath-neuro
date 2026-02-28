@@ -73,14 +73,14 @@ const PatientDashboard = () => {
             
             {/* WIDGET 1: Cita de HOY */}
             {nextAppointment ? (
-                <div className="bg-gradient-to-r from-mindpath-primary to-purple-600 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-purple-500/20 border border-purple-400">
+                <div className="bg-gradient-to-r from-mindpath-primary to-mindpath-primary rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-mindpath-primary/20 border border-mindpath-primary">
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center mr-6 backdrop-blur-sm">
                             <Video size={32} className="text-white animate-pulse" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold mb-1">Tienes una consulta HOY</h2>
-                            <p className="text-purple-100 opacity-90">
+                            <p className="text-gray-400 opacity-90">
                                 Con el Dr(a). {nextAppointment.doctor_name} a las {nextAppointment.start_time.slice(0,5)}
                             </p>
                         </div>
@@ -162,7 +162,7 @@ const PatientDashboard = () => {
                                             className="flex items-start p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/10 cursor-pointer"
                                             onClick={() => navigate('/patient/appointments')}
                                         >
-                                            <div className="h-10 w-10 bg-mindpath-light dark:bg-purple-900/40 rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
+                                            <div className="h-10 w-10 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
                                                 <Clock size={20} />
                                             </div>
                                             <div>
@@ -179,7 +179,7 @@ const PatientDashboard = () => {
                                 })}
                                 <button 
                                     onClick={() => navigate('/patient/appointments')}
-                                    className="w-full mt-2 py-2.5 text-sm font-bold text-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                                    className="w-full mt-2 py-2.5 text-sm font-bold text-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 rounded-xl hover:bg-mindpath-light dark:hover:bg-mindpath-primary/50 transition-colors"
                                 >
                                     Ver todas mis citas
                                 </button>

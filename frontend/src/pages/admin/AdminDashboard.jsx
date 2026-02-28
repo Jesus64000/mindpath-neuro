@@ -15,11 +15,23 @@ import {
 } from 'lucide-react';
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
-const CHART_COLORS = ['#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE'];
+// COLORES DINAMICOS
+const getDynamicChartColors = () => {
+    const root = document.documentElement;
+    const baseRGB = getComputedStyle(root).getPropertyValue('--color-primary-rgb').trim() || '109 40 217';
+    // Generar variaciones de opacidad para el pie chart
+    return [
+        `rgb(${baseRGB})`,
+        `rgb(${baseRGB} / 0.8)`,
+        `rgb(${baseRGB} / 0.6)`,
+        `rgb(${baseRGB} / 0.4)`,
+        `rgb(${baseRGB} / 0.2)`,
+    ];
+};
 const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 const ROLE_LABEL = {
-    admin: { label: 'Admin', color: 'text-violet-700 bg-violet-100' },
+    admin: { label: 'Admin', color: 'text-mindpath-primary bg-mindpath-light' },
     supervisor: { label: 'Supervisor', color: 'text-blue-700 bg-blue-100' },
     doctor: { label: 'Doctor', color: 'text-green-700 bg-green-100' },
     patient: { label: 'Paciente', color: 'text-gray-700 bg-gray-100' },
@@ -61,7 +73,7 @@ const AdminDashboard = () => {
         '🗂️ Catálogos',
         ...(isAdmin ? ['🛡️ Equipo'] : []),
         '👥 Usuarios',
-        ...(isAdmin ? ['🎨 Theming'] : []),
+        ...(isAdmin ? ['🎨 Personalización'] : []),
     ];
     // Índices lógicos (invariantes)
     const TAB = {
@@ -273,7 +285,7 @@ const AdminDashboard = () => {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{u.full_name}</p>
-                                {isSelf && <span className="text-[10px] text-violet-500 font-black">(Tú)</span>}
+                                {isSelf && <span className="text-[10px] text-gray-4000 font-black">(Tú)</span>}
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleInfo.color}`}>{roleInfo.label}</span>
                                 {!u.is_active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Suspendido</span>}
                             </div>
@@ -357,7 +369,7 @@ const AdminDashboard = () => {
                                 <KpiCard icon={UserX}       label="Pendientes Verificar" value={stats?.kpis.pendingDoctors} color="text-yellow-600" bg="bg-yellow-50" />
                                 <KpiCard icon={Stethoscope} label="Pacientes Registrados" value={stats?.kpis.totalPatients} color="text-blue-600" bg="bg-blue-50" />
                                 <KpiCard icon={CheckCircle2} label="Citas Completadas"   value={stats?.kpis.completedAppts} color="text-green-600" bg="bg-green-50" />
-                                <KpiCard icon={Calendar}   label="Citas Activas"         value={stats?.kpis.activeAppts} color="text-purple-600" bg="bg-purple-50" />
+                                <KpiCard icon={Calendar}   label="Citas Activas"         value={stats?.kpis.activeAppts} color="text-mindpath-primary" bg="bg-mindpath-light" />
                                 <KpiCard icon={XCircle}    label="Citas Canceladas"       value={stats?.kpis.cancelledAppts} color="text-red-500" bg="bg-red-50" />
                                 <KpiCard icon={TrendingUp} label="Tasa Confirmación"     value={`${stats?.kpis.confirmationRate}%`} color="text-indigo-600" bg="bg-indigo-50" />
                             </div>
@@ -381,7 +393,7 @@ const AdminDashboard = () => {
                                         <PieChart>
                                             <Pie data={stats?.topSpecialties || []} dataKey="total_appts" nameKey="specialty" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3}>
                                                 {(stats?.topSpecialties || []).map((_, i) => (
-                                                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                                    <Cell key={i} fill={getDynamicChartColors()[i % 5]} />
                                                 ))}
                                             </Pie>
                                             <Tooltip />
@@ -619,7 +631,18 @@ const AdminDashboard = () => {
                             </div>
 
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Colores del Sistema</label>
+                                <div className="flex items-center justify-between mb-4">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Colores del Sistema</label>
+                                    <button 
+                                        onClick={() => {
+                                            previewColor('primary_color', '#6D28D9');
+                                            previewColor('primary_hover', '#5B21B6');
+                                        }}
+                                        className="text-xs font-bold text-mindpath-primary hover:underline"
+                                    >
+                                        Restaurar por defecto
+                                    </button>
+                                </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-4">
                                         <input type="color" value={theme.primary_color}
@@ -708,7 +731,7 @@ const AdminDashboard = () => {
                     </div>
 
                     <button onClick={saveTheme} disabled={savingTheme}
-                        className="flex items-center gap-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold px-8 py-4 rounded-2xl transition-colors disabled:opacity-60 shadow-lg shadow-purple-500/25">
+                        className="flex items-center gap-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold px-8 py-4 rounded-2xl transition-colors disabled:opacity-60 shadow-lg shadow-mindpath-primary/25">
                         {savingTheme ? <RefreshCw size={18} className="animate-spin"/> : <Save size={18}/>}
                         {savingTheme ? 'Guardando...' : 'Guardar Configuración'}
                     </button>

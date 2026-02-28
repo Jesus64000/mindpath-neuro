@@ -24,11 +24,9 @@ const Login = () => {
     return (
         <div className="flex min-h-screen bg-white">
             
-            {/* PANEL IZQUIERDO: Branding (Basado en el PDF de Mindpath) */}
-            <div className="hidden lg:flex lg:w-[45%] bg-mindpath-dark flex-col justify-center px-16 relative overflow-hidden">
-                {/* Elementos decorativos (simulando los gradientes de fondo) */}
-                <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+            {/* PANEL IZQUIERDO: Branding (Igualado al de Registro) */}
+            <div className="hidden lg:flex lg:w-[45%] bg-mindpath-primary flex-col justify-center px-16 relative overflow-hidden">
+                <div className="absolute inset-0 bg-black/15 z-0"></div>
                 
                 <div className="relative z-10">
                     <h2 className="text-white text-2xl font-bold mb-8 tracking-wide">Mindpath</h2>

@@ -82,10 +82,10 @@ const PatientVideoRoom = () => {
                 <div className="text-center max-w-sm px-6">
                     {/* Icono animado */}
                     <div className="relative mx-auto mb-8 w-28 h-28">
-                        <div className="absolute inset-0 rounded-full bg-purple-600/20 animate-ping" />
-                        <div className="absolute inset-3 rounded-full bg-purple-600/30 animate-ping animation-delay-150" />
-                        <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-slate-800 border-2 border-purple-500/50">
-                            <Wifi size={48} className="text-purple-400" />
+                        <div className="absolute inset-0 rounded-full bg-mindpath-primary/20 animate-ping" />
+                        <div className="absolute inset-3 rounded-full bg-mindpath-primary/30 animate-ping animation-delay-150" />
+                        <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-slate-800 border-2 border-mindpath-primary/50">
+                            <Wifi size={48} className="text-mindpath-primary" />
                         </div>
                     </div>
 
@@ -96,7 +96,7 @@ const PatientVideoRoom = () => {
 
                     {/* Barra animada */}
                     <div className="h-1.5 w-48 mx-auto bg-slate-800 rounded-full overflow-hidden mb-8">
-                        <div className="h-full w-1/2 bg-purple-500 rounded-full animate-[slide_2s_ease-in-out_infinite]" />
+                        <div className="h-full w-1/2 bg-mindpath-light0 rounded-full animate-[slide_2s_ease-in-out_infinite]" />
                     </div>
 
                     {pollError && (

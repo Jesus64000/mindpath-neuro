@@ -148,9 +148,9 @@ const DoctorDashboard = () => {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-mindpath-primary p-7 rounded-[2rem] text-white shadow-xl shadow-purple-200 dark:shadow-purple-900/30">
+                <div className="bg-mindpath-primary p-7 rounded-[2rem] text-white shadow-xl shadow-mindpath-primary dark:shadow-mindpath-primary/30">
                     <TrendingUp className="mb-4 opacity-50" size={30} />
-                    <p className="text-purple-100 text-sm font-medium">Consultas / Semana</p>
+                    <p className="text-gray-400 text-sm font-medium">Consultas / Semana</p>
                     <h3 className="text-4xl font-black">{data?.stats.avgPerWeek}</h3>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 flex items-center justify-between">
@@ -212,7 +212,7 @@ const DoctorDashboard = () => {
                                         onClick={() => setSelectedDate(day)}
                                         className={`p-3 md:p-5 rounded-3xl border-2 text-center transition-all ${
                                             isSelected 
-                                                ? 'border-mindpath-primary bg-purple-50 dark:bg-purple-900/30' 
+                                                ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30' 
                                                 : 'border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-slate-700/30 hover:border-mindpath-primary/50'
                                         }`}
                                     >
@@ -243,7 +243,7 @@ const DoctorDashboard = () => {
                                     {dayAppointments.map((app) => (
                                         <div
                                             key={app.appointment_id}
-                                            className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-100 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3 cursor-pointer hover:border-mindpath-primary/30 dark:hover:border-purple-500/30 transition-all"
+                                            className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-100 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3 cursor-pointer hover:border-mindpath-primary/30 dark:hover:border-mindpath-primary/30 transition-all"
                                             onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}
                                         >
                                             <div>
@@ -314,7 +314,7 @@ const DoctorDashboard = () => {
                             </h3>
                             <div className="space-y-3">
                                 {data?.pending.length > 0 ? data.pending.map(app => (
-                                    <div key={app.id} className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-[1.5rem] border border-transparent hover:border-mindpath-primary dark:hover:border-purple-500/50 transition-all group">
+                                    <div key={app.id} className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-[1.5rem] border border-transparent hover:border-mindpath-primary dark:hover:border-mindpath-primary/50 transition-all group">
                                         <div
                                             className="cursor-pointer"
                                             onClick={() => navigate(`/doctor/appointment/${app.id}`)}
@@ -364,7 +364,7 @@ const DoctorDashboard = () => {
                                     <div
                                         key={`up-${app.id}`}
                                         onClick={() => navigate(`/doctor/appointment/${app.id}`)}
-                                        className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-[1.25rem] border border-gray-100 dark:border-white/10 flex items-center justify-between cursor-pointer hover:border-mindpath-primary/40 dark:hover:border-purple-500/30 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-all group"
+                                        className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-[1.25rem] border border-gray-100 dark:border-white/10 flex items-center justify-between cursor-pointer hover:border-mindpath-primary/40 dark:hover:border-mindpath-primary/30 hover:bg-mindpath-light/30 dark:hover:bg-mindpath-primary/10 transition-all group"
                                     >
                                         <div>
                                             <p className="font-black text-gray-900 dark:text-white group-hover:text-mindpath-primary transition-colors text-sm">{app.patient_name}</p>
@@ -374,7 +374,7 @@ const DoctorDashboard = () => {
                                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}</p>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <span className="text-[10px] font-black text-mindpath-primary bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full border border-purple-100 dark:border-purple-500/30">
+                                            <span className="text-[10px] font-black text-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 px-2 py-1 rounded-full border border-mindpath-light dark:border-mindpath-primary/30">
                                                 {app.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
                                             </span>
                                             <ChevronRight size={14} className="text-gray-300 dark:text-slate-600 group-hover:text-mindpath-primary transition-colors" />

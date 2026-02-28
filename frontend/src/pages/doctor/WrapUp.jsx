@@ -361,14 +361,14 @@ const WrapUp = () => {
                                 {/* Notas privadas */}
                                 <div className="bg-gray-900 p-5 rounded-2xl text-white relative overflow-hidden">
                                     <Lock size={80} className="absolute -right-3 -bottom-3 text-white/5" />
-                                    <p className="text-[10px] font-black text-purple-300 uppercase tracking-widest flex items-center mb-2">
+                                    <p className="text-[10px] font-black text-mindpath-primary uppercase tracking-widest flex items-center mb-2">
                                         <Lock size={12} className="mr-1.5" /> Notas Privadas del Médico
                                     </p>
                                     <p className="text-[10px] text-gray-500 mb-3">Ocultas para el paciente. Solo las verás tú.</p>
                                     <textarea
                                         value={privateNotes}
                                         onChange={(e) => setPrivateNotes(e.target.value)}
-                                        className="w-full h-20 p-3 bg-white/10 rounded-xl text-xs text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-purple-400 relative z-10"
+                                        className="w-full h-20 p-3 bg-white/10 rounded-xl text-xs text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-mindpath-primary relative z-10"
                                         placeholder="Recordatorios, observaciones confidenciales..."
                                     />
                                 </div>

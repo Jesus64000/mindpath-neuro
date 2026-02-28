@@ -117,7 +117,7 @@ const DoctorBooking = () => {
         return (
             <div className="flex items-center justify-center py-24">
                 <div className="text-center animate-pulse">
-                    <div className="h-24 w-24 bg-mindpath-light dark:bg-purple-900/30 rounded-full mx-auto mb-4" />
+                    <div className="h-24 w-24 bg-mindpath-light dark:bg-mindpath-primary/30 rounded-full mx-auto mb-4" />
                     <Activity className="animate-spin text-mindpath-primary mx-auto" size={28} />
                     <p className="text-gray-400 dark:text-slate-500 font-bold mt-3">Cargando perfil del especialista...</p>
                 </div>
@@ -139,7 +139,7 @@ const DoctorBooking = () => {
 
             {/* Perfil del Doctor */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm text-center flex flex-col items-center">
-                <div className="h-24 w-24 bg-mindpath-light dark:bg-purple-900/30 rounded-full flex items-center justify-center text-mindpath-primary text-3xl font-bold border-4 border-white dark:border-slate-700 shadow-md overflow-hidden mb-4">
+                <div className="h-24 w-24 bg-mindpath-light dark:bg-mindpath-primary/30 rounded-full flex items-center justify-center text-mindpath-primary text-3xl font-bold border-4 border-white dark:border-slate-700 shadow-md overflow-hidden mb-4">
                     {avatarSrc
                         ? <img src={avatarSrc} alt="Doctor" className="h-full w-full object-cover" />
                         : doctor.full_name?.charAt(0)
@@ -168,7 +168,7 @@ const DoctorBooking = () => {
                         onClick={() => setModality('virtual')}
                         className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${
                             modality === 'virtual'
-                                ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary'
+                                ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary'
                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-slate-400 hover:border-gray-200 dark:hover:border-white/20'
                         }`}
                     >
@@ -179,7 +179,7 @@ const DoctorBooking = () => {
                         onClick={() => setModality('presencial')}
                         className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${
                             modality === 'presencial'
-                                ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary'
+                                ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary'
                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-slate-400 hover:border-gray-200 dark:hover:border-white/20'
                         }`}
                     >
@@ -265,8 +265,8 @@ const DoctorBooking = () => {
             {/* Resumen y botón de confirmación */}
             {selectedSlot && (
                 <div className="fixed bottom-0 left-0 right-0 md:relative bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-white/10 md:border-none md:bg-transparent p-4 md:p-0 z-50">
-                    <div className="bg-mindpath-light dark:bg-purple-900/30 border border-violet-100 dark:border-purple-500/30 p-4 rounded-2xl mb-4">
-                        <h4 className="font-bold text-mindpath-dark dark:text-white mb-2 text-sm">Resumen de tu hora</h4>
+                    <div className="bg-mindpath-light dark:bg-mindpath-primary/30 border border-mindpath-light dark:border-mindpath-primary/30 p-4 rounded-2xl mb-4">
+                        <h4 className="font-bold text-slate-900 dark:text-white mb-2 text-sm">Resumen de tu hora</h4>
                         <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-slate-300">
                             <span className="flex items-center">
                                 {modality === 'virtual' ? <Video size={15} className="mr-2 text-mindpath-primary" /> : <MapPin size={15} className="mr-2 text-mindpath-primary" />}
@@ -280,7 +280,7 @@ const DoctorBooking = () => {
                     </div>
                     <button
                         onClick={handleBooking}
-                        className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-purple-500/30 transition-colors flex justify-center items-center"
+                        className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-mindpath-primary/30 transition-colors flex justify-center items-center"
                     >
                         CONFIRMAR CITA <ChevronRight size={24} className="ml-1" />
                     </button>

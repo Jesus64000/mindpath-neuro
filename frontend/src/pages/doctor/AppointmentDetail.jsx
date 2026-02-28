@@ -61,7 +61,7 @@ const AppointmentDetail = () => {
         <div className="max-w-lg mx-auto mt-20 p-8 bg-red-50 dark:bg-red-900/20 rounded-3xl text-center">
             <AlertCircle size={40} className="mx-auto text-red-400 mb-4" />
             <p className="font-bold text-red-700 dark:text-red-400">{error}</p>
-            <button onClick={() => navigate(-1)} className="mt-4 text-sm text-mindpath-primary dark:text-purple-400 font-bold hover:underline">
+            <button onClick={() => navigate(-1)} className="mt-4 text-sm text-mindpath-primary dark:text-mindpath-primary font-bold hover:underline">
                 ← Volver a la agenda
             </button>
         </div>
@@ -113,7 +113,7 @@ const AppointmentDetail = () => {
                     )}
                     {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'virtual' && (
                         <button onClick={() => navigate(`/doctor/video-room/${id}`)}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black rounded-2xl shadow-lg shadow-purple-100 transition-all">
+                            className="flex items-center gap-2 px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black rounded-2xl shadow-lg shadow-mindpath-primary transition-all">
                             <Video size={20}/> INICIAR LLAMADA
                         </button>
                     )}
@@ -141,7 +141,7 @@ const AppointmentDetail = () => {
                                 <img src={avatarSrc} alt={patient.full_name}
                                     className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow" />
                             ) : (
-                                <div className="w-16 h-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-2xl font-black text-mindpath-primary dark:text-purple-400 border-4 border-white dark:border-slate-800 shadow">
+                                <div className="w-16 h-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-2xl font-black text-mindpath-primary dark:text-mindpath-primary border-4 border-white dark:border-slate-800 shadow">
                                     {patient.full_name?.[0] || 'P'}
                                 </div>
                             )}
@@ -198,8 +198,8 @@ const AppointmentDetail = () => {
                             </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
-                            <div className="w-8 h-8 bg-purple-50 dark:bg-purple-900/40 rounded-xl flex items-center justify-center">
-                                <Clock size={15} className="text-purple-500 dark:text-purple-400"/>
+                            <div className="w-8 h-8 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-xl flex items-center justify-center">
+                                <Clock size={15} className="text-gray-4000 dark:text-mindpath-primary"/>
                             </div>
                             <span className="font-bold text-gray-700 dark:text-slate-300">
                                 {appt.start_time?.slice(0, 5)}
@@ -288,7 +288,7 @@ const AppointmentDetail = () => {
                                                     {h.consultation_id && (
                                                         <button
                                                             onClick={() => navigate(`/doctor/wrap-up/${h.appt_id}`)}
-                                                            className="text-xs font-bold text-mindpath-primary dark:text-purple-400 hover:underline flex items-center gap-1 mt-2">
+                                                            className="text-xs font-bold text-mindpath-primary dark:text-mindpath-primary hover:underline flex items-center gap-1 mt-2">
                                                             <FileText size={13}/> Ver informe completo
                                                         </button>
                                                     )}

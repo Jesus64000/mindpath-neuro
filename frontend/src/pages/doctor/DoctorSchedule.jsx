@@ -187,7 +187,7 @@ const DoctorSchedule = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Agenda Médica</h1>
                     <p className="text-gray-500 dark:text-slate-400 mt-1">Calendario mensual y citas del día.</p>
                 </div>
-                <div className="bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-violet-100 dark:border-purple-500/30 flex items-center text-sm">
+                <div className="bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-mindpath-light dark:border-mindpath-primary/30 flex items-center text-sm">
                     <CalendarIcon size={18} className="mr-2" />
                     Hoy: {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </div>
@@ -201,7 +201,7 @@ const DoctorSchedule = () => {
                     onClick={() => setActiveTab('appointments')}
                     className={`pb-4 px-6 font-bold text-sm transition-colors flex items-center border-b-2 ${
                         activeTab === 'appointments'
-                            ? 'border-mindpath-primary text-mindpath-primary dark:text-purple-400'
+                            ? 'border-mindpath-primary text-mindpath-primary dark:text-mindpath-primary'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
@@ -211,7 +211,7 @@ const DoctorSchedule = () => {
                     onClick={() => setActiveTab('availability')}
                     className={`pb-4 px-6 font-bold text-sm transition-colors flex items-center border-b-2 ${
                         activeTab === 'availability'
-                            ? 'border-mindpath-primary text-mindpath-primary dark:text-purple-400'
+                            ? 'border-mindpath-primary text-mindpath-primary dark:text-mindpath-primary'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
@@ -272,7 +272,7 @@ const DoctorSchedule = () => {
                                             onClick={() => setSelectedDate(day)}
                                             className={`p-2 rounded-xl border text-sm transition-all text-center ${
                                                 isSelected
-                                                    ? 'border-mindpath-primary bg-purple-50 dark:bg-purple-900/40'
+                                                    ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/40'
                                                     : 'border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-slate-700/30 hover:border-mindpath-primary/50'
                                             } ${isToday ? 'ring-1 ring-mindpath-primary/40' : ''}`}
                                         >
@@ -310,7 +310,7 @@ const DoctorSchedule = () => {
                                     return (
                                         <div
                                             key={app.appointment_id}
-                                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:shadow-md dark:hover:border-purple-500/20 transition-all"
+                                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:shadow-md dark:hover:border-mindpath-primary/20 transition-all"
                                         >
                                             {/* Info paciente */}
                                             <div className="flex items-center w-full md:w-auto">
@@ -460,13 +460,13 @@ const DoctorSchedule = () => {
                                         </label>
                                     </div>
                                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                                        El sistema dividirá automáticamente esta franja en ranuras de <span className="font-bold text-mindpath-primary dark:text-purple-400">{formSchedule.slot_duration} minutos</span>.
+                                        El sistema dividirá automáticamente esta franja en ranuras de <span className="font-bold text-mindpath-primary dark:text-mindpath-primary">{formSchedule.slot_duration} minutos</span>.
                                     </p>
                                 </div>
 
                                 <button 
                                     type="submit"
-                                    className="w-full mt-4 py-3.5 bg-mindpath-primary text-white font-bold rounded-2xl flex justify-center items-center hover:bg-mindpath-primaryHover transition-all shadow-md shadow-purple-500/20"
+                                    className="w-full mt-4 py-3.5 bg-mindpath-primary text-white font-bold rounded-2xl flex justify-center items-center hover:bg-mindpath-primaryHover transition-all shadow-md shadow-mindpath-primary/20"
                                 >
                                     <Plus size={18} className="mr-2" /> Agregar Franja Horaria
                                 </button>
@@ -488,7 +488,7 @@ const DoctorSchedule = () => {
                                         return (
                                             <div key={dayKey} className="bg-gray-50 dark:bg-slate-700/30 p-4 rounded-2xl border border-gray-100 dark:border-white/5">
                                                 <h4 className="font-black text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-white/10 uppercase">
-                                                    <CalendarIcon size={14} className="text-mindpath-primary dark:text-purple-400" /> {dayLabels[dayKey]}
+                                                    <CalendarIcon size={14} className="text-mindpath-primary dark:text-mindpath-primary" /> {dayLabels[dayKey]}
                                                 </h4>
                                                 <div className="space-y-2">
                                                     {daySchedules.map(slot => (
@@ -497,7 +497,7 @@ const DoctorSchedule = () => {
                                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
                                                                     {slot.start_time.substring(0, 5)} - {slot.end_time.substring(0, 5)}
                                                                 </span>
-                                                                <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-mindpath-primary dark:text-purple-400 px-2.5 py-1 rounded-md font-bold">
+                                                                <span className="text-xs bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary dark:text-mindpath-primary px-2.5 py-1 rounded-md font-bold">
                                                                     {slot.slot_duration} min
                                                                 </span>
                                                             </div>

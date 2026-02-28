@@ -64,7 +64,7 @@ const ScheduleManager = () => {
 
     return (
         <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-            <h3 className="text-xl font-bold text-mindpath-dark mb-6 flex items-center">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
                 <Clock className="text-mindpath-primary mr-2" />
                 Mi Disponibilidad
             </h3>
@@ -125,9 +125,9 @@ const ScheduleManager = () => {
                 ) : schedules.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {schedules.map((schedule) => (
-                            <div key={schedule.id} className="flex justify-between items-center p-4 bg-mindpath-light border border-violet-100 rounded-2xl">
+                            <div key={schedule.id} className="flex justify-between items-center p-4 bg-mindpath-light border border-mindpath-light rounded-2xl">
                                 <div>
-                                    <p className="font-bold text-mindpath-dark">{dayTranslations[schedule.day_of_week]}</p>
+                                    <p className="font-bold text-slate-900">{dayTranslations[schedule.day_of_week]}</p>
                                     <p className="text-sm text-mindpath-primary font-medium">
                                         {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                                     </p>

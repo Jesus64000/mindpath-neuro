@@ -59,7 +59,7 @@ const ReportEditor = () => {
 
             {/* Editor de Texto */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-mindpath-dark px-6 py-4 flex items-center justify-between">
+                <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                     <h3 className="text-white font-bold flex items-center">
                         <FileText size={18} className="mr-2 text-mindpath-primary" />
                         Informe de Consulta Neurológica
@@ -102,7 +102,7 @@ const ReportEditor = () => {
                         </label>
                         <div className="relative">
                             <textarea 
-                                className="w-full bg-violet-50/50 border border-violet-200 rounded-2xl p-4 text-gray-700 focus:ring-2 focus:ring-mindpath-primary outline-none min-h-[100px]"
+                                className="w-full bg-mindpath-light/50 border border-mindpath-primary rounded-2xl p-4 text-gray-700 focus:ring-2 focus:ring-mindpath-primary outline-none min-h-[100px]"
                                 value={report.treatment_plan}
                                 onChange={(e) => setReport({...report, treatment_plan: e.target.value})}
                             />

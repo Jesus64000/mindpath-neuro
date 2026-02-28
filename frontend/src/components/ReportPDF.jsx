@@ -207,7 +207,7 @@ export const PDFExportButton = ({ report, header, className = '' }) => {
             {({ loading }) => (
                 <button
                     disabled={loading}
-                    className={`flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-colors ${className}`}
+                    className={`flex items-center gap-2 px-4 py-2 bg-mindpath-primary hover:bg-mindpath-primary disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-colors ${className}`}
                 >
                     {loading ? (
                         <><span className="animate-spin">⏳</span> Generando…</>

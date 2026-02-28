@@ -207,8 +207,8 @@ const PatientFile = () => {
         <div className="max-w-6xl mx-auto pb-12 space-y-6">
 
             {/* ── HEADER ──────────────────────────────────────────────────── */}
-            <div className="bg-mindpath-dark dark:bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden border border-white/5">
-                <div className="absolute top-0 right-0 w-56 h-56 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
+            <div className="bg-slate-900 dark:bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden border border-white/5">
+                <div className="absolute top-0 right-0 w-56 h-56 bg-mindpath-light0 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
                 <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {avatarSrc ? (
                         <img src={avatarSrc} alt={info.full_name}
@@ -220,7 +220,7 @@ const PatientFile = () => {
                     )}
                     <div className="flex-1">
                         <h1 className="text-3xl font-black">{info.full_name}</h1>
-                        <p className="text-purple-200 text-sm mt-1">{info.email}</p>
+                        <p className="text-mindpath-primary text-sm mt-1">{info.email}</p>
                         <div className="flex flex-wrap gap-2 mt-3">
                             {age !== null && (
                                 <span className="bg-white/10 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -236,7 +236,7 @@ const PatientFile = () => {
                                 {history.length} consulta{history.length !== 1 ? 's' : ''}
                             </span>
                             {upcoming.length > 0 && (
-                                <span className="bg-purple-400/30 text-purple-100 text-xs font-bold px-3 py-1 rounded-full border border-purple-400/30">
+                                <span className="bg-mindpath-primary/30 text-gray-400 text-xs font-bold px-3 py-1 rounded-full border border-mindpath-primary/30">
                                     {upcoming.length} cita{upcoming.length !== 1 ? 's' : ''} próxima{upcoming.length !== 1 ? 's' : ''}
                                 </span>
                             )}
@@ -323,7 +323,7 @@ const PatientFile = () => {
                     {/* Botón agendar */}
                     <button
                         onClick={() => setShowScheduleModal(true)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-2xl transition-colors shadow-sm shadow-purple-200 text-sm"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-2xl transition-colors shadow-sm shadow-mindpath-primary text-sm"
                     >
                         <CalendarPlus size={16} />
                         Agendar nueva cita
@@ -421,7 +421,7 @@ const PatientFile = () => {
                                             </div>
                                             <div className="flex items-center gap-3 shrink-0">
                                                 {h.diagnostico && (
-                                                    <span className="hidden md:inline-block bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold max-w-[160px] truncate">
+                                                    <span className="hidden md:inline-block bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary dark:text-mindpath-primary px-3 py-1 rounded-full text-xs font-bold max-w-[160px] truncate">
                                                         {h.diagnostico}
                                                     </span>
                                                 )}
@@ -463,7 +463,7 @@ const PatientFile = () => {
                                                         )}
                                                         {h.private_notes && (
                                                             <div className="bg-gray-900 dark:bg-black/40 text-white p-4 rounded-2xl border border-white/10">
-                                                                <p className="text-[10px] font-black text-purple-300 uppercase flex items-center mb-1">
+                                                                <p className="text-[10px] font-black text-mindpath-primary uppercase flex items-center mb-1">
                                                                     <Lock size={11} className="mr-1" /> Notas Privadas
                                                                 </p>
                                                                 <p className="text-gray-300 text-xs italic">{h.private_notes}</p>
@@ -517,10 +517,10 @@ const PatientFile = () => {
                                     <div
                                         key={appt.appointment_id}
                                         onClick={() => navigate(`/doctor/appointment/${appt.appointment_id}`)}
-                                        className="bg-white dark:bg-slate-800 p-5 rounded-[1.75rem] border border-gray-100 dark:border-white/10 shadow-sm flex items-center justify-between cursor-pointer hover:border-mindpath-primary/30 dark:hover:border-purple-500/30 hover:shadow-md transition-all group"
+                                        className="bg-white dark:bg-slate-800 p-5 rounded-[1.75rem] border border-gray-100 dark:border-white/10 shadow-sm flex items-center justify-between cursor-pointer hover:border-mindpath-primary/30 dark:hover:border-mindpath-primary/30 hover:shadow-md transition-all group"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-mindpath-light dark:bg-purple-900/30 rounded-2xl flex flex-col items-center justify-center shrink-0">
+                                            <div className="w-14 h-14 bg-mindpath-light dark:bg-mindpath-primary/30 rounded-2xl flex flex-col items-center justify-center shrink-0">
                                                 <span className="text-xs font-black text-mindpath-primary uppercase">
                                                     {new Date(appt.appointment_date).toLocaleDateString('es-ES', { month: 'short' })}
                                                 </span>
@@ -577,14 +577,14 @@ const PatientFile = () => {
                             <div className="grid grid-cols-2 gap-3 mb-6">
                                 <button 
                                     onClick={() => setModality('virtual')}
-                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'virtual' ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'virtual' ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
                                 >
                                     <Video size={24} className="mb-2" />
                                     <span className="font-bold text-sm">Telemedicina</span>
                                 </button>
                                 <button 
                                     onClick={() => setModality('presencial')}
-                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'presencial' ? 'border-mindpath-primary bg-mindpath-light dark:bg-purple-900/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${modality === 'presencial' ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary' : 'border-gray-100 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-200'}`}
                                 >
                                     <MapPin size={24} className="mb-2" />
                                     <span className="font-bold text-sm">Presencial</span>
@@ -632,7 +632,7 @@ const PatientFile = () => {
                                                             aspect-square flex items-center justify-center rounded-xl text-sm font-bold transition-all
                                                             ${dayObj.isPast ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : ''}
                                                             ${!dayObj.isPast && !isSelected ? 'text-gray-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 hover:shadow-sm' : ''}
-                                                            ${isSelected ? 'bg-mindpath-primary text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30 ring-2 ring-mindpath-primary ring-offset-2 dark:ring-offset-slate-800' : ''}
+                                                            ${isSelected ? 'bg-mindpath-primary text-white shadow-md shadow-mindpath-primary dark:shadow-mindpath-primary/30 ring-2 ring-mindpath-primary ring-offset-2 dark:ring-offset-slate-800' : ''}
                                                         `}
                                                     >
                                                         {dayObj.dayNum}
@@ -679,7 +679,7 @@ const PatientFile = () => {
                             <button 
                                 onClick={handleBooking}
                                 disabled={!selectedSlot}
-                                className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:text-gray-500 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-purple-500/30 transition-all flex justify-center items-center"
+                                className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:text-gray-500 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-mindpath-primary/30 transition-all flex justify-center items-center"
                             >
                                 Confirmar Agendamiento <ChevronRight size={20} className="ml-1" />
                             </button>

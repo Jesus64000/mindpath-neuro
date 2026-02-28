@@ -99,21 +99,21 @@ const AILab = () => {
                 </button>
             </div>
             {report && (
-                <div className="bg-mindpath-dark p-8 rounded-[2rem] shadow-xl text-white animate-fade-in space-y-6">
-                    <h2 className="text-2xl font-black flex items-center gap-2 text-purple-200">
+                <div className="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white animate-fade-in space-y-6">
+                    <h2 className="text-2xl font-black flex items-center gap-2 text-mindpath-primary">
                         <CheckCircle className="text-green-400"/> Informe Generado por IA
                     </h2>
                     <div className="space-y-4">
                         <div className="bg-white/10 p-4 rounded-xl">
-                            <h3 className="text-xs font-black text-purple-300 uppercase tracking-widest mb-2">Motivo y Antecedentes</h3>
+                            <h3 className="text-xs font-black text-mindpath-primary uppercase tracking-widest mb-2">Motivo y Antecedentes</h3>
                             <p className="text-gray-200 text-sm leading-relaxed">{report.antecedentes}</p>
                         </div>
                         <div className="bg-white/10 p-4 rounded-xl">
-                            <h3 className="text-xs font-black text-purple-300 uppercase tracking-widest mb-2">Hallazgos Neurológicos</h3>
+                            <h3 className="text-xs font-black text-mindpath-primary uppercase tracking-widest mb-2">Hallazgos Neurológicos</h3>
                             <p className="text-gray-200 text-sm leading-relaxed">{report.hallazgos}</p>
                         </div>
                         <div className="bg-white/10 p-4 rounded-xl">
-                            <h3 className="text-xs font-black text-purple-300 uppercase tracking-widest mb-2">Plan Terapéutico</h3>
+                            <h3 className="text-xs font-black text-mindpath-primary uppercase tracking-widest mb-2">Plan Terapéutico</h3>
                             <p className="text-gray-200 text-sm leading-relaxed">{report.plan}</p>
                         </div>
                     </div>

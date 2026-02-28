@@ -79,7 +79,7 @@ const DoctorStats = () => {
                 </div>
                 <button
                     onClick={() => navigate('/doctor/dashboard')}
-                    className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-mindpath-primary dark:hover:text-purple-400 transition-colors"
+                    className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-mindpath-primary dark:hover:text-mindpath-primary transition-colors"
                 >
                     <ChevronLeft size={16}/> Dashboard
                 </button>
@@ -94,7 +94,7 @@ const DoctorStats = () => {
                     },
                     {
                         label: 'Pac. Únicos', value: data.uniquePatients, icon: Users,
-                        color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-500 dark:text-purple-400'
+                        color: 'bg-mindpath-light dark:bg-mindpath-primary/30 text-gray-4000 dark:text-mindpath-primary'
                     },
                     {
                         label: 'Completadas', value: completed, icon: Award,
@@ -188,7 +188,7 @@ const DoctorStats = () => {
                         <div className="space-y-3">
                             {[
                                 { label: 'Pacientes Nuevos', value: data.retention.new_patients || 0, color: 'bg-blue-400' },
-                                { label: 'Recurrentes',      value: data.retention.recurrent_patients || 0, color: 'bg-purple-500' },
+                                { label: 'Recurrentes',      value: data.retention.recurrent_patients || 0, color: 'bg-mindpath-light0' },
                             ].map(({ label, value, color }) => {
                                 const total2 = (data.retention.new_patients || 0) + (data.retention.recurrent_patients || 0) || 1;
                                 const pct = Math.round((value / total2) * 100);

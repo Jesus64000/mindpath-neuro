@@ -28,7 +28,7 @@ const DoctorCard = ({ doctor }) => {
         >
             <div className="flex items-start gap-4 mb-4">
                 {/* Foto del Doctor */}
-                <div className="h-16 w-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-mindpath-primary dark:text-purple-400 text-xl font-bold border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden shrink-0">
+                <div className="h-16 w-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-mindpath-primary dark:text-mindpath-primary text-xl font-bold border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden shrink-0">
                     {doctor.profile_picture ? (
                         <img src={doctor.profile_picture} alt={doctor.full_name} className="h-full w-full object-cover" />
                     ) : (
@@ -38,10 +38,10 @@ const DoctorCard = ({ doctor }) => {
                 
                 {/* Info Básica */}
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-mindpath-primary dark:group-hover:text-purple-400 transition-colors">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-mindpath-primary dark:group-hover:text-mindpath-primary transition-colors">
                         Dr(a). {doctor.full_name.split(' ').slice(-1).join(' ')}
                     </h3>
-                    <p className="text-sm font-medium text-mindpath-primary dark:text-purple-400">{doctor.specialty}</p>
+                    <p className="text-sm font-medium text-mindpath-primary dark:text-mindpath-primary">{doctor.specialty}</p>
                     <MiniStars rating={doctor.avg_rating} count={doctor.rating_count} />
                 </div>
             </div>
@@ -57,7 +57,7 @@ const DoctorCard = ({ doctor }) => {
             </div>
 
             {/* Botón de acción */}
-            <div className="mt-4 flex items-center text-sm font-bold text-mindpath-primary dark:text-purple-400 opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="mt-4 flex items-center text-sm font-bold text-mindpath-primary dark:text-mindpath-primary opacity-80 group-hover:opacity-100 transition-opacity">
                 Ver perfil y agendar <ChevronRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
             </div>
         </div>

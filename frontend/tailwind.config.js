@@ -10,8 +10,8 @@ export default {
       colors: {
         mindpath: {
           dark:         'var(--color-dark, #1E1B4B)',
-          primary:      'var(--color-primary, #6D28D9)',
-          primaryHover: 'var(--color-primary-hover, #5B21B6)',
+          primary:      'rgb(var(--color-primary-rgb, 109 40 217) / <alpha-value>)',
+          primaryHover: 'rgb(var(--color-primary-hover-rgb, 91 33 182) / <alpha-value>)',
           light:        'var(--color-light, #F5F3FF)',
         }
       },

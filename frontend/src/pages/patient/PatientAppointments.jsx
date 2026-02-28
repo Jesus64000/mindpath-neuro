@@ -217,7 +217,7 @@ const PatientAppointments = () => {
                                             isToday ? (
                                                 <button
                                                     onClick={() => handleJoinVideoCall(app.appointment_id)}
-                                                    className="w-full md:w-auto px-6 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center justify-center transition-all shadow-md shadow-purple-500/20 hover:scale-105">
+                                                    className="w-full md:w-auto px-6 py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center justify-center transition-all shadow-md shadow-mindpath-primary/20 hover:scale-105">
                                                     <Video size={18} className="mr-2 animate-pulse" />
                                                     Entrar a Consulta
                                                 </button>
@@ -288,8 +288,8 @@ const PatientAppointments = () => {
                         </div>
 
                         <div className="space-y-5">
-                            <div className="bg-purple-50 dark:bg-violet-900/20 border border-purple-100 dark:border-violet-500/30 p-4 rounded-2xl">
-                                <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Diagnóstico</p>
+                            <div className="bg-mindpath-light dark:bg-mindpath-primary/20 border border-mindpath-light dark:border-mindpath-primary/30 p-4 rounded-2xl">
+                                <p className="text-[10px] font-black text-gray-4000 uppercase tracking-widest mb-1">Diagnóstico</p>
                                 <p className="font-bold text-gray-900 dark:text-white">{selectedReport.diagnostico || 'No especificado'}</p>
                             </div>
                             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/30 p-4 rounded-2xl">

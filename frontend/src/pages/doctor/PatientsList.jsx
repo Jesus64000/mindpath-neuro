@@ -34,7 +34,7 @@ const PatientsList = () => {
             {/* Header */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-mindpath-light dark:bg-purple-900/40 rounded-xl flex items-center justify-center text-mindpath-primary">
+                    <div className="h-10 w-10 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-xl flex items-center justify-center text-mindpath-primary">
                         <Users size={22} />
                     </div>
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white">Mis Pacientes</h1>
@@ -72,7 +72,7 @@ const PatientsList = () => {
                             >
                                 <td className="p-5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-mindpath-light dark:bg-purple-900/40 rounded-full flex items-center justify-center text-mindpath-primary font-bold shrink-0">
+                                        <div className="w-10 h-10 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-full flex items-center justify-center text-mindpath-primary font-bold shrink-0">
                                             {p.full_name ? p.full_name[0].toUpperCase() : <User size={16} />}
                                         </div>
                                         <span className="font-bold text-gray-800 dark:text-white">{p.full_name}</span>

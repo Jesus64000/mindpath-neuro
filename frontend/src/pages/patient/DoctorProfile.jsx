@@ -322,7 +322,7 @@ const DoctorProfile = () => {
                             <button 
                                 onClick={handleBooking}
                                 disabled={!selectedSlot}
-                                className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-purple-500/30 transition-all flex justify-center items-center"
+                                className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-mindpath-primary/30 transition-all flex justify-center items-center"
                             >
                                 Confirmar Cita <ChevronRight size={20} className="ml-1" />
                             </button>

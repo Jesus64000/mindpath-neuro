@@ -234,9 +234,9 @@ const Register = () => {
             <div className="hidden lg:flex w-1/2 bg-mindpath-primary flex-col justify-center items-center p-12 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/15 z-0"></div>
                 <div className="z-10 text-center text-white">
-                    <Stethoscope size={80} className="mx-auto mb-6 text-purple-200" />
+                    <Stethoscope size={80} className="mx-auto mb-6 text-mindpath-primary" />
                     <h2 className="text-4xl font-bold mb-4">El futuro de la clínica</h2>
-                    <p className="text-lg text-purple-100 max-w-md mx-auto">
+                    <p className="text-lg text-gray-400 max-w-md mx-auto">
                         Únete a la red de profesionales y pacientes que están transformando las consultas gracias al poder de la Inteligencia Artificial.
                     </p>
                 </div>

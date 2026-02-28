@@ -35,7 +35,7 @@ const MyHistory = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-violet-600" />
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-mindpath-primary" />
             </div>
         );
     }
@@ -44,8 +44,8 @@ const MyHistory = () => {
         <div className="p-6 max-w-4xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                    <Activity size={22} className="text-violet-600 dark:text-violet-400" />
+                <div className="w-12 h-12 rounded-2xl bg-mindpath-light dark:bg-mindpath-primary/30 flex items-center justify-center">
+                    <Activity size={22} className="text-mindpath-primary dark:text-mindpath-primary" />
                 </div>
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 dark:text-white">Mi Historial Clínico</h1>
@@ -81,15 +81,15 @@ const MyHistory = () => {
                             <button
                                 onClick={() => toggle(rec.appointment_id)}
                                 className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                                    <Stethoscope size={22} className="text-violet-600 dark:text-violet-400" />
+                                <div className="w-12 h-12 rounded-xl bg-mindpath-light dark:bg-mindpath-primary/30 flex items-center justify-center shrink-0">
+                                    <Stethoscope size={22} className="text-mindpath-primary dark:text-mindpath-primary" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <p className="font-black text-gray-900 dark:text-white text-sm">
                                             {rec.doctor_name}
                                         </p>
-                                        <span className="text-xs px-2 py-0.5 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 rounded-full font-medium">
+                                        <span className="text-xs px-2 py-0.5 bg-mindpath-light dark:bg-mindpath-primary/40 text-mindpath-primary dark:text-mindpath-primary rounded-full font-medium">
                                             {rec.specialty}
                                         </span>
                                     </div>
@@ -126,9 +126,9 @@ const MyHistory = () => {
                                                 { label: 'Estudios / Observaciones', value: rec.estudios_observaciones },
                                             ].filter(f => f.value).map(field => (
                                                 <div key={field.label}
-                                                    className={`bg-white dark:bg-slate-700/60 rounded-xl p-4 border border-gray-100 dark:border-white/10 ${field.bold ? 'sm:col-span-2 border-violet-200 dark:border-violet-500/30 bg-violet-50/50 dark:bg-violet-900/30' : ''}`}>
+                                                    className={`bg-white dark:bg-slate-700/60 rounded-xl p-4 border border-gray-100 dark:border-white/10 ${field.bold ? 'sm:col-span-2 border-mindpath-primary dark:border-mindpath-primary/30 bg-mindpath-light/50 dark:bg-mindpath-primary/30' : ''}`}>
                                                     <p className="text-xs font-black uppercase text-gray-400 dark:text-slate-400 mb-1">{field.label}</p>
-                                                    <p className={`text-sm text-gray-800 dark:text-slate-200 leading-relaxed ${field.bold ? 'font-bold text-violet-700 dark:text-violet-300' : ''}`}>
+                                                    <p className={`text-sm text-gray-800 dark:text-slate-200 leading-relaxed ${field.bold ? 'font-bold text-mindpath-primary dark:text-mindpath-primary' : ''}`}>
                                                         {field.value}
                                                     </p>
                                                 </div>
@@ -148,7 +148,7 @@ const MyHistory = () => {
                                             ) : (
                                                 <button
                                                     onClick={() => navigate('/patient/appointments')}
-                                                    className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 font-bold hover:underline">
+                                                    className="flex items-center gap-1 text-xs text-mindpath-primary dark:text-mindpath-primary font-bold hover:underline">
                                                     <Star size={13} /> Valorar esta consulta
                                                 </button>
                                             )}
