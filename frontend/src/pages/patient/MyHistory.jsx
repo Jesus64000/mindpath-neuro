@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import {
-    FileText, Calendar, Star, ChevronDown, ChevronUp,
-    Activity, BrainCircuit, Stethoscope
-} from 'lucide-react';
+import { FileText, Calendar, Download, ChevronDown, ChevronUp, Stethoscope, Star, Activity } from 'lucide-react';
+import Avatar from '../../components/ui/Avatar';
 
 const StarDisplay = ({ rating }) => (
     <div className="flex items-center gap-0.5">
@@ -81,8 +79,8 @@ const MyHistory = () => {
                             <button
                                 onClick={() => toggle(rec.appointment_id)}
                                 className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                <div className="w-12 h-12 rounded-xl bg-mindpath-light dark:bg-mindpath-primary/30 flex items-center justify-center shrink-0">
-                                    <Stethoscope size={22} className="text-mindpath-primary dark:text-mindpath-primary" />
+                                <div className="shrink-0">
+                                    <Avatar fullName={rec.doctor_name} profilePictureUrl={rec.profile_picture} size="12" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">

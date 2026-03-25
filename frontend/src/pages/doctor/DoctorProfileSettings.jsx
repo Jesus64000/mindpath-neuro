@@ -4,6 +4,7 @@ import {
     User, MapPin, Award, BookOpen, Save, Camera, CheckCircle,
     GraduationCap, Building2, AlertCircle, ChevronDown, Globe
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const BACKEND_URL = 'http://localhost:3000';
 
@@ -14,6 +15,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const DoctorProfileSettings = () => {
+    const { updateUser } = useAuthStore();
     const [formData, setFormData] = useState({
         full_name: '', specialty: '', bio: '', clinic_name: '',
         clinic_address: '', license_number: '', experience_years: '',
@@ -72,6 +74,7 @@ const DoctorProfileSettings = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setProfilePicture(res.data.url);
+            updateUser({ profile_picture: res.data.url });
         } catch (err) {
             setUploadError(err.response?.data?.message || 'Error al subir la foto.');
             setPreview(null);

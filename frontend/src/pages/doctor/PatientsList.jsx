@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { User, Search, ChevronRight, Users } from 'lucide-react';
+import Avatar from '../../components/ui/Avatar';
 
 const PatientsList = () => {
     const [patients, setPatients] = useState([]);
@@ -72,9 +73,7 @@ const PatientsList = () => {
                             >
                                 <td className="p-5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-full flex items-center justify-center text-mindpath-primary font-bold shrink-0">
-                                            {p.full_name ? p.full_name[0].toUpperCase() : <User size={16} />}
-                                        </div>
+                                        <Avatar fullName={p.full_name} profilePictureUrl={p.profile_picture} size="10" />
                                         <span className="font-bold text-gray-800 dark:text-white">{p.full_name}</span>
                                     </div>
                                 </td>

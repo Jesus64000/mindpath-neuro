@@ -1,17 +1,36 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import useSettingsStore from '../store/useSettingsStore';
 import {
     LayoutDashboard, Calendar, Users, Settings, LogOut,
     BrainCircuit, Sun, Moon, ShieldCheck, FileText, BarChart3
 } from 'lucide-react';
-
+import Avatar from '../components/ui/Avatar';
+import api from '../api/axiosConfig';
 
 const DashboardLayout = () => {
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateUser } = useAuthStore();
     const { clinicName, logoUrl } = useSettingsStore();
     const location = useLocation();
+
+    // Sincronizar foto de perfil (por si el token quedó desactualizado en caché)
+    useEffect(() => {
+        if (!user || !updateUser) return;
+        if (user.role === 'patient') {
+            api.get('/patients/profile').then(res => {
+                if (res.data.profile_picture && res.data.profile_picture !== user.profile_picture) {
+                    updateUser({ profile_picture: res.data.profile_picture });
+                }
+            }).catch(() => {});
+        } else if (user.role === 'doctor') {
+            api.get('/doctors/profile/settings').then(res => {
+                if (res.data.profile_picture && res.data.profile_picture !== user.profile_picture) {
+                    updateUser({ profile_picture: res.data.profile_picture });
+                }
+            }).catch(() => {});
+        }
+    }, [user?.id, user?.role]);
 
     // ── Dark Mode ──────────────────────────────────────────────────────────────
     const [isDark, setIsDark] = useState(
@@ -146,15 +165,17 @@ const DashboardLayout = () => {
                     <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {menuItems.find(i => location.pathname.startsWith(i.path))?.name || 'Dashboard'}
                     </h2>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <div className="flex flex-col items-end">
-                            <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                            <span className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {user?.full_name}
                             </span>
-                            <span className="text-xs text-mindpath-primary capitalize">{user?.role}</span>
+                            <span className="text-[10px] font-bold text-mindpath-primary uppercase tracking-widest bg-mindpath-light/50 px-2 py-0.5 rounded-full mt-0.5">
+                                {{ patient: 'Paciente', doctor: 'Especialista', admin: 'Administrador', supervisor: 'Supervisor' }[user?.role] || user?.role}
+                            </span>
                         </div>
-                        <div className="h-9 w-9 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary font-bold border border-mindpath-light">
-                            {user?.full_name?.charAt(0).toUpperCase()}
+                        <div className="shrink-0">
+                            <Avatar fullName={user?.full_name} profilePictureUrl={user?.profile_picture} size="12" />
                         </div>
                     </div>
                 </header>

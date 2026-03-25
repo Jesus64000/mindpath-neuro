@@ -1,5 +1,6 @@
 import { Star, MapPin, Video, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Avatar from './ui/Avatar';
 
 // Mini display de estrellas
 const MiniStars = ({ rating, count }) => {
@@ -28,13 +29,8 @@ const DoctorCard = ({ doctor }) => {
         >
             <div className="flex items-start gap-4 mb-4">
                 {/* Foto del Doctor */}
-                <div className="h-16 w-16 bg-mindpath-light dark:bg-slate-700 rounded-full flex items-center justify-center text-mindpath-primary dark:text-mindpath-primary text-xl font-bold border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden shrink-0">
-                    {doctor.profile_picture ? (
-                        <img src={doctor.profile_picture} alt={doctor.full_name} className="h-full w-full object-cover" />
-                    ) : (
-                        doctor.full_name.charAt(0)
-                    )}
-                </div>
+                <Avatar fullName={doctor.full_name} profilePictureUrl={doctor.profile_picture} size="16" />
+
                 
                 {/* Info Básica */}
                 <div>

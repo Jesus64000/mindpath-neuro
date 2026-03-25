@@ -24,7 +24,7 @@ const Login = () => {
     return (
         <div className="flex min-h-screen bg-white">
             
-            {/* PANEL IZQUIERDO: Branding (Igualado al de Registro) */}
+            {/* PANEL IZQUIERDO: Branding */}
             <div className="hidden lg:flex lg:w-[45%] bg-mindpath-primary flex-col justify-center px-16 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/15 z-0"></div>
                 
@@ -58,7 +58,7 @@ const Login = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Input Correo */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Mail size={18} className="text-gray-400" />
@@ -67,8 +67,8 @@ const Login = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
-                                    placeholder="dr.perez@mindpath.com"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
+                                    placeholder="ejemplo@correo.com"
                                     required
                                 />
                             </div>
@@ -76,7 +76,7 @@ const Login = () => {
 
                         {/* Input Contraseña */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Contraseña</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock size={18} className="text-gray-400" />
@@ -85,11 +85,12 @@ const Login = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm tracking-widest"
-                                    placeholder="••••••••"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
+                                    placeholder="Ingresa tu contraseña"
                                     required
                                 />
                             </div>
+                            <p className="text-xs text-gray-400 mt-2">Mínimo 6 caracteres.</p>
                         </div>
 
                         {/* Recordarme y Olvidaste contraseña */}
@@ -115,38 +116,30 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-medium py-2.5 px-4 rounded-xl transition-colors disabled:opacity-70 mt-4 text-sm"
+                            className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-70 mt-4 text-sm"
                         >
                             {isLoading ? 'Verificando...' : 'Iniciar sesión'}
                         </button>
                     </form>
 
-                    {/* Divisor */}
+                    {/* Botones Sociales (Comentados temporalmente) */}
+                    {/* 
                     <div className="mt-8 flex items-center justify-center">
                         <div className="border-t border-gray-200 flex-grow"></div>
                         <span className="px-3 text-sm text-gray-500 bg-white">O inicia sesión con</span>
                         <div className="border-t border-gray-200 flex-grow"></div>
                     </div>
-
-                    {/* Botones Sociales */}
                     <div className="mt-6 grid grid-cols-2 gap-4">
-                        <button 
-                            type="button"
-                            onClick={() => alert("Autenticación con Google próximamente")}
-                            className="flex items-center justify-center py-2.5 px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-                        >
+                        <button type="button" className="flex items-center justify-center py-2.5 px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-2" />
                             <span className="text-sm font-medium text-gray-700">Google</span>
                         </button>
-                        <button 
-                            type="button"
-                            onClick={() => alert("Autenticación con Facebook próximamente")}
-                            className="flex items-center justify-center py-2.5 px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-                        >
+                        <button type="button" className="flex items-center justify-center py-2.5 px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                             <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" className="h-5 w-5 mr-2" />
                             <span className="text-sm font-medium text-gray-700">Facebook</span>
                         </button>
                     </div>
+                    */}
 
                     {/* Footer */}
                     <p className="mt-8 text-center text-sm text-gray-600">

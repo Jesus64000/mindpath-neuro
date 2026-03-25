@@ -33,5 +33,14 @@ export const useAuthStore = create((set) => ({
         localStorage.removeItem('mindpath_token');
         localStorage.removeItem('mindpath_user');
         set({ user: null, token: null, isAuthenticated: false });
+    },
+
+    updateUser: (updates) => {
+        set((state) => {
+            if (!state.user) return state;
+            const newUser = { ...state.user, ...updates };
+            localStorage.setItem('mindpath_user', JSON.stringify(newUser));
+            return { user: newUser };
+        });
     }
 }));

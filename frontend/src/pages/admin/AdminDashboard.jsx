@@ -49,8 +49,8 @@ const Toast = ({ msg, type, onClose }) => {
 };
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
-const KpiCard = ({ icon: Icon, label, value, color = 'text-mindpath-primary', bg = 'bg-mindpath-light' }) => (
-    <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 flex items-center gap-4 shadow-sm">
+const KpiCard = ({ icon: Icon, label, value, color = 'text-mindpath-primary', bg = 'bg-mindpath-light', onClick }) => (
+    <div onClick={onClick} className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 flex items-center gap-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-mindpath-primary/30 transition-all">
         <div className={`h-12 w-12 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
             <Icon size={22} className={color} />
         </div>
@@ -91,10 +91,10 @@ const AdminDashboard = () => {
     const [specialties, setSpecialties] = useState([]);
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
-    const { clinicName, logoUrl, primaryColor, primaryHover, applySettings } = useSettingsStore();
+    const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, applySettings } = useSettingsStore();
 
     // Theming
-    const [theme, setTheme]       = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
+    const [theme, setTheme]       = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: 'Inter' });
     const [logoFile, setLogoFile] = useState(null);
     const [savingTheme, setSavingTheme] = useState(false);
 
@@ -163,7 +163,7 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff();
-        setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover });
+        setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: fontFamily || 'Inter' });
     }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, clinicName, logoUrl, primaryColor, primaryHover]);
 
     // ── Verificación ───────────────────────────────────────────────────────────
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
             const logo_url = await uploadLogo();
             const payload = { ...theme, logo_url };
             await api.put('/admin/settings', payload);
-            applySettings({ clinic_name: payload.clinic_name, logo_url: payload.logo_url, primary_color: payload.primary_color, primary_hover: payload.primary_hover });
+            applySettings({ clinic_name: payload.clinic_name, logo_url: payload.logo_url, primary_color: payload.primary_color, primary_hover: payload.primary_hover, font_family: payload.font_family });
             showToast('Configuración guardada exitosamente. 🎨');
         } catch { showToast('Error al guardar configuración.', 'error'); }
         finally { setSavingTheme(false); }
@@ -364,9 +364,9 @@ const AdminDashboard = () => {
                     ) : (
                         <>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <KpiCard icon={Users}       label="Usuarios Totales"    value={stats?.kpis.totalUsers} />
-                                <KpiCard icon={UserCheck}   label="Doctores Verificados" value={stats?.kpis.totalDoctors} color="text-green-600" bg="bg-green-50" />
-                                <KpiCard icon={UserX}       label="Pendientes Verificar" value={stats?.kpis.pendingDoctors} color="text-yellow-600" bg="bg-yellow-50" />
+                                <KpiCard icon={Users}       label="Usuarios Totales"    value={stats?.kpis.totalUsers} onClick={() => setActiveTab(TAB.users)} />
+                                <KpiCard icon={UserCheck}   label="Doctores Verificados" value={stats?.kpis.totalDoctors} color="text-green-600" bg="bg-green-50" onClick={() => setActiveTab(TAB.users)} />
+                                <KpiCard icon={UserX}       label="Pendientes Verificar" value={stats?.kpis.pendingDoctors} color="text-yellow-600" bg="bg-yellow-50" onClick={() => setActiveTab(TAB.verification)} />
                                 <KpiCard icon={Stethoscope} label="Pacientes Registrados" value={stats?.kpis.totalPatients} color="text-blue-600" bg="bg-blue-50" />
                                 <KpiCard icon={CheckCircle2} label="Citas Completadas"   value={stats?.kpis.completedAppts} color="text-green-600" bg="bg-green-50" />
                                 <KpiCard icon={Calendar}   label="Citas Activas"         value={stats?.kpis.activeAppts} color="text-mindpath-primary" bg="bg-mindpath-light" />
@@ -665,7 +665,48 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
+                            
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Tipografía del Sistema</label>
+                                <select value={['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'].includes(theme.font_family) ? theme.font_family : '__custom__'}
+                                    onChange={e => {
+                                        if (e.target.value !== '__custom__') setTheme(p => ({ ...p, font_family: e.target.value }));
+                                    }}
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white mb-3">
+                                    <option value="Inter">Inter (Moderna)</option>
+                                    <option value="Roboto">Roboto (Clásica)</option>
+                                    <option value="Poppins">Poppins (Redondeada)</option>
+                                    <option value="Outfit">Outfit (Geométrica)</option>
+                                    <option value="Nunito">Nunito (Suave)</option>
+                                    <option value="Lato">Lato (Elegante)</option>
+                                    <option value="Open Sans">Open Sans (Legible)</option>
+                                    <option value="Montserrat">Montserrat (Fuerte)</option>
+                                    <option value="Raleway">Raleway (Fina)</option>
+                                    <option value="system-ui">Sistema (Por defecto del SO)</option>
+                                    <option value="__custom__">✨ Google Font personalizada...</option>
+                                </select>
+                                {(!['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'].includes(theme.font_family) || theme.font_family === '__custom__') && (
+                                    <div className="mt-2">
+                                        <input 
+                                            type="text" 
+                                            value={theme.font_family === '__custom__' ? '' : (theme.font_family || '')}
+                                            onChange={e => setTheme(p => ({ ...p, font_family: e.target.value }))}
+                                            placeholder="Escribe el nombre exacto de la fuente de Google Fonts..."
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-2">
+                                            Busca fuentes en <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-mindpath-primary hover:underline">fonts.google.com</a> y escribe el nombre exacto (ej: "Playfair Display", "Dancing Script").
+                                        </p>
+                                    </div>
+                                )}
+                                <div className="mt-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-600">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300" style={{ fontFamily: theme.font_family + ', sans-serif' }}>
+                                        Vista previa: El zorro marrón ágil salta sobre el perro perezoso. 0123456789
+                                    </p>
+                                </div>
+                            </div>
+
+<div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Logo</label>
                                 <div className="space-y-3">
                                     <div>

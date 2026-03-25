@@ -47,6 +47,17 @@ exports.getSpecialties = async (_req, res) => {
     }
 };
 
+// Sprint 29: Catálogo público de clínicas/hospitales
+exports.getClinics = async (_req, res) => {
+    try {
+        const [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+        res.status(200).json(clinics);
+    } catch (error) {
+        console.error('Error al obtener clínicas:', error);
+        res.status(500).json({ message: 'Error al obtener las clínicas.' });
+    }
+};
+
 // Obtener el perfil público de un doctor por su ID
 exports.getDoctorById = async (req, res) => {
     try {
@@ -92,7 +103,7 @@ exports.getMyPatients = async (req, res) => {
         const doctorId = doctor[0].id;
 
         const [patients] = await db.query(`
-            SELECT DISTINCT p.id, u.full_name, u.email, p.phone, 
+            SELECT DISTINCT p.id, u.full_name, u.email, p.phone, p.profile_picture,
                 (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id AND doctor_id = ?) as last_visit
             FROM patients p
             JOIN users u ON p.user_id = u.id

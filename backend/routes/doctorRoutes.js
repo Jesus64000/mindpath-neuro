@@ -33,6 +33,9 @@ router.get('/my-stats', authMiddleware, doctorController.getMyStats);
 // Catálogo público de especialidades (sin auth — para el registro y directorio)
 router.get('/specialties', doctorController.getSpecialties);
 
+// Sprint 29: Catálogo público de clínicas/hospitales (sin auth — para el registro)
+router.get('/clinics', doctorController.getClinics);
+
 // Perfil público del doctor (mantener al final para evitar conflictos con rutas específicas)
 router.get('/:id', authMiddleware, doctorController.getDoctorById);
 

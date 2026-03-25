@@ -282,18 +282,19 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { clinic_name, logo_url, primary_color, primary_hover } = req.body;
+    const { clinic_name, logo_url, primary_color, primary_hover, font_family } = req.body;
     await db.query(
       `
-            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover)
-            VALUES (1, ?, ?, ?, ?)
+            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family)
+            VALUES (1, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 clinic_name   = VALUES(clinic_name),
                 logo_url      = VALUES(logo_url),
                 primary_color = VALUES(primary_color),
-                primary_hover = VALUES(primary_hover)
+                primary_hover = VALUES(primary_hover),
+                font_family   = VALUES(font_family)
         `,
-      [clinic_name, logo_url, primary_color, primary_hover],
+      [clinic_name, logo_url, primary_color, primary_hover, font_family || 'Inter'],
     );
     res.status(200).json({ message: "Configuración guardada exitosamente." });
   } catch (error) {

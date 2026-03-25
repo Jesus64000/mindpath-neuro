@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosConfig';
 import { User, Phone, MapPin, Save, Camera, CheckCircle, AlertCircle, Mail, Calendar } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const BACKEND_URL = 'http://localhost:3000';
 
 const PatientSettings = () => {
+    const { user, updateUser } = useAuthStore();
     const [formData, setFormData] = useState({
         full_name: '', email: '', phone: '', address: '', date_of_birth: '', gender: ''
     });
@@ -43,6 +45,7 @@ const PatientSettings = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setProfilePicture(res.data.url);
+            updateUser({ profile_picture: res.data.url }); // Sincronizar instantáneamente con el header
         } catch (err) {
             setUploadError(err.response?.data?.message || 'Error al subir la foto.');
             setPreview(null);
@@ -109,7 +112,7 @@ const PatientSettings = () => {
                     <div>
                         <p className="font-black text-xl text-gray-900 dark:text-white">{formData.full_name}</p>
                         <p className="text-gray-500 dark:text-slate-400 text-sm">{formData.email}</p>
-                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{genderLabel[formData.gender]} • {formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{genderLabel[formData.gender]} • {formData.date_of_birth ? new Date(formData.date_of_birth + 'T12:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
                         <button type="button" onClick={() => fileInputRef.current?.click()}
                             className="mt-3 text-sm font-bold text-mindpath-primary dark:text-mindpath-primary hover:underline flex items-center gap-1">
                             <Camera size={14}/> Cambiar foto de perfil

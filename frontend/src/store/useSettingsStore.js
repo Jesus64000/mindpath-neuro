@@ -7,12 +7,32 @@ const hexToRgb = (hex) => {
   return `${r} ${g} ${b}`;
 };
 
-// Store global de configuración del sistema (theming + branding)
+// Cargar fuente de Google Fonts dinámicamente
+const loadGoogleFont = (fontName) => {
+  if (!fontName || fontName === 'system-ui') return;
+  
+  const linkId = 'dynamic-google-font';
+  let existing = document.getElementById(linkId);
+  
+  // Si ya existe un link, actualizar el href
+  if (existing) {
+    existing.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@300;400;500;600;700;800;900&display=swap`;
+  } else {
+    const link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@300;400;500;600;700;800;900&display=swap`;
+    document.head.appendChild(link);
+  }
+};
+
+// Store global de configuración del sistema (theming + branding + fuentes)
 const useSettingsStore = create((set) => ({
   clinicName: "MindPath Neuro",
   logoUrl: null,
   primaryColor: "#6D28D9",
   primaryHover: "#5B21B6",
+  fontFamily: "Inter",
 
   applySettings: (settings) => {
     // Inyectar CSS variables en el documento para el theming dinámico
@@ -39,11 +59,22 @@ const useSettingsStore = create((set) => ({
         );
     }
 
+    // Sprint 29: Inyectar tipografía del sistema con soporte Google Fonts
+    const font = settings.font_family || "Inter";
+    
+    // Cargar la fuente de Google Fonts si no es system-ui
+    loadGoogleFont(font);
+    
+    // Aplicar la fuente al documento
+    document.documentElement.style.setProperty("--system-font", `'${font}'`);
+    document.body.style.fontFamily = `'${font}', ui-sans-serif, system-ui, -apple-system, sans-serif`;
+
     set({
       clinicName: settings.clinic_name || "MindPath Neuro",
       logoUrl: settings.logo_url || null,
       primaryColor: settings.primary_color || "#6D28D9",
       primaryHover: settings.primary_hover || "#5B21B6",
+      fontFamily: font,
     });
   },
 }));

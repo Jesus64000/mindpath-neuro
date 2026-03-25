@@ -6,6 +6,7 @@ import {
     AlertCircle, ChevronLeft, ChevronRight, FileText, X, Star
 } from 'lucide-react';
 import { BACKEND_URL } from '../../api/constants';
+import Avatar from '../../components/ui/Avatar';
 
 // ── Componente de Valoración con Estrellas ────────────────────────────────────
 const StarRating = ({ value, onChange, readonly = false }) => (
@@ -154,10 +155,8 @@ const PatientAppointments = () => {
 
                                     {/* Doctor */}
                                     <div className="flex items-center w-full md:w-1/3">
-                                        <div className="h-16 w-16 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary text-xl font-bold border-2 border-white shadow-sm overflow-hidden mr-4 shrink-0">
-                                            {app.profile_picture ? (
-                                                <img src={`${BACKEND_URL}${app.profile_picture}`} alt={app.doctor_name} className="h-full w-full object-cover" />
-                                            ) : app.doctor_name?.charAt(0)}
+                                        <div className="mr-4">
+                                            <Avatar fullName={app.doctor_name} profilePictureUrl={app.profile_picture} size="16" />
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Dr(a). {app.doctor_name?.split(' ').slice(-1).join(' ')}</h3>

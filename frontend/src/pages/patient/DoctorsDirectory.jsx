@@ -32,10 +32,12 @@ const DoctorsDirectory = () => {
 
     // Lógica de Filtrado Inteligente (Cliente)
     const filteredDoctors = useMemo(() => {
+        const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
+
         return doctors.filter(doc => {
-            const matchesSearch = doc.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  doc.specialty?.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesSpecialty = selectedSpecialty === 'Todas' || doc.specialty === selectedSpecialty;
+            const matchesSearch = normalize(doc.full_name).includes(normalize(searchTerm)) || 
+                                  normalize(doc.specialty).includes(normalize(searchTerm));
+            const matchesSpecialty = selectedSpecialty === 'Todas' || normalize(doc.specialty) === normalize(selectedSpecialty);
             
             return matchesSearch && matchesSpecialty;
         });

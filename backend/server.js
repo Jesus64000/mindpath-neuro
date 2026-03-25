@@ -29,9 +29,8 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ratings', require('./routes/ratingRoutes'));
 
-// Servir archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/public/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Servir archivos estáticos de la carpeta public/uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {

@@ -15,6 +15,12 @@ exports.getAvailability = async (req, res) => {
             return res.status(400).json({ message: 'Se requiere doctorId y date' });
         }
 
+        // Verificar bloqueo de emergencia
+        const [doctorRows] = await db.query('SELECT is_blocked FROM doctors WHERE id = ?', [doctorId]);
+        if (doctorRows.length > 0 && doctorRows[0].is_blocked) {
+            return res.status(200).json([]);
+        }
+
         // Traducir fecha a ENUM de la base (Sunday/Monday...)
         const requestDate = new Date(date);
         const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -80,6 +86,15 @@ exports.bookAppointment = async (req, res) => {
 
     try {
         let finalPatientId = null;
+
+        // Verificar si el doctor tiene Bloqueo de Emergencia activo
+        const [doctorRows] = await db.query('SELECT is_blocked FROM doctors WHERE id = ?', [doctor_id]);
+        if (doctorRows.length === 0) {
+            return res.status(404).json({ message: 'Especialista no encontrado.' });
+        }
+        if (doctorRows[0].is_blocked) {
+            return res.status(403).json({ message: 'El especialista no está disponible para nuevas citas por bloqueo de emergencia.' });
+        }
 
         if (req.user.role === 'doctor') {
             // El doctor está agendando para un paciente específico

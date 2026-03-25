@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import DoctorCard from '../../components/DoctorCard';
+import Avatar from '../../components/ui/Avatar';
 
 const statusConfig = {
     confirmed: { label: 'Confirmada', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -162,8 +163,8 @@ const PatientDashboard = () => {
                                             className="flex items-start p-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/10 cursor-pointer"
                                             onClick={() => navigate('/patient/appointments')}
                                         >
-                                            <div className="h-10 w-10 bg-mindpath-light dark:bg-mindpath-primary/40 rounded-full flex items-center justify-center text-mindpath-primary shrink-0 mr-4">
-                                                <Clock size={20} />
+                                            <div className="mr-4">
+                                                <Avatar fullName={app.doctor_name} profilePictureUrl={app.profile_picture} size="10" />
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">Dr(a). {app.doctor_name}</p>
