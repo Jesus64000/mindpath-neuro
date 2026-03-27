@@ -233,11 +233,8 @@ exports.getPatientAppointments = async (req, res) => {
         // Página actual con JOIN a doctores/usuarios
         const [appointments] = await db.query(`
             SELECT 
+                a.*,
                 a.id AS appointment_id,
-                a.appointment_date,
-                a.start_time,
-                a.status,
-                a.type,
                 u.full_name AS doctor_name,
                 d.id AS doctor_id,
                 d.specialty,
@@ -424,5 +421,60 @@ exports.setDoctorReady = async (req, res) => {
     } catch (error) {
         console.error('Error en setDoctorReady:', error.message);
         res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// Permite al paciente cancelar su cita (con regla de 24 horas)
+exports.cancelAppointmentByPatient = async (req, res) => {
+    const userId = req.user.id; // Viene del token JWT
+    const appointmentId = req.params.id;
+
+    try {
+        // 1. Buscar la cita y verificar que pertenezca al paciente asociado a este usuario
+        const [patientRows] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+        if (patientRows.length === 0) return res.status(403).json({ message: "No se encontró tu perfil de paciente." });
+        const patientId = patientRows[0].id;
+
+        const [appRes] = await db.query(
+            `SELECT a.* FROM appointments a WHERE a.id = ? AND a.patient_id = ?`,
+            [appointmentId, patientId]
+        );
+
+        if (appRes.length === 0) {
+            return res.status(404).json({ message: "Cita no encontrada o acceso denegado." });
+        }
+
+        const appointment = appRes[0];
+
+        // 2. Verificar el estado actual (No puedes cancelar algo ya completado o cancelado)
+        // Añadimos 'emergency_reschedule' para dejarles borrar alertas del dashboard
+        const validStatuses = ['scheduled', 'pending', 'confirmed', 'emergency_reschedule'];
+        if (!validStatuses.includes(appointment.status)) {
+            return res.status(400).json({ message: `No puedes cancelar una cita en estado: ${appointment.status}` });
+        }
+
+        // 3. Regla de Negocio: Validar que falten más de 24 horas para la cita
+        // Excepción: Si es una emergencia del médico, se puede descartar ya mismo.
+        if (appointment.status !== 'emergency_reschedule') {
+            const appointmentDateTime = new Date(`${appointment.appointment_date}T${appointment.start_time}`);
+            const now = new Date();
+            const diffInHours = (appointmentDateTime - now) / (1000 * 60 * 60);
+
+            if (diffInHours < 24 && diffInHours > 0) {
+                return res.status(403).json({ 
+                    message: "Faltan menos de 24 horas para tu consulta. Por políticas de la clínica, debes contactar a soporte para cancelar." 
+                });
+            }
+        }
+
+        // 4. Ejecutar la cancelación
+        // Omitimos actualizar la columna 'notes' ya que actualmente el esquema no posee la columna notes en appointments.
+        await db.query(`UPDATE appointments SET status = 'cancelled' WHERE id = ?`, [appointmentId]);
+
+        res.status(200).json({ message: "Cita cancelada exitosamente." });
+
+    } catch (error) {
+        console.error("Error al cancelar cita por el paciente:", error);
+        res.status(500).json({ message: "Error interno al cancelar la cita." });
     }
 };

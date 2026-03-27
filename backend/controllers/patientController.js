@@ -150,30 +150,3 @@ exports.getMyHistory = async (req, res) => {
         res.status(500).json({ message: 'Error al cargar historial clínico.' });
     }
 };
-
-// Cancelar una cita propia
-exports.cancelAppointment = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { id } = req.params;
-
-        const [patient] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
-        if (patient.length === 0) return res.status(403).json({ message: 'No se encontró tu perfil de paciente.' });
-        
-        const patientId = patient[0].id;
-
-        const [result] = await db.query(
-            `UPDATE appointments SET status = 'cancelled' WHERE id = ? AND patient_id = ?`,
-            [id, patientId]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Cita no encontrada.' });
-        }
-
-        res.status(200).json({ message: 'Cita cancelada correctamente.' });
-    } catch (error) {
-        console.error('Error al cancelar cita:', error);
-        res.status(500).json({ message: 'Error en el servidor.' });
-    }
-};

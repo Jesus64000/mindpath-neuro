@@ -19,6 +19,7 @@ const PatientDashboard = () => {
     const [nextAppointment, setNextAppointment] = useState(null);
     const [upcomingAppointments, setUpcomingAppointments] = useState([]);
     const [emergencyAppointments, setEmergencyAppointments] = useState([]);
+    const [missedAppointments, setMissedAppointments] = useState([]);
     const [myDoctors, setMyDoctors] = useState([]);
 
     useEffect(() => {
@@ -48,6 +49,13 @@ const PatientDashboard = () => {
 
                 const emergencyApps = appointments.filter(app => app.status === 'emergency_reschedule');
                 setEmergencyAppointments(emergencyApps);
+
+                const missedApps = appointments.filter(app => {
+                    if (!['pending', 'scheduled', 'confirmed'].includes(app.status)) return false;
+                    const appDateTime = new Date(`${app.appointment_date}T${app.start_time}`);
+                    return appDateTime < new Date() && app.appointment_id !== todayApp?.appointment_id;
+                });
+                setMissedAppointments(missedApps);
 
                 try {
                     const doctorsResponse = await api.get('/patients/my-doctors');
@@ -107,6 +115,36 @@ const PatientDashboard = () => {
                         className="w-full md:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center whitespace-nowrap uppercase tracking-wide text-sm hover:scale-105"
                     >
                         {emergencyAppointments[0].is_long_term_block ? 'Buscar otro Especialista' : 'Reagendar con mi Doctor'} <ArrowRight size={18} className="ml-2" />
+                    </button>
+                </div>
+            )}
+
+            {/* ALERT BANNER PARA CITAS PERDIDAS */}
+            {missedAppointments.length > 0 && (
+                <div className="bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-500 dark:border-orange-500/50 p-6 md:p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between mb-8 shadow-xl shadow-orange-500/10">
+                    <div className="flex items-center mb-4 md:mb-0 w-full md:w-auto">
+                        <div className="h-14 w-14 bg-orange-100 dark:bg-orange-900/50 rounded-2xl flex items-center justify-center mr-5 shrink-0">
+                            <Clock size={28} className="text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-orange-800 dark:text-orange-300">Cita no completada</h3>
+                            <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">
+                                Parece que no pudiste asistir a tu cita del {new Date(missedAppointments[0].appointment_date).toLocaleDateString()} con el Dr(a). {missedAppointments[0].doctor_name}. ¿Deseas reagendarla?
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            try {
+                                await api.put(`/patients/appointments/${missedAppointments[0].appointment_id}/cancel`);
+                            } catch (error) {
+                                console.error('Error al cancelar la cita perdida', error);
+                            }
+                            navigate(`/patient/doctor/${missedAppointments[0].doctor_id}`);
+                        }}
+                        className="w-full md:w-auto px-8 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center whitespace-nowrap uppercase tracking-wide text-sm hover:scale-105"
+                    >
+                        Limpiar y Reagendar <ArrowRight size={18} className="ml-2" />
                     </button>
                 </div>
             )}
