@@ -16,9 +16,13 @@ exports.getAvailability = async (req, res) => {
         }
 
         // Verificar bloqueo de emergencia
-        const [doctorRows] = await db.query('SELECT is_blocked FROM doctors WHERE id = ?', [doctorId]);
+        const [doctorRows] = await db.query('SELECT is_blocked, emergency_block_until FROM doctors WHERE id = ?', [doctorId]);
+        let blockUntil = null;
         if (doctorRows.length > 0 && doctorRows[0].is_blocked) {
-            return res.status(200).json([]);
+            if (!doctorRows[0].emergency_block_until) {
+                return res.status(200).json([]); // Bloqueo indefinido
+            }
+            blockUntil = new Date(doctorRows[0].emergency_block_until);
         }
 
         // Traducir fecha a ENUM de la base (Sunday/Monday...)
@@ -60,8 +64,16 @@ exports.getAvailability = async (req, res) => {
             while (currentSlot < endTime) {
                 const timeString = currentSlot.toISOString().substring(11, 16); // HH:MM
 
-                // Evitar solapamientos (ej. si dos reglas se tocan o si ya estaba ocupado)
-                if (!bookedTimes.includes(timeString) && !slots.includes(timeString)) {
+                let isSlotBlocked = false;
+                if (blockUntil) {
+                    const realSlotTime = new Date(`${date}T${timeString}:00`);
+                    if (blockUntil > realSlotTime) {
+                        isSlotBlocked = true;
+                    }
+                }
+
+                // Evitar solapamientos (ej. si dos reglas se tocan o si ya estaba ocupado o bloqueado)
+                if (!bookedTimes.includes(timeString) && !slots.includes(timeString) && !isSlotBlocked) {
                     slots.push(timeString);
                 }
 
@@ -88,12 +100,19 @@ exports.bookAppointment = async (req, res) => {
         let finalPatientId = null;
 
         // Verificar si el doctor tiene Bloqueo de Emergencia activo
-        const [doctorRows] = await db.query('SELECT is_blocked FROM doctors WHERE id = ?', [doctor_id]);
+        const [doctorRows] = await db.query('SELECT is_blocked, emergency_block_until FROM doctors WHERE id = ?', [doctor_id]);
         if (doctorRows.length === 0) {
             return res.status(404).json({ message: 'Especialista no encontrado.' });
         }
         if (doctorRows[0].is_blocked) {
-            return res.status(403).json({ message: 'El especialista no está disponible para nuevas citas por bloqueo de emergencia.' });
+            if (!doctorRows[0].emergency_block_until) {
+                return res.status(403).json({ message: 'El especialista no está disponible para nuevas citas por bloqueo de emergencia.' });
+            }
+            const blockUntil = new Date(doctorRows[0].emergency_block_until);
+            const requestedDateTime = new Date(`${appointment_date}T${start_time}`);
+            if (blockUntil > requestedDateTime) {
+                return res.status(403).json({ message: 'Ese horario se encuentra dentro del periodo de bloqueo de emergencia del especialista.' });
+            }
         }
 
         if (req.user.role === 'doctor') {

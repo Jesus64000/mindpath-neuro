@@ -25,3 +25,12 @@ ADD COLUMN rif VARCHAR(100) AFTER specialty_certificate;
 -- Preparacion para Fuentes
 
 ALTER TABLE system_settings ADD COLUMN font_family VARCHAR(50) DEFAULT 'Inter' AFTER primary_color;
+
+
+-- 1. Añadimos la columna para saber hasta cuándo dura la emergencia
+ALTER TABLE doctors 
+ADD COLUMN emergency_block_until DATETIME DEFAULT NULL AFTER is_blocked;
+
+-- 2. Añadimos el nuevo estado a las citas para diferenciarlas de cancelaciones normales
+ALTER TABLE appointments 
+MODIFY COLUMN status ENUM('scheduled', 'completed', 'cancelled', 'emergency_reschedule') DEFAULT 'scheduled';

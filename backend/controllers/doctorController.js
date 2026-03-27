@@ -233,7 +233,8 @@ exports.getProfileSettings = async (req, res) => {
         const [doctor] = await db.query(`
             SELECT u.full_name, u.email, d.specialty, d.bio, d.clinic_name,
                    d.clinic_address, d.license_number, d.experience_years,
-                   d.consultation_fee, d.languages, d.education, d.profile_picture
+                   d.consultation_fee, d.languages, d.education, d.profile_picture,
+                   d.is_blocked, d.emergency_block_until
             FROM doctors d 
             JOIN users u ON d.user_id = u.id 
             WHERE u.id = ?
@@ -409,6 +410,135 @@ exports.getMyStats = async (req, res) => {
     } catch (error) {
         console.error('Error en getMyStats:', error);
         res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// ── Sprint 30: Bloqueo de Emergencia ────────────────────────────
+
+// Activar, desactivar o extender Bloqueo de Emergencia
+exports.toggleEmergencyBlock = async (req, res) => {
+    const userId = req.user.id; // El ID del usuario autenticado
+    const { action, duration } = req.body; // action: 'activate', 'deactivate', 'extend'; duration: '1_week', etc.
+
+    // Obtenemos una conexión directa para hacer una Transacción
+    const connection = await db.getConnection(); 
+
+    try {
+        await connection.beginTransaction();
+
+        // Obtener el ID real del doctor
+        const [docRes] = await connection.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (docRes.length === 0) return res.status(404).json({ message: "Doctor no encontrado." });
+        const doctorId = docRes[0].id;
+
+        if (action === 'activate') {
+            // 1. Bloquear al doctor por 24 horas exactas desde AHORA
+            await connection.query(
+                `UPDATE doctors SET is_blocked = true, emergency_block_until = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id = ?`,
+                [doctorId]
+            );
+
+            // 2. Suspender masivamente las citas de las próximas 24 horas + la anterior si estaba pendiente
+            const [updateRes] = await connection.query(
+                `UPDATE appointments 
+                 SET status = 'emergency_reschedule' 
+                 WHERE doctor_id = ? 
+                   AND status IN ('pending', 'confirmed') 
+                   AND (
+                       CONCAT(appointment_date, ' ', start_time) BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)
+                       OR id = (
+                           SELECT temp.top_id FROM (
+                               SELECT id as top_id FROM appointments 
+                               WHERE doctor_id = ? 
+                                 AND status IN ('pending', 'confirmed') 
+                                 AND CONCAT(appointment_date, ' ', start_time) <= NOW() 
+                               ORDER BY CONCAT(appointment_date, ' ', start_time) DESC 
+                               LIMIT 1
+                           ) AS temp
+                       )
+                   )`,
+                [doctorId, doctorId]
+            );
+
+            await connection.commit();
+            return res.status(200).json({ 
+                message: "Bloqueo activado por 24h.", 
+                affectedAppointments: updateRes.affectedRows 
+            });
+        } 
+        
+        else if (action === 'deactivate') {
+            // 1. Quitar el bloqueo y limpiar la fecha
+            await connection.query(
+                `UPDATE doctors SET is_blocked = false, emergency_block_until = NULL WHERE id = ?`,
+                [doctorId]
+            );
+
+            // 2. Restaurar citas que no fueron reasignadas (siguen en emergency_reschedule) a 'confirmed'
+            const [restoreRes] = await connection.query(
+                `UPDATE appointments 
+                 SET status = 'confirmed' 
+                 WHERE doctor_id = ? 
+                   AND status = 'emergency_reschedule' 
+                   AND CONCAT(appointment_date, ' ', start_time) >= NOW()`,
+                [doctorId]
+            );
+
+            await connection.commit();
+            return res.status(200).json({ 
+                message: "Bloqueo desactivado correctamente. Citas restauradas a Confirmadas.",
+                affectedAppointments: restoreRes.affectedRows
+            });
+        }
+
+        else if (action === 'extend' && duration) {
+            let extensionQuery = '';
+            
+            switch(duration) {
+                case '2_days': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 2 DAY)'; break;
+                case '1_week': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 1 WEEK)'; break;
+                case '2_weeks': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 2 WEEK)'; break;
+                case '1_month': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 1 MONTH)'; break;
+                case '3_months': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 3 MONTH)'; break;
+                case 'indefinite': extensionQuery = 'DATE_ADD(NOW(), INTERVAL 10 YEAR)'; break;
+                default: 
+                    await connection.rollback();
+                    return res.status(400).json({ message: "Duración inválida." });
+            }
+
+            // 1. Actualizar doctor con el nuevo horizonte
+            await connection.query(
+                `UPDATE doctors SET is_blocked = true, emergency_block_until = ${extensionQuery} WHERE id = ?`,
+                [doctorId]
+            );
+
+            // 2. Suspender citas hasta esa nueva fecha
+            const [updateRes] = await connection.query(
+                `UPDATE appointments 
+                 SET status = 'emergency_reschedule' 
+                 WHERE doctor_id = ? 
+                   AND status IN ('pending', 'confirmed') 
+                   AND CONCAT(appointment_date, ' ', start_time) BETWEEN NOW() AND ${extensionQuery}`,
+                [doctorId]
+            );
+
+            await connection.commit();
+            return res.status(200).json({ 
+                message: "Bloqueo de emergencia extendido exitosamente.",
+                affectedAppointments: updateRes.affectedRows 
+            });
+        }
+
+        // Si mandan una acción inválida
+        await connection.rollback();
+        return res.status(400).json({ message: "Acción no válida." });
+
+    } catch (error) {
+        await connection.rollback(); // Si algo explota, deshacemos todo
+        console.error("Error en toggleEmergencyBlock:", error);
+        res.status(500).json({ message: "Error interno procesando la emergencia." });
+    } finally {
+        connection.release(); // Liberamos la conexión
     }
 };
 

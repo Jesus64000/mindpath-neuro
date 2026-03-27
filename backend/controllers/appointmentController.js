@@ -6,7 +6,7 @@ exports.getDoctorDashboardSummary = async (req, res) => {
         const userId = req.user.id;
         
         // 1. Obtener el ID del doctor y su estado de bloqueo
-        const [doctor] = await db.query('SELECT id, is_blocked FROM doctors WHERE user_id = ?', [userId]);
+        const [doctor] = await db.query('SELECT id, is_blocked, emergency_block_until FROM doctors WHERE user_id = ?', [userId]);
         if (doctor.length === 0) return res.status(404).json({ message: 'Perfil no encontrado.' });
         const doctorId = doctor[0].id;
 
@@ -80,7 +80,8 @@ exports.getDoctorDashboardSummary = async (req, res) => {
                     return thisWeekTotal;
                 })()
             },
-            isBlocked: doctor[0].is_blocked === 1
+            isBlocked: doctor[0].is_blocked === 1,
+            emergencyBlockUntil: doctor[0].emergency_block_until
         });
     } catch (error) {
         console.error('Error cargando resumen del dashboard del doctor:', error);
@@ -238,8 +239,10 @@ exports.getPatientAppointments = async (req, res) => {
                 a.status,
                 a.type,
                 u.full_name AS doctor_name,
+                d.id AS doctor_id,
                 d.specialty,
-                d.profile_picture
+                d.profile_picture,
+                d.emergency_block_until
             FROM appointments a
             JOIN doctors d ON a.doctor_id = d.id
             JOIN users u ON d.user_id = u.id
@@ -248,8 +251,21 @@ exports.getPatientAppointments = async (req, res) => {
             LIMIT ? OFFSET ?
         `, [patientId, limit, offset]);
 
+        const processedAppointments = appointments.map(app => {
+            let is_long_term_block = false;
+            if (app.emergency_block_until) {
+                const blockUntil = new Date(app.emergency_block_until);
+                const twoWeeksFromNow = new Date();
+                twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+                if (blockUntil > twoWeeksFromNow) {
+                    is_long_term_block = true;
+                }
+            }
+            return { ...app, is_long_term_block };
+        });
+
         res.status(200).json({
-            data: appointments,
+            data: processedAppointments,
             pagination: {
                 currentPage: page,
                 totalPages: totalPages === 0 ? 1 : totalPages,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus, AlertTriangle } from 'lucide-react';
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
@@ -35,12 +35,12 @@ const toLocalISO = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-// ─── Config de estados ────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
     pending:   { label: 'Pendiente',  color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-500/30' },
     confirmed: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-500/30' },
     completed: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-500/30' },
     cancelled: { label: 'Cancelada',  color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-500/30' },
+    emergency_reschedule: { label: 'Em. Médica', color: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-500/30' },
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -65,6 +65,12 @@ const DoctorSchedule = () => {
         end_time: '12:00',
         slot_duration: '30'
     });
+
+    // --- Estado para Bloqueo de Emergencia ---
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockLoading, setBlockLoading] = useState(false);
+    const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [extensionDuration, setExtensionDuration] = useState('1_week');
 
     const navigate = useNavigate();
 
@@ -99,6 +105,21 @@ const DoctorSchedule = () => {
         }
     };
 
+    const fetchProfileSettings = async () => {
+        try {
+            const res = await api.get('/doctors/profile/settings');
+            setIsBlocked(!!res.data.is_blocked);
+            
+            if (res.data.is_blocked && res.data.emergency_block_until) {
+                if (new Date(res.data.emergency_block_until) < new Date()) {
+                    setShowExtensionModal(true);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching doctor profile", err);
+        }
+    };
+
     const fetchDayAppointments = async (date) => {
         setDayLoading(true);
         try {
@@ -120,7 +141,7 @@ const DoctorSchedule = () => {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate), fetchSchedules()]);
+            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate), fetchSchedules(), fetchProfileSettings()]);
         };
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,7 +149,6 @@ const DoctorSchedule = () => {
 
     useEffect(() => {
         fetchDayAppointments(selectedDate);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate]);
 
     const updateStatus = async (id, newStatus) => {
@@ -149,6 +169,65 @@ const DoctorSchedule = () => {
         const next = shiftMonth(monthStart, delta);
         setMonthStart(next);
         setSelectedDate(next);
+    };
+
+    // --- Controlador de Emergencia ---
+    const handleEmergencyBlock = async () => {
+        if (isBlocked) {
+            setShowExtensionModal(true);
+            return;
+        }
+
+        const confirmBlock = window.confirm("⚠️ ¿Estás seguro? Esto suspenderá tus citas médicas de las próximas 24 horas y notificará a los pacientes afectados.");
+        if (!confirmBlock) return;
+
+        try {
+            const res = await api.post('/doctors/emergency-block', { action: 'activate' });
+            
+            setIsBlocked(!isBlocked);
+            alert(`${res.data.message} ${res.data.affectedAppointments !== undefined ? `Pacientes reasignados: ${res.data.affectedAppointments}` : ''}`);
+            
+            // Refrescar calendario y citas para ver los cancelados
+            fetchCalendar();
+            fetchDayAppointments(selectedDate);
+            fetchProfileSettings();
+        } catch (error) {
+            console.error("Error al activar bloqueo:", error);
+            alert("Hubo un error al procesar el bloqueo de emergencia.");
+        }
+    };
+
+    const handleExtendBlock = async () => {
+        try {
+            setBlockLoading(true);
+            const res = await api.post('/doctors/emergency-block', { action: 'extend', duration: extensionDuration });
+            alert(res.data.message);
+            setShowExtensionModal(false);
+            fetchProfileSettings();
+        } catch (error) {
+            console.error(error);
+            alert("Error al extender el bloqueo");
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleReactivateAgenda = async () => {
+        try {
+            setBlockLoading(true);
+            const res = await api.post('/doctors/emergency-block', { action: 'deactivate' });
+            alert(`${res.data.message} ${res.data.affectedAppointments !== undefined ? `Citas restauradas automáticamente: ${res.data.affectedAppointments}` : ''}`);
+            setIsBlocked(false);
+            setShowExtensionModal(false);
+            fetchCalendar();
+            fetchDayAppointments(selectedDate);
+            fetchProfileSettings();
+        } catch (error) {
+            console.error(error);
+            alert("Error al reactivar la agenda");
+        } finally {
+            setBlockLoading(false);
+        }
     };
 
     // --- Controladores para Pestaña de Disponibilidad ---
@@ -187,9 +266,23 @@ const DoctorSchedule = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Agenda Médica</h1>
                     <p className="text-gray-500 dark:text-slate-400 mt-1">Calendario mensual y citas del día.</p>
                 </div>
-                <div className="bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-mindpath-light dark:border-mindpath-primary/30 flex items-center text-sm">
-                    <CalendarIcon size={18} className="mr-2" />
-                    Hoy: {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={handleEmergencyBlock}
+                        className={`px-4 py-2 rounded-xl font-bold border flex items-center justify-center text-sm transition-colors ${
+                            isBlocked
+                                ? 'bg-red-600 text-white hover:bg-red-700 border-red-600 shadow-md shadow-red-500/30'
+                                : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 dark:bg-red-900/30 dark:border-red-500/30 dark:text-red-400'
+                        }`}
+                        title="Bloqueo de Emergencia (24h)"
+                    >
+                        <AlertTriangle size={18} className="mr-2" />
+                        {isBlocked ? 'Inactivo por Emergencia' : 'Reportar Emergencia'}
+                    </button>
+                    <div className="bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary px-4 py-2 rounded-xl font-bold border border-mindpath-light dark:border-mindpath-primary/30 flex items-center justify-center text-sm">
+                        <CalendarIcon size={18} className="mr-2" />
+                        Hoy: {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </div>
                 </div>
             </div>
 
@@ -521,6 +614,60 @@ const DoctorSchedule = () => {
                                     <p className="text-gray-500 dark:text-slate-400 text-sm">Aún no has configurado disponibilidad.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DE EXTENSIÓN DE EMERGENCIA */}
+            {showExtensionModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-8 max-w-md w-full shadow-2xl relative">
+                        <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-6">
+                            <AlertTriangle size={32} className="text-red-600 dark:text-red-400 animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-black text-center text-gray-900 dark:text-white mb-2">Bloqueo de Emergencia Activo</h2>
+                        <p className="text-center text-gray-500 dark:text-slate-400 mb-8 border-b dark:border-white/10 pb-6 text-sm">
+                            Tu agenda está bloqueada. ¿Necesitas más tiempo para resolver tu emergencia o deseas reactivar tu agenda para recibir pacientes nuevamente?
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Extender Bloqueo:</label>
+                                <select 
+                                    value={extensionDuration}
+                                    onChange={(e) => setExtensionDuration(e.target.value)}
+                                    className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 font-medium focus:border-red-500 focus:outline-none transition-colors"
+                                >
+                                    <option value="2_days">2 Días adicionales</option>
+                                    <option value="1_week">1 Semana</option>
+                                    <option value="2_weeks">2 Semanas</option>
+                                    <option value="1_month">1 Mes</option>
+                                    <option value="3_months">3 Meses</option>
+                                    <option value="indefinite">Hasta Nuevo Aviso</option>
+                                </select>
+                            </div>
+                            <button
+                                onClick={handleExtendBlock}
+                                disabled={blockLoading}
+                                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-black py-4 rounded-xl shadow-lg transition-all"
+                            >
+                                {blockLoading ? 'Procesando...' : 'Aplicar Extensión'}
+                            </button>
+
+                            <div className="relative flex py-2 items-center">
+                                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                                <span className="flex-shrink-0 mx-4 text-gray-400 text-[10px] font-black uppercase tracking-widest">o</span>
+                                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                            </div>
+
+                            <button
+                                onClick={handleReactivateAgenda}
+                                disabled={blockLoading}
+                                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white font-black py-4 rounded-xl shadow-lg transition-all"
+                            >
+                                {blockLoading ? 'Procesando...' : 'Reactivar Agenda Ahora'}
+                            </button>
                         </div>
                     </div>
                 </div>

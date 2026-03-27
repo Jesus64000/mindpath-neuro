@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
+import { BACKEND_URL } from '../../api/constants';
 import { 
     Calendar as CalendarIcon,
     Video,
@@ -145,7 +146,7 @@ const DoctorProfile = () => {
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
                         <div className="h-32 w-32 bg-mindpath-light rounded-full flex items-center justify-center text-mindpath-primary text-4xl font-bold border-4 border-white shadow-md overflow-hidden shrink-0">
                             {doctor.profile_picture ? (
-                                <img src={doctor.profile_picture} alt={doctor.full_name} className="h-full w-full object-cover" />
+                                <img src={doctor.profile_picture.startsWith('http') ? doctor.profile_picture : `${BACKEND_URL}${doctor.profile_picture}`} alt={doctor.full_name} className="h-full w-full object-cover" />
                             ) : doctor.full_name.charAt(0)}
                         </div>
                         <div className="text-center md:text-left">

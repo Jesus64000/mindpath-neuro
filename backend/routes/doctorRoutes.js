@@ -27,6 +27,9 @@ router.delete('/schedules/:id', authMiddleware, scheduleController.deleteSchedul
 router.get('/profile/settings', authMiddleware, doctorController.getProfileSettings);
 router.put('/profile/settings', authMiddleware, doctorController.updateProfileSettings);
 
+// Emergencia Médica
+router.post('/emergency-block', authMiddleware, doctorController.toggleEmergencyBlock);
+
 // Sprint 27: Estadísticas personales
 router.get('/my-stats', authMiddleware, doctorController.getMyStats);
 

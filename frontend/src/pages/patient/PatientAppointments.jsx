@@ -118,7 +118,8 @@ const PatientAppointments = () => {
         pending: { label: 'Esperando Confirmación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
         confirmed: { label: 'Cita Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200' },
         completed: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200' },
-        cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 border-red-200' }
+        cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 border-red-200' },
+        emergency_reschedule: { label: 'Emergencia (Reagendar)', color: 'bg-red-600 text-white border-red-700 shadow-md shadow-red-500/20 animate-pulse' }
     };
 
     const isAppointmentToday = (dateString) => {
@@ -182,7 +183,8 @@ const PatientAppointments = () => {
                                             )}
                                         </div>
                                         <div>
-                                            <span className={`text-xs px-2.5 py-1 rounded-full border font-bold inline-block mt-1 ${statusConfig[app.status]?.color}`}>
+                                            <span className={`text-xs px-2.5 py-1.5 rounded-full border font-bold flex items-center w-fit mt-1 ${statusConfig[app.status]?.color}`}>
+                                                {app.status === 'emergency_reschedule' && <AlertCircle size={14} className="mr-1.5" />}
                                                 {statusConfig[app.status]?.label}
                                             </span>
                                         </div>

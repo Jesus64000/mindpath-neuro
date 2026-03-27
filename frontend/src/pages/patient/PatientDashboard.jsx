@@ -1,5 +1,5 @@
 import { useAuthStore } from '../../store/useAuthStore';
-import { Video, Calendar, ArrowRight, Clock, Users, PlusCircle, Activity } from 'lucide-react';
+import { Video, Calendar, ArrowRight, Clock, Users, PlusCircle, Activity, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
@@ -18,6 +18,7 @@ const PatientDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [nextAppointment, setNextAppointment] = useState(null);
     const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+    const [emergencyAppointments, setEmergencyAppointments] = useState([]);
     const [myDoctors, setMyDoctors] = useState([]);
 
     useEffect(() => {
@@ -44,6 +45,9 @@ const PatientDashboard = () => {
                     )
                     .slice(0, 3);
                 setUpcomingAppointments(futureApps);
+
+                const emergencyApps = appointments.filter(app => app.status === 'emergency_reschedule');
+                setEmergencyAppointments(emergencyApps);
 
                 try {
                     const doctorsResponse = await api.get('/patients/my-doctors');
@@ -72,6 +76,41 @@ const PatientDashboard = () => {
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-10">
             
+            {/* ALERT BANNER PARA EMERGENCIAS MÉDICAS */}
+            {emergencyAppointments.length > 0 && (
+                <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-500 dark:border-red-500/50 p-6 md:p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between mb-8 shadow-xl shadow-red-500/10">
+                    <div className="flex items-center mb-4 md:mb-0 w-full md:w-auto">
+                        <div className="h-14 w-14 bg-red-100 dark:bg-red-900/50 rounded-2xl flex items-center justify-center mr-5 shrink-0">
+                            <AlertCircle size={28} className="text-red-600 dark:text-red-400 animate-pulse" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-red-800 dark:text-red-300">¡Atención! Emergencia Médica</h3>
+                            <p className="text-red-600 dark:text-red-400 text-sm font-medium mt-1">
+                                El Dr(a). {emergencyAppointments[0].doctor_name} ha reportado una emergencia y tu cita ha sido suspendida.
+                                {emergencyAppointments[0].is_long_term_block && " El doctor estará ausente un tiempo prolongado, te recomendamos reagendar con otro especialista de nuestro equipo."}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            try {
+                                await api.put(`/patients/appointments/${emergencyAppointments[0].appointment_id}/cancel`);
+                            } catch (error) {
+                                console.error('Error al cancelar la cita de emergencia', error);
+                            }
+                            navigate(
+                                emergencyAppointments[0].is_long_term_block 
+                                    ? '/patient/doctors' 
+                                    : `/patient/doctor/${emergencyAppointments[0].doctor_id}`
+                            );
+                        }}
+                        className="w-full md:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center whitespace-nowrap uppercase tracking-wide text-sm hover:scale-105"
+                    >
+                        {emergencyAppointments[0].is_long_term_block ? 'Buscar otro Especialista' : 'Reagendar con mi Doctor'} <ArrowRight size={18} className="ml-2" />
+                    </button>
+                </div>
+            )}
+
             {/* WIDGET 1: Cita de HOY */}
             {nextAppointment ? (
                 <div className="bg-gradient-to-r from-mindpath-primary to-mindpath-primary rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-white shadow-xl shadow-mindpath-primary/20 border border-mindpath-primary">

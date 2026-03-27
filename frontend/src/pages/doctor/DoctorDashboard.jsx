@@ -43,13 +43,26 @@ const DoctorDashboard = () => {
     const [weekStart, setWeekStart] = useState(() => getStartOfWeek(new Date()));
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockLoading, setBlockLoading] = useState(false);
+    
+    // Extensión de bloqueo
+    const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [extensionDuration, setExtensionDuration] = useState('1_week');
 
     const loadDashboard = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/appointments/doctor/summary');
-            setData(res.data);
-            setIsBlocked(res.data.isBlocked || false);
+            const [summaryRes, profileRes] = await Promise.all([
+                api.get('/appointments/doctor/summary'),
+                api.get('/doctors/profile/settings')
+            ]);
+            setData(summaryRes.data);
+            setIsBlocked(!!profileRes.data.is_blocked);
+            
+            if (profileRes.data.is_blocked && profileRes.data.emergency_block_until) {
+                if (new Date(profileRes.data.emergency_block_until) < new Date()) {
+                    setShowExtensionModal(true);
+                }
+            }
         } catch (e) {
             console.error('Error', e);
         }
@@ -77,15 +90,58 @@ const DoctorDashboard = () => {
         loadDashboard();
         fetchDayAppointments(selectedDate);
     };
-
-    const handleBlockToggle = async () => {
+    
+    const handleExtendBlock = async () => {
         try {
             setBlockLoading(true);
-            const nextState = !isBlocked;
-            await api.patch('/appointments/doctor/block', { blocked: nextState });
-            setIsBlocked(nextState);
-        } catch (e) {
-            console.error('Error al cambiar bloqueo', e);
+            const res = await api.post('/doctors/emergency-block', { action: 'extend', duration: extensionDuration });
+            alert(res.data.message);
+            setShowExtensionModal(false);
+            loadDashboard();
+        } catch (error) {
+            console.error(error);
+            alert("Error al extender el bloqueo");
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleReactivateAgenda = async () => {
+        try {
+            setBlockLoading(true);
+            const res = await api.post('/doctors/emergency-block', { action: 'deactivate' });
+            alert(`${res.data.message} ${res.data.affectedAppointments !== undefined ? `Pacientes reasignados a pendiente: ${res.data.affectedAppointments}` : ''}`);
+            setIsBlocked(false);
+            setShowExtensionModal(false);
+            loadDashboard();
+        } catch (error) {
+            console.error(error);
+            alert("Error al reactivar la agenda");
+        } finally {
+            setBlockLoading(false);
+        }
+    };
+
+    const handleBlockToggle = async () => {
+        if (isBlocked) {
+            setShowExtensionModal(true);
+            return;
+        }
+
+        const confirmBlock = window.confirm("⚠️ ¿Estás seguro? Esto suspenderá tus citas médicas de las próximas 24 horas y notificará a los pacientes afectados.");
+        if (!confirmBlock) return;
+
+        try {
+            setBlockLoading(true);
+            const res = await api.post('/doctors/emergency-block', { action: 'activate' });
+            
+            setIsBlocked(true);
+            alert(`${res.data.message} ${res.data.affectedAppointments !== undefined ? `Pacientes reasignados: ${res.data.affectedAppointments}` : ''}`);
+            
+            loadDashboard();
+        } catch (error) {
+            console.error("Error al activar bloqueo:", error);
+            alert("Hubo un error al procesar el bloqueo de emergencia.");
         } finally {
             setBlockLoading(false);
         }
@@ -142,7 +198,7 @@ const DoctorDashboard = () => {
                     }`}
                 >
                     <ShieldAlert size={20} className="mr-2" />
-                    {isBlocked ? 'Desbloquear agenda' : 'Bloqueo de Emergencia'}
+                    {isBlocked ? 'Inactivo por Emergencia' : 'Reportar Emergencia'}
                 </button>
             </div>
 
@@ -390,6 +446,60 @@ const DoctorDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL DE EXTENSIÓN DE EMERGENCIA */}
+            {showExtensionModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-8 max-w-md w-full shadow-2xl relative">
+                        <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-6">
+                            <ShieldAlert size={32} className="text-red-600 dark:text-red-400 animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-black text-center text-gray-900 dark:text-white mb-2">Bloqueo de Emergencia Activo</h2>
+                        <p className="text-center text-gray-500 dark:text-slate-400 mb-8 border-b dark:border-white/10 pb-6 text-sm">
+                            Tu agenda está bloqueada. ¿Necesitas más tiempo para resolver tu emergencia o deseas reactivar tu agenda para recibir pacientes nuevamente?
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Extender Bloqueo:</label>
+                                <select 
+                                    value={extensionDuration}
+                                    onChange={(e) => setExtensionDuration(e.target.value)}
+                                    className="w-full border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-4 py-3 font-medium focus:border-red-500 focus:outline-none transition-colors"
+                                >
+                                    <option value="2_days">2 Días adicionales</option>
+                                    <option value="1_week">1 Semana</option>
+                                    <option value="2_weeks">2 Semanas</option>
+                                    <option value="1_month">1 Mes</option>
+                                    <option value="3_months">3 Meses</option>
+                                    <option value="indefinite">Hasta Nuevo Aviso</option>
+                                </select>
+                            </div>
+                            <button
+                                onClick={handleExtendBlock}
+                                disabled={blockLoading}
+                                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-black py-4 rounded-xl shadow-lg transition-all"
+                            >
+                                {blockLoading ? 'Procesando...' : 'Aplicar Extensión'}
+                            </button>
+
+                            <div className="relative flex py-2 items-center">
+                                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                                <span className="flex-shrink-0 mx-4 text-gray-400 text-[10px] font-black uppercase tracking-widest">o</span>
+                                <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                            </div>
+
+                            <button
+                                onClick={handleReactivateAgenda}
+                                disabled={blockLoading}
+                                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white font-black py-4 rounded-xl shadow-lg transition-all"
+                            >
+                                {blockLoading ? 'Procesando...' : 'Reactivar Agenda Ahora'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
