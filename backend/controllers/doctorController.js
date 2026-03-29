@@ -542,3 +542,53 @@ exports.toggleEmergencyBlock = async (req, res) => {
     }
 };
 
+// ── Sprint 33: Días Libres y Excepciones ────────────────────────────
+
+// 1. Obtener las excepciones futuras del doctor
+exports.getExceptions = async (req, res) => {
+    try {
+        const [exceptions] = await db.query(
+            `SELECT * FROM doctor_exceptions 
+             WHERE doctor_id = (SELECT id FROM doctors WHERE user_id = ?) 
+             AND exception_date >= CURDATE() 
+             ORDER BY exception_date ASC`,
+            [req.user.id]
+        );
+        res.json(exceptions);
+    } catch (error) {
+        console.error("Error al cargar excepciones", error);
+        res.status(500).json({ message: "Error al cargar excepciones." });
+    }
+};
+
+// 2. Crear una nueva excepción
+exports.addException = async (req, res) => {
+    const { date, isDayOff, startTime, endTime } = req.body;
+    try {
+        const [docRes] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [req.user.id]);
+        if (docRes.length === 0) return res.status(404).json({ message: "Perfil no encontrado." });
+        const doctorId = docRes[0].id;
+
+        await db.query(
+            `INSERT INTO doctor_exceptions (doctor_id, exception_date, is_day_off, start_time, end_time) 
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE is_day_off = VALUES(is_day_off), start_time = VALUES(start_time), end_time = VALUES(end_time)`,
+            [doctorId, date, isDayOff, isDayOff ? null : startTime, isDayOff ? null : endTime]
+        );
+        res.json({ message: "Excepción de horario guardada exitosamente." });
+    } catch (error) {
+        console.error("Error al guardar excepción", error);
+        res.status(500).json({ message: "Error al guardar la excepción." });
+    }
+};
+
+// 3. Eliminar una excepción
+exports.deleteException = async (req, res) => {
+    try {
+        await db.query(`DELETE FROM doctor_exceptions WHERE id = ?`, [req.params.id]);
+        res.json({ message: "Excepción eliminada." });
+    } catch (error) {
+        console.error("Error al eliminar excepción", error);
+        res.status(500).json({ message: "Error al eliminar." });
+    }
+};

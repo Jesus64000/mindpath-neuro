@@ -31,16 +31,37 @@ exports.getAvailability = async (req, res) => {
         const dayOfWeekEnum = daysMap[requestDate.getUTCDay()];
 
         // Buscar *todas* las reglas de horario en doctor_schedules para ese día
-        const [schedules] = await db.query(
-            `SELECT start_time, end_time, slot_duration 
-             FROM doctor_schedules 
-             WHERE doctor_id = ? AND day_of_week = ?
-             ORDER BY start_time`,
-            [doctorId, dayOfWeekEnum]
+        const [exceptions] = await db.query(
+            `SELECT * FROM doctor_exceptions WHERE doctor_id = ? AND exception_date = ?`,
+            [doctorId, date]
         );
 
-        if (schedules.length === 0) {
-            return res.status(200).json([]);
+        let schedulesToUse = [];
+
+        if (exceptions.length > 0) {
+            const exception = exceptions[0];
+            if (exception.is_day_off) {
+                return res.status(200).json([]); // Día libre asignado
+            }
+            // Horario especial
+            schedulesToUse = [{
+                start_time: exception.start_time,
+                end_time: exception.end_time,
+                slot_duration: 30 // Fallback si no hay slot configurable a nivel de excepción
+            }];
+        } else {
+            const [schedules] = await db.query(
+                `SELECT start_time, end_time, slot_duration 
+                 FROM doctor_schedules 
+                 WHERE doctor_id = ? AND day_of_week = ?
+                 ORDER BY start_time`,
+                [doctorId, dayOfWeekEnum]
+            );
+
+            if (schedules.length === 0) {
+                return res.status(200).json([]);
+            }
+            schedulesToUse = schedules;
         }
 
         // Citas ya agendadas ese día
@@ -56,7 +77,7 @@ exports.getAvailability = async (req, res) => {
         // Generar slots para cada bloque de horario
         const slots = [];
         
-        schedules.forEach(rule => {
+        schedulesToUse.forEach(rule => {
             const slotDuration = rule.slot_duration || 30; // 30 min por defecto
             let currentSlot = new Date(`1970-01-01T${rule.start_time}Z`);
             const endTime = new Date(`1970-01-01T${rule.end_time}Z`);

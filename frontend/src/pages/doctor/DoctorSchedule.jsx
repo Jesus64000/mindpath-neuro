@@ -72,6 +72,15 @@ const DoctorSchedule = () => {
     const [showExtensionModal, setShowExtensionModal] = useState(false);
     const [extensionDuration, setExtensionDuration] = useState('1_week');
 
+    // --- Estado para Excepciones (Sprint 33) ---
+    const [exceptions, setExceptions] = useState([]);
+    const [newException, setNewException] = useState({
+        date: '',
+        isDayOff: true,
+        startTime: '08:00',
+        endTime: '12:00'
+    });
+
     const navigate = useNavigate();
 
     const calculateAge = (dob) => {
@@ -141,7 +150,7 @@ const DoctorSchedule = () => {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate), fetchSchedules(), fetchProfileSettings()]);
+            await Promise.all([fetchCalendar(), fetchDayAppointments(selectedDate), fetchSchedules(), fetchProfileSettings(), fetchExceptions()]);
         };
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,6 +259,39 @@ const DoctorSchedule = () => {
             fetchSchedules();
         } catch {
             alert('Error al eliminar el horario');
+        }
+    };
+
+    // --- Controladores para Excepciones ---
+    const fetchExceptions = async () => {
+        try {
+            const res = await api.get('/doctors/exceptions');
+            setExceptions(res.data);
+        } catch (error) {
+            console.error("Error fetching exceptions", error);
+        }
+    };
+
+    const handleAddException = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/doctors/exceptions', newException);
+            alert("Regla aplicada exitosamente");
+            fetchExceptions(); 
+            setNewException({ date: '', isDayOff: true, startTime: '08:00', endTime: '12:00' });
+        } catch (error) {
+            console.error(error);
+            alert("Error al aplicar regla.");
+        }
+    };
+
+    const handleDeleteException = async (id) => {
+        if(!window.confirm("¿Deseas eliminar esta regla y volver a tu horario normal ese día?")) return;
+        try {
+            await api.delete(`/doctors/exceptions/${id}`);
+            fetchExceptions();
+        } catch (error) {
+            console.error("Error deleting exception", error);
         }
     };
 
@@ -612,6 +654,89 @@ const DoctorSchedule = () => {
                                 <div className="text-center p-10 bg-gray-50 dark:bg-slate-700/30 rounded-3xl border border-dashed border-gray-200 dark:border-slate-600">
                                     <Settings size={40} className="mx-auto text-gray-300 dark:text-slate-600 mb-3" />
                                     <p className="text-gray-500 dark:text-slate-400 text-sm">Aún no has configurado disponibilidad.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* --- PANEL DE EXCEPCIONES --- */}
+                    <div className="bg-gray-50 dark:bg-slate-700/30 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 mt-8">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🌴 Días Libres y Horarios Especiales</h3>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                            Selecciona una fecha para marcarla como día libre o asignarle un horario diferente al habitual. Ésta excepción anulará tu horario de la semana regular para esa fecha.
+                        </p>
+
+                        <form onSubmit={handleAddException} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-8 bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fecha a modificar</label>
+                                <input 
+                                    type="date" 
+                                    required 
+                                    min={new Date().toISOString().split('T')[0]} 
+                                    value={newException.date} 
+                                    onChange={e => setNewException({...newException, date: e.target.value})}
+                                    className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"
+                                />
+                            </div>
+                            
+                            <div className="flex items-center h-10">
+                                <label className="flex items-center space-x-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-gray-300">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={newException.isDayOff} 
+                                        onChange={e => setNewException({...newException, isDayOff: e.target.checked})}
+                                        className="w-4 h-4 accent-mindpath-primary"
+                                    />
+                                    <span>¿Es día libre completo?</span>
+                                </label>
+                            </div>
+
+                            {!newException.isDayOff && (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
+                                        <input type="time" required value={newException.startTime} onChange={e => setNewException({...newException, startTime: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Fin</label>
+                                        <input type="time" required value={newException.endTime} onChange={e => setNewException({...newException, endTime: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"/>
+                                    </div>
+                                </>
+                            )}
+
+                            <div className={newException.isDayOff ? "md:col-span-2" : "md:col-span-4"}>
+                                <button type="submit" className="w-full py-2.5 bg-mindpath-primary text-white rounded-lg font-bold hover:bg-mindpath-primaryHover transition shadow-sm flex items-center justify-center">
+                                    <Plus size={16} className="mr-2" /> Guardar Excepción
+                                </button>
+                            </div>
+                        </form>
+
+                        <div>
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-3">Excepciones Programadas</h4>
+                            {exceptions.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic bg-white dark:bg-slate-800 p-4 py-8 text-center rounded-xl border border-dashed border-gray-200 dark:border-slate-600">No tienes excepciones futuras programadas.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {exceptions.map(exc => (
+                                        <div key={exc.id} className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg shadow-sm">
+                                            <div className="flex items-center">
+                                                <span className="font-bold text-gray-800 dark:text-white mr-4 flex items-center text-sm">
+                                                    <CalendarIcon size={14} className="mr-1.5 text-mindpath-primary"/>
+                                                    {new Date(exc.exception_date).toLocaleDateString()}
+                                                </span>
+                                                {exc.is_day_off ? (
+                                                    <span className="bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/40 dark:border-red-500/30 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wide">Día Libre</span>
+                                                ) : (
+                                                    <span className="bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-500/30 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wide">
+                                                        Turno Especial: {exc.start_time.substring(0,5)} - {exc.end_time.substring(0,5)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <button onClick={() => handleDeleteException(exc.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition" title="Eliminar regla">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>

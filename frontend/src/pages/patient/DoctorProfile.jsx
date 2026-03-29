@@ -57,14 +57,21 @@ const DoctorProfile = () => {
     const [modality, setModality] = useState('virtual');
     const [loadingSlots, setLoadingSlots] = useState(false);
 
-    // Calendario simple: próximos 7 días desde hoy
+    const [weekOffset, setWeekOffset] = useState(0); // 0 = Esta semana, 1 = Próxima, etc.
+
+    // Calendario: 7 días basados en el weekOffset
     const next7Days = useMemo(() => {
-        return Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            return d;
-        });
-    }, []);
+        const days = [];
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + (weekOffset * 7));
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            days.push(date);
+        }
+        return days;
+    }, [weekOffset]);
 
     // 1. Cargar perfil
     useEffect(() => {
@@ -125,6 +132,18 @@ const DoctorProfile = () => {
             console.error(error);
         }
     };
+
+    // Traductor de '14:30' a '2:30 PM'
+    const formatTimeAMPM = (timeStr) => {
+        const [hourStr, minute] = timeStr.split(':');
+        const hour = parseInt(hourStr, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12; // Convierte el 0 a 12
+        return `${formattedHour}:${minute} ${ampm}`;
+    };
+
+    const morningSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) < 12);
+    const afternoonSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) >= 12);
 
     if (loadingProfile && !doctor) {
         return <div className="flex justify-center items-center h-[70vh]"><Activity className="animate-spin text-mindpath-primary" size={48} /></div>;
@@ -275,8 +294,28 @@ const DoctorProfile = () => {
                             </button>
                         </div>
 
+                        {/* CONTROLES DE FECHA (Paginación de Semanas) */}
+                        <div className="flex items-center justify-between mb-4 mt-6">
+                            <button 
+                                onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
+                                disabled={weekOffset === 0}
+                                className="px-3 py-1.5 text-sm font-bold text-mindpath-primary hover:bg-mindpath-light dark:hover:bg-mindpath-primary/20 rounded-full disabled:opacity-30 disabled:hover:bg-transparent transition"
+                            >
+                                &larr; Anterior
+                            </button>
+                            <span className="font-bold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">
+                                {weekOffset === 0 ? "Esta semana" : weekOffset === 1 ? "Próxima Semana" : `Semana +${weekOffset}`}
+                            </span>
+                            <button 
+                                onClick={() => setWeekOffset(prev => Math.min(8, prev + 1))}
+                                disabled={weekOffset >= 8}
+                                className="px-3 py-1.5 text-sm font-bold text-mindpath-primary hover:bg-mindpath-light dark:hover:bg-mindpath-primary/20 rounded-full disabled:opacity-30 disabled:hover:bg-transparent transition"
+                            >
+                                Siguiente &rarr;
+                            </button>
+                        </div>
+
                         <div className="mb-6">
-                            <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">Fecha de consulta</h3>
                             <div className="flex justify-between items-center overflow-x-auto pb-2 scrollbar-hide gap-2">
                                 {next7Days.map((date, i) => {
                                     const dateString = formatDateLocal(date);
@@ -298,24 +337,60 @@ const DoctorProfile = () => {
                             </div>
                         </div>
 
+                        {/* MALLA DE HORARIOS SEPARADA (Mañana / Tarde) */}
                         <div className="mb-8">
-                            <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">Horarios</h3>
                             {loadingSlots ? (
                                 <div className="py-4 flex justify-center"><Activity size={24} className="animate-spin text-mindpath-primary"/></div>
-                            ) : availableSlots.length > 0 ? (
-                                <div className="grid grid-cols-3 gap-2">
-                                    {availableSlots.map(time => (
-                                        <button
-                                            key={time}
-                                            onClick={() => setSelectedSlot(time)}
-                                            className={`p-2 rounded-xl font-bold text-sm transition-all border ${selectedSlot === time ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'}`}
-                                        >
-                                            {time}
-                                        </button>
-                                    ))}
-                                </div>
+                            ) : availableSlots.length === 0 ? (
+                                 <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-500/30 rounded-xl font-medium text-sm">
+                                     Sin horarios disponibles para este día.
+                                 </div>
                             ) : (
-                                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl font-medium border border-red-100 dark:border-red-500/30">Sin horarios disponibles para este día.</p>
+                                <div className="space-y-6">
+                                    {/* SECCIÓN MAÑANA */}
+                                    {morningSlots.length > 0 && (
+                                        <div>
+                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1">☀️ Mañana</h4>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {morningSlots.map(slot => (
+                                                    <button 
+                                                        key={slot}
+                                                        onClick={() => setSelectedSlot(slot)}
+                                                        className={`py-2 rounded-xl text-sm font-bold transition-all border ${
+                                                            selectedSlot === slot 
+                                                            ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
+                                                            : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
+                                                        }`}
+                                                    >
+                                                        {formatTimeAMPM(slot)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* SECCIÓN TARDE / NOCHE */}
+                                    {afternoonSlots.length > 0 && (
+                                        <div>
+                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1">🌤️ Tarde / Noche</h4>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {afternoonSlots.map(slot => (
+                                                    <button 
+                                                        key={slot}
+                                                        onClick={() => setSelectedSlot(slot)}
+                                                        className={`py-2 rounded-xl text-sm font-bold transition-all border ${
+                                                            selectedSlot === slot 
+                                                            ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
+                                                            : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
+                                                        }`}
+                                                    >
+                                                        {formatTimeAMPM(slot)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
 

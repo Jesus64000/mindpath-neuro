@@ -39,6 +39,11 @@ router.get('/specialties', doctorController.getSpecialties);
 // Sprint 29: Catálogo público de clínicas/hospitales (sin auth — para el registro)
 router.get('/clinics', doctorController.getClinics);
 
+// Sprint 33: Motor de Agendamiento Avanzado (Excepciones)
+router.get('/exceptions', authMiddleware, doctorController.getExceptions);
+router.post('/exceptions', authMiddleware, doctorController.addException);
+router.delete('/exceptions/:id', authMiddleware, doctorController.deleteException);
+
 // Perfil público del doctor (mantener al final para evitar conflictos con rutas específicas)
 router.get('/:id', authMiddleware, doctorController.getDoctorById);
 
