@@ -6,18 +6,25 @@ exports.getMyDoctors = async (req, res) => {
         const userId = req.user.id;
 
         const [myDoctors] = await db.query(`
-            SELECT DISTINCT
+            SELECT 
                 d.id AS doctor_id,
                 u.id AS user_id,
                 u.full_name,
                 d.specialty,
                 d.profile_picture,
-                d.bio
-            FROM appointments a
-            JOIN doctors d ON a.doctor_id = d.id
+                d.bio,
+                ROUND(AVG(dr.rating), 1) AS avg_rating,
+                COUNT(dr.id) AS rating_count
+            FROM doctors d
             JOIN users u ON d.user_id = u.id
-            JOIN patients p ON a.patient_id = p.id
-            WHERE p.user_id = ? AND u.role = 'doctor' AND d.is_verified = TRUE
+            LEFT JOIN doctor_ratings dr ON dr.doctor_id = d.id
+            WHERE d.id IN (
+                SELECT DISTINCT a.doctor_id 
+                FROM appointments a
+                JOIN patients p ON a.patient_id = p.id
+                WHERE p.user_id = ?
+            ) AND u.role = 'doctor' AND d.is_verified = TRUE
+            GROUP BY d.id, u.id, u.full_name, d.specialty, d.profile_picture, d.bio
         `, [userId]);
 
         res.status(200).json(myDoctors);

@@ -123,10 +123,11 @@ const DoctorStats = () => {
 
                 {/* Gráfico de barras — últimos 6 meses */}
                 <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm">
-                    <div className="flex items-center mb-6">
-                        <BarChart3 className="text-mindpath-primary mr-2" size={20} />
-                        <h3 className="font-black text-gray-900 dark:text-white">Citas por Mes</h3>
-                        <span className="ml-auto text-xs text-gray-400 dark:text-slate-500">últimos 6 meses</span>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center">
+                            <BarChart3 className="text-mindpath-primary mr-2" size={20} /> Citas por Mes
+                        </h3>
+                        <span className="text-xs font-bold text-gray-400 dark:text-slate-500">últimos 6 meses</span>
                     </div>
 
                     {data.byMonth.length === 0 ? (
@@ -134,19 +135,28 @@ const DoctorStats = () => {
                             Sin datos aún
                         </div>
                     ) : (
-                        <div className="flex items-end justify-between gap-3 h-40">
-                            {data.byMonth.map(({ month, total: t }) => {
-                                const pct = Math.round((t / maxMonth) * 100);
+                        <div className="h-48 flex items-end justify-around gap-4 mt-4">
+                            {data.byMonth.map(({ month, total: t }, index) => {
+                                const heightPercentage = maxMonth === 0 ? 0 : (t / maxMonth) * 100;
+
                                 return (
-                                    <div key={month} className="flex flex-col items-center flex-1 gap-1">
-                                        <span className="text-xs font-bold text-mindpath-primary">{t}</span>
-                                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden flex items-end" style={{height: '100px'}}>
-                                            <div
-                                                className="w-full bg-mindpath-primary rounded-full transition-all duration-700"
-                                                style={{height: `${pct}%`, minHeight: '4px'}}
-                                            />
+                                    <div key={index} className="flex flex-col items-center justify-end w-full h-full group">
+                                        <span className="text-mindpath-primary font-bold text-sm mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {t}
+                                        </span>
+                                        
+                                        <div className="flex-1 w-full max-w-[60px] bg-gray-100 dark:bg-slate-700 rounded-t-2xl relative overflow-hidden">
+                                            <div 
+                                                className="absolute bottom-0 left-0 w-full bg-mindpath-primary rounded-t-2xl transition-all duration-1000 ease-out"
+                                                style={{ height: `${heightPercentage}%`, minHeight: '4px' }}
+                                            >
+                                                <div className="w-full h-full bg-gradient-to-t from-black/10 dark:from-purple-900/50 to-transparent"></div>
+                                            </div>
                                         </div>
-                                        <span className="text-xs text-gray-400 dark:text-slate-500 font-bold">{getMonthLabel(month)}</span>
+                                        
+                                        <span className="text-xs text-gray-500 dark:text-slate-400 mt-3 font-bold">
+                                            {getMonthLabel(month)}
+                                        </span>
                                     </div>
                                 );
                             })}

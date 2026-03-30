@@ -58,7 +58,6 @@ const PatientAppointments = () => {
             // Obtenemos un límite generoso para manejar localmente las pestañas
             const response = await api.get('/appointments/patient?limit=100');
             setAppointments(response.data.data);
-            setTotalPages(1); // Desabilitamos paginación vieja
         } catch (err) {
             console.error(err);
             setError('Error al cargar tus citas médicas.');
@@ -73,9 +72,8 @@ const PatientAppointments = () => {
 
     const handleCancelAppointment = async (id) => {
         if (!window.confirm("¿Estás seguro de que deseas cancelar esta cita?")) return;
-        
         try {
-            await api.put(`/appointments/${id}/cancel`);
+            await api.put(`/patients/appointments/${id}/cancel`);
             alert("Cita cancelada exitosamente.");
             fetchAppointments(); // Recargar la lista
         } catch (error) {

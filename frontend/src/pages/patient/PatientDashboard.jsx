@@ -50,10 +50,12 @@ const PatientDashboard = () => {
                 const emergencyApps = appointments.filter(app => app.status === 'emergency_reschedule');
                 setEmergencyAppointments(emergencyApps);
 
+                const now = new Date();
                 const missedApps = appointments.filter(app => {
-                    if (!['pending', 'scheduled', 'confirmed'].includes(app.status)) return false;
-                    const appDateTime = new Date(`${app.appointment_date}T${app.start_time}`);
-                    return appDateTime < new Date() && app.appointment_id !== todayApp?.appointment_id;
+                    if (app.status !== 'confirmed' && app.status !== 'scheduled') return false;
+                    const cleanDate = app.appointment_date.split('T')[0];
+                    const appDateTime = new Date(`${cleanDate}T${app.start_time}`);
+                    return appDateTime < now && app.appointment_id !== todayApp?.appointment_id;
                 });
                 setMissedAppointments(missedApps);
 

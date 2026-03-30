@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
@@ -55,6 +57,7 @@ const DoctorSchedule = () => {
     
     // UI State para Pestañas (Mis Citas vs Mi Disponibilidad)
     const [activeTab, setActiveTab] = useState('appointments'); // 'appointments' | 'availability'
+    const [activeSubTab, setActiveSubTab] = useState('regular'); // 'regular' o 'exceptions'
 
     // --- Estado para "Mi Disponibilidad" ---
     const [schedules, setSchedules] = useState([]);
@@ -74,8 +77,9 @@ const DoctorSchedule = () => {
 
     // --- Estado para Excepciones (Sprint 33) ---
     const [exceptions, setExceptions] = useState([]);
+    const [dateRange, setDateRange] = useState([null, null]);
+    const [startDate, endDate] = dateRange;
     const [newException, setNewException] = useState({
-        date: '',
         isDayOff: true,
         startTime: '08:00',
         endTime: '12:00'
@@ -275,10 +279,16 @@ const DoctorSchedule = () => {
     const handleAddException = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/doctors/exceptions', newException);
+            const payload = {
+                ...newException,
+                startDate: toLocalISO(startDate),
+                endDate: endDate ? toLocalISO(endDate) : toLocalISO(startDate)
+            };
+            await api.post('/doctors/exceptions', payload);
             alert("Regla aplicada exitosamente");
             fetchExceptions(); 
-            setNewException({ date: '', isDayOff: true, startTime: '08:00', endTime: '12:00' });
+            setNewException({ isDayOff: true, startTime: '08:00', endTime: '12:00' });
+            setDateRange([null, null]);
         } catch (error) {
             console.error(error);
             alert("Error al aplicar regla.");
@@ -531,12 +541,38 @@ const DoctorSchedule = () => {
             ) : (
                 // --- PESTAÑA: MI DISPONIBILIDAD ---
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
-                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">Configurar Disponibilidad</h2>
+                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">Mi Disponibilidad</h2>
                     <p className="text-gray-500 dark:text-slate-400 mb-8 max-w-2xl">
-                        Define los días y horas que estás disponible para que los pacientes agenden sus consultas. Puedes agregar múltiples bloques en un mismo día (ej. Mañana y Tarde).
+                        Gestiona tu horario semanal y programa tus días libres.
                     </p>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+                    {/* 🗂️ MENÚ DE SUB-PESTAÑAS */}
+                    <div className="flex space-x-6 border-b border-gray-200 dark:border-slate-700 mb-8">
+                        <button
+                            onClick={() => setActiveSubTab('regular')}
+                            className={`pb-3 text-sm font-bold transition-colors ${
+                                activeSubTab === 'regular' 
+                                ? 'border-b-2 border-mindpath-primary text-mindpath-primary' 
+                                : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            }`}
+                        >
+                            🕒 Horario Regular
+                        </button>
+                        <button
+                            onClick={() => setActiveSubTab('exceptions')}
+                            className={`pb-3 text-sm font-bold transition-colors ${
+                                activeSubTab === 'exceptions' 
+                                ? 'border-b-2 border-mindpath-primary text-mindpath-primary' 
+                                : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            }`}
+                        >
+                            🌴 Vacaciones y Días Libres
+                        </button>
+                    </div>
+
+                    {/* 🔄 HORARIO REGULAR */}
+                    {activeSubTab === 'regular' && (
+                        <div className="animate-fadeIn grid grid-cols-1 lg:grid-cols-2 gap-10">
                         {/* Formulario */}
                         <div>
                             <form onSubmit={handleAddSchedule} className="space-y-5 bg-gray-50 dark:bg-slate-700/30 p-6 rounded-3xl border border-gray-100 dark:border-white/5">
@@ -658,58 +694,73 @@ const DoctorSchedule = () => {
                             )}
                         </div>
                     </div>
+                )}
 
-                    {/* --- PANEL DE EXCEPCIONES --- */}
-                    <div className="bg-gray-50 dark:bg-slate-700/30 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 mt-8">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🌴 Días Libres y Horarios Especiales</h3>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
-                            Selecciona una fecha para marcarla como día libre o asignarle un horario diferente al habitual. Ésta excepción anulará tu horario de la semana regular para esa fecha.
-                        </p>
+                {/* 🔄 VACACIONES Y EXCEPCIONES */}
+                    {activeSubTab === 'exceptions' && (
+                        <div className="animate-fadeIn space-y-8">
+                            <div className="bg-gray-50 dark:bg-slate-700/30 p-6 rounded-2xl border border-gray-100 dark:border-slate-700">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🌴 Días Libres y Horarios Especiales</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                                    Selecciona el rango de fechas en el calendario interactivo. Esta excepción anulará tu horario de la semana regular.
+                                </p>
 
-                        <form onSubmit={handleAddException} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-8 bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fecha a modificar</label>
-                                <input 
-                                    type="date" 
-                                    required 
-                                    min={new Date().toISOString().split('T')[0]} 
-                                    value={newException.date} 
-                                    onChange={e => setNewException({...newException, date: e.target.value})}
-                                    className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"
-                                />
-                            </div>
-                            
-                            <div className="flex items-center h-10">
-                                <label className="flex items-center space-x-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-gray-300">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={newException.isDayOff} 
-                                        onChange={e => setNewException({...newException, isDayOff: e.target.checked})}
-                                        className="w-4 h-4 accent-mindpath-primary"
-                                    />
-                                    <span>¿Es día libre completo?</span>
-                                </label>
-                            </div>
-
-                            {!newException.isDayOff && (
-                                <>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
-                                        <input type="time" required value={newException.startTime} onChange={e => setNewException({...newException, startTime: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"/>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-8">
+                                    {/* COLUMNA IZQUIERDA: EL CALENDARIO VISUAL */}
+                                    <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
+                                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 text-center">
+                                            Selecciona el rango en el calendario
+                                        </label>
+                                        <DatePicker
+                                            selectsRange={true}
+                                            startDate={startDate}
+                                            endDate={endDate}
+                                            onChange={(update) => setDateRange(update)}
+                                            inline 
+                                            minDate={new Date()} 
+                                            calendarClassName="mindpath-calendar shadow-md border-0 rounded-xl" 
+                                        />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Fin</label>
-                                        <input type="time" required value={newException.endTime} onChange={e => setNewException({...newException, endTime: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 outline-none focus:ring-2 focus:ring-mindpath-primary/30 rounded-lg bg-white dark:bg-slate-900 dark:text-white text-sm"/>
-                                    </div>
-                                </>
-                            )}
 
-                            <div className={newException.isDayOff ? "md:col-span-2" : "md:col-span-4"}>
-                                <button type="submit" className="w-full py-2.5 bg-mindpath-primary text-white rounded-lg font-bold hover:bg-mindpath-primaryHover transition shadow-sm flex items-center justify-center">
-                                    <Plus size={16} className="mr-2" /> Guardar Excepción
-                                </button>
-                            </div>
-                        </form>
+                                    {/* COLUMNA DERECHA: LOS CONTROLES */}
+                                    <div className="flex flex-col justify-center space-y-6">
+                                        <div className="bg-mindpath-primary/10 p-4 rounded-xl border border-mindpath-primary/20">
+                                            <label className="flex items-center space-x-3 cursor-pointer text-sm font-bold text-gray-800 dark:text-gray-200">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={newException.isDayOff} 
+                                                    onChange={e => setNewException({...newException, isDayOff: e.target.checked})}
+                                                    className="w-5 h-5 accent-mindpath-primary rounded focus:ring-mindpath-primary"
+                                                />
+                                                <span>¿Serán días libres completos?</span>
+                                            </label>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 ml-8">
+                                                Si desmarcas esta opción, podrás definir un horario especial para los días seleccionados.
+                                            </p>
+                                        </div>
+
+                                        {!newException.isDayOff && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
+                                                    <input type="time" required value={newException.startTime} onChange={e => setNewException({...newException, startTime: e.target.value})} className="w-full p-3 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"/>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Fin</label>
+                                                    <input type="time" required value={newException.endTime} onChange={e => setNewException({...newException, endTime: e.target.value})} className="w-full p-3 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"/>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button 
+                                            onClick={handleAddException} 
+                                            disabled={!startDate}
+                                            className="w-full py-3 bg-mindpath-primary text-white rounded-xl font-bold hover:bg-mindpath-primaryHover transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                        >
+                                            <Plus size={16} className="mr-2" /> Guardar Excepción
+                                        </button>
+                                    </div>
+                                </div>
 
                         <div>
                             <h4 className="font-bold text-gray-900 dark:text-white mb-3">Excepciones Programadas</h4>
@@ -743,6 +794,8 @@ const DoctorSchedule = () => {
                     </div>
                 </div>
             )}
+            </div>
+        )}
 
             {/* MODAL DE EXTENSIÓN DE EMERGENCIA */}
             {showExtensionModal && (

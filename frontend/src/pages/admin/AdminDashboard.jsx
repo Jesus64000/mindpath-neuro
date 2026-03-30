@@ -94,51 +94,48 @@ const AdminDashboard = () => {
     const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, applySettings } = useSettingsStore();
 
     // Theming
-    const [theme, setTheme]       = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: 'Inter' });
-    const [logoFile, setLogoFile] = useState(null);
+    const PRESET_FONTS = ['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'];
+    const [theme, setTheme]         = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: 'Inter' });
+    const [logoFile, setLogoFile]   = useState(null);
     const [savingTheme, setSavingTheme] = useState(false);
+    const [customFontName, setCustomFontName] = useState('');
+    const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
 
     // Specialties
     const [newSpe, setNewSpe]     = useState('');
     const [editSpe, setEditSpe]   = useState(null);
 
-    // Verificación modal
+    // Verificacion modal
     const [rejectTarget, setRejectTarget] = useState(null);
     const [rejectNotes, setRejectNotes]   = useState('');
 
     // Usuarios
-    const [staff, setStaff]         = useState([]);
-    const [users, setUsers]         = useState([]);
-    const [userSearch, setUserSearch] = useState('');
+    const [staff, setStaff]               = useState([]);
+    const [users, setUsers]               = useState([]);
+    const [userSearch, setUserSearch]     = useState('');
     const [userRoleFilter, setUserRoleFilter] = useState('');
-    const [changingRole, setChangingRole]     = useState(null); // id en proceso
-    const [roleDropdown, setRoleDropdown]     = useState(null); // id del dropdown abierto
+    const [changingRole, setChangingRole]     = useState(null);
+    const [roleDropdown, setRoleDropdown]     = useState(null);
 
     const showToast = (msg, type = 'success') => setToast({ msg, type });
 
-    // ── Data Fetching ──────────────────────────────────────────────────────────
+    // Data Fetching
     const loadStats = useCallback(async () => {
         if (!isAdmin) return;
-        try {
-            const res = await api.get('/admin/stats');
-            setStats(res.data);
-        } catch { showToast('Error al cargar métricas.', 'error'); }
+        try { const res = await api.get('/admin/stats'); setStats(res.data); }
+        catch { showToast('Error al cargar metricas.', 'error'); }
         finally { setLoading(p => ({ ...p, stats: false })); }
     }, [isAdmin]);
 
     const loadPending = useCallback(async () => {
-        try {
-            const res = await api.get('/admin/doctors/pending');
-            setPending(res.data);
-        } catch { /* silencioso */ }
+        try { const res = await api.get('/admin/doctors/pending'); setPending(res.data); }
+        catch { /* silencioso */ }
         finally { setLoading(p => ({ ...p, pending: false })); }
     }, []);
 
     const loadSpecialties = useCallback(async () => {
-        try {
-            const res = await api.get('/admin/specialties');
-            setSpecialties(res.data);
-        } catch { /* silencioso */ }
+        try { const res = await api.get('/admin/specialties'); setSpecialties(res.data); }
+        catch { /* silencioso */ }
         finally { setLoading(p => ({ ...p, spe: false })); }
     }, []);
 
@@ -154,10 +151,8 @@ const AdminDashboard = () => {
     }, [userSearch, userRoleFilter]);
 
     const loadStaff = useCallback(async () => {
-        try {
-            const res = await api.get('/admin/users?role=staff');
-            setStaff(res.data);
-        } catch { showToast('Error al cargar equipo.', 'error'); }
+        try { const res = await api.get('/admin/users?role=staff'); setStaff(res.data); }
+        catch { showToast('Error al cargar equipo.', 'error'); }
         finally { setLoading(p => ({ ...p, staff: false })); }
     }, []);
 
@@ -166,81 +161,48 @@ const AdminDashboard = () => {
         setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: fontFamily || 'Inter' });
     }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, clinicName, logoUrl, primaryColor, primaryHover]);
 
-    // ── Verificación ───────────────────────────────────────────────────────────
     const verifyDoctor = async (id) => {
-        try {
-            await api.put(`/admin/doctors/${id}/verify`);
-            showToast('Doctor verificado. Ya aparece en el directorio.');
-            loadPending(); loadStats();
-        } catch { showToast('Error al verificar doctor.', 'error'); }
+        try { await api.put(`/admin/doctors/${id}/verify`); showToast('Doctor verificado.'); loadPending(); loadStats(); }
+        catch { showToast('Error al verificar doctor.', 'error'); }
     };
 
     const rejectDoctor = async () => {
         if (!rejectTarget) return;
-        try {
-            await api.put(`/admin/doctors/${rejectTarget}/reject`, { notes: rejectNotes });
-            showToast('Doctor rechazado.');
-            setRejectTarget(null); setRejectNotes('');
-            loadPending();
-        } catch { showToast('Error al rechazar doctor.', 'error'); }
+        try { await api.put(`/admin/doctors/${rejectTarget}/reject`, { notes: rejectNotes }); showToast('Doctor rechazado.'); setRejectTarget(null); setRejectNotes(''); loadPending(); }
+        catch { showToast('Error al rechazar doctor.', 'error'); }
     };
 
-    // ── Especialidades CRUD ────────────────────────────────────────────────────
     const createSpe = async () => {
         if (!newSpe.trim()) return;
-        try {
-            const res = await api.post('/admin/specialties', { name: newSpe.trim() });
-            setSpecialties(p => [...p, res.data]);
-            setNewSpe('');
-            showToast('Especialidad creada.');
-        } catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
+        try { const res = await api.post('/admin/specialties', { name: newSpe.trim() }); setSpecialties(p => [...p, res.data]); setNewSpe(''); showToast('Especialidad creada.'); }
+        catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
     };
 
     const updateSpe = async () => {
         if (!editSpe?.name.trim()) return;
-        try {
-            await api.put(`/admin/specialties/${editSpe.id}`, { name: editSpe.name.trim() });
-            setSpecialties(p => p.map(s => s.id === editSpe.id ? { ...s, name: editSpe.name } : s));
-            setEditSpe(null);
-            showToast('Especialidad actualizada.');
-        } catch { showToast('Error al actualizar.', 'error'); }
+        try { await api.put(`/admin/specialties/${editSpe.id}`, { name: editSpe.name.trim() }); setSpecialties(p => p.map(s => s.id === editSpe.id ? { ...s, name: editSpe.name } : s)); setEditSpe(null); showToast('Especialidad actualizada.'); }
+        catch { showToast('Error al actualizar.', 'error'); }
     };
 
     const deleteSpe = async (id) => {
-        if (!confirm('¿Eliminar esta especialidad?')) return;
-        try {
-            await api.delete(`/admin/specialties/${id}`);
-            setSpecialties(p => p.filter(s => s.id !== id));
-            showToast('Especialidad eliminada.');
-        } catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
+        if (!confirm('Eliminar esta especialidad?')) return;
+        try { await api.delete(`/admin/specialties/${id}`); setSpecialties(p => p.filter(s => s.id !== id)); showToast('Especialidad eliminada.'); }
+        catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
     };
 
-    // ── Gestión de Usuarios ────────────────────────────────────────────────────
     const toggleUserActive = async (userId, currentlyActive) => {
-        try {
-            await api.put(`/admin/users/${userId}/toggle`);
-            setUsers(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u));
-            setStaff(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u));
-            showToast(currentlyActive ? 'Cuenta suspendida.' : 'Cuenta reactivada.');
-        } catch { showToast('Error al cambiar estado del usuario.', 'error'); }
+        try { await api.put(`/admin/users/${userId}/toggle`); setUsers(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u)); setStaff(p => p.map(u => u.id === userId ? { ...u, is_active: !currentlyActive } : u)); showToast(currentlyActive ? 'Cuenta suspendida.' : 'Cuenta reactivada.'); }
+        catch { showToast('Error al cambiar estado del usuario.', 'error'); }
     };
 
     const changeUserRole = async (userId, newRole) => {
         if (!isAdmin) return;
         setChangingRole(userId);
-        try {
-            await api.put(`/admin/users/${userId}/role`, { role: newRole });
-            
-            // Recargar ambas listas
-            loadUsers();
-            loadStaff();
-            
-            showToast(`Rol actualizado a ${ROLE_LABEL[newRole]?.label || newRole}.`);
-        } catch { showToast('Error al cambiar rol.', 'error'); }
+        try { await api.put(`/admin/users/${userId}/role`, { role: newRole }); loadUsers(); loadStaff(); showToast(`Rol actualizado a ${ROLE_LABEL[newRole]?.label || newRole}.`); }
+        catch { showToast('Error al cambiar rol.', 'error'); }
         finally { setChangingRole(null); setRoleDropdown(null); }
     };
 
-    // ── Theming ────────────────────────────────────────────────────────────────
     const previewColor = (field, value) => {
         setTheme(p => ({ ...p, [field]: value }));
         if (field === 'primary_color') document.documentElement.style.setProperty('--color-primary', value);
@@ -259,13 +221,17 @@ const AdminDashboard = () => {
         setSavingTheme(true);
         try {
             const logo_url = await uploadLogo();
-            const payload = { ...theme, logo_url };
+            const finalFont = (isCustomFont || theme.font_family === '__custom__')
+                ? (customFontName.trim() || 'Inter')
+                : theme.font_family;
+            const payload = { ...theme, logo_url, font_family: finalFont };
             await api.put('/admin/settings', payload);
-            applySettings({ clinic_name: payload.clinic_name, logo_url: payload.logo_url, primary_color: payload.primary_color, primary_hover: payload.primary_hover, font_family: payload.font_family });
-            showToast('Configuración guardada exitosamente. 🎨');
-        } catch { showToast('Error al guardar configuración.', 'error'); }
+            applySettings({ clinic_name: payload.clinic_name, logo_url: payload.logo_url, primary_color: payload.primary_color, primary_hover: payload.primary_hover, font_family: finalFont });
+            showToast('Configuracion guardada y aplicada!');
+        } catch { showToast('Error al guardar configuracion.', 'error'); }
         finally { setSavingTheme(false); }
     };
+
 
     const chartData = stats?.apptsByMonth?.map(r => ({
         name: MONTH_NAMES[(r.month || 1) - 1],
@@ -665,14 +631,25 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            
+
                             <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Tipografía del Sistema</label>
-                                <select value={['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'].includes(theme.font_family) ? theme.font_family : '__custom__'}
+
+                                {/* Select de fuentes predefinidas + opción custom */}
+                                <select
+                                    value={isCustomFont ? '__custom__' : theme.font_family}
                                     onChange={e => {
-                                        if (e.target.value !== '__custom__') setTheme(p => ({ ...p, font_family: e.target.value }));
+                                        if (e.target.value === '__custom__') {
+                                            // Al elegir "custom" dejamos el font_family intacto para preservar cualquier fuente previa
+                                            setCustomFontName('');
+                                            setTheme(p => ({ ...p, font_family: '__custom__' }));
+                                        } else {
+                                            setCustomFontName('');
+                                            setTheme(p => ({ ...p, font_family: e.target.value }));
+                                        }
                                     }}
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white mb-3">
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white mb-3"
+                                >
                                     <option value="Inter">Inter (Moderna)</option>
                                     <option value="Roboto">Roboto (Clásica)</option>
                                     <option value="Poppins">Poppins (Redondeada)</option>
@@ -685,23 +662,47 @@ const AdminDashboard = () => {
                                     <option value="system-ui">Sistema (Por defecto del SO)</option>
                                     <option value="__custom__">✨ Google Font personalizada...</option>
                                 </select>
-                                {(!['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'].includes(theme.font_family) || theme.font_family === '__custom__') && (
-                                    <div className="mt-2">
-                                        <input 
-                                            type="text" 
-                                            value={theme.font_family === '__custom__' ? '' : (theme.font_family || '')}
-                                            onChange={e => setTheme(p => ({ ...p, font_family: e.target.value }))}
-                                            placeholder="Escribe el nombre exacto de la fuente de Google Fonts..."
-                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+
+                                {/* Input de fuente custom — solo aparece cuando se elige esa opción */}
+                                {(isCustomFont || theme.font_family === '__custom__') && (
+                                    <div className="animate-fadeIn mt-1 mb-3 p-4 bg-mindpath-primary/5 border border-mindpath-primary/20 rounded-xl">
+                                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                            Nombre exacto de la fuente en Google Fonts
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: Space Mono, Oswald, Playfair Display..."
+                                            value={customFontName}
+                                            onChange={e => {
+                                                setCustomFontName(e.target.value);
+                                                // Preview en tiempo real: inyectamos el <link> al vuelo
+                                                if (e.target.value.trim()) {
+                                                    const formatted = e.target.value.trim().replace(/\s+/g, '+');
+                                                    const url = `https://fonts.googleapis.com/css2?family=${formatted}:wght@300;400;500;600;700;800&display=swap`;
+                                                    let el = document.getElementById('mindpath-preview-font');
+                                                    if (!el) { el = document.createElement('link'); el.id = 'mindpath-preview-font'; el.rel = 'stylesheet'; document.head.appendChild(el); }
+                                                    el.href = url;
+                                                }
+                                            }}
+                                            className="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:text-white"
                                         />
-                                        <p className="text-xs text-gray-400 mt-2">
-                                            Busca fuentes en <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-mindpath-primary hover:underline">fonts.google.com</a> y escribe el nombre exacto (ej: "Playfair Display", "Dancing Script").
+                                        <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-2">
+                                            Busca en{' '}
+                                            <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-mindpath-primary hover:underline font-semibold">fonts.google.com</a>
+                                            {' '}y copia el nombre tal cual aparece (sensible a mayúsculas).
                                         </p>
                                     </div>
                                 )}
-                                <div className="mt-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-600">
-                                    <p className="text-sm text-gray-600 dark:text-gray-300" style={{ fontFamily: theme.font_family + ', sans-serif' }}>
-                                        Vista previa: El zorro marrón ágil salta sobre el perro perezoso. 0123456789
+
+                                {/* Caja de vista previa — aplica la fuente en tiempo real */}
+                                <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-600">
+                                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Vista previa</p>
+                                    <p
+                                        className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed"
+                                        style={{ fontFamily: `'${ (isCustomFont || theme.font_family === '__custom__') ? customFontName || 'Inter' : theme.font_family}', sans-serif` }}
+                                    >
+                                        El zorro marrón ágil salta sobre el perro perezoso. 0123456789<br/>
+                                        <span className="font-bold">Texto en negrita</span> · <span className="font-light">Texto ligero</span>
                                     </p>
                                 </div>
                             </div>

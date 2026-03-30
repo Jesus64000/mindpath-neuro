@@ -561,24 +561,38 @@ exports.getExceptions = async (req, res) => {
     }
 };
 
-// 2. Crear una nueva excepción
+// 2. Crear una nueva excepción (Rango Sprint 35)
 exports.addException = async (req, res) => {
-    const { date, isDayOff, startTime, endTime } = req.body;
+    const { startDate, endDate, isDayOff, startTime, endTime } = req.body;
     try {
         const [docRes] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [req.user.id]);
         if (docRes.length === 0) return res.status(404).json({ message: "Perfil no encontrado." });
         const doctorId = docRes[0].id;
 
-        await db.query(
-            `INSERT INTO doctor_exceptions (doctor_id, exception_date, is_day_off, start_time, end_time) 
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE is_day_off = VALUES(is_day_off), start_time = VALUES(start_time), end_time = VALUES(end_time)`,
-            [doctorId, date, isDayOff, isDayOff ? null : startTime, isDayOff ? null : endTime]
-        );
-        res.json({ message: "Excepción de horario guardada exitosamente." });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (start > end) return res.status(400).json({ message: "La fecha de inicio debe ser anterior a la fecha final." });
+
+        let currentDate = new Date(start);
+        
+        while (currentDate <= end) {
+            const formattedDate = currentDate.toISOString().split('T')[0];
+
+            await db.query(
+                `INSERT INTO doctor_exceptions (doctor_id, exception_date, is_day_off, start_time, end_time) 
+                 VALUES (?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE is_day_off = VALUES(is_day_off), start_time = VALUES(start_time), end_time = VALUES(end_time)`,
+                [doctorId, formattedDate, isDayOff, isDayOff ? null : startTime, isDayOff ? null : endTime]
+            );
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        res.json({ message: "Rango de excepciones guardado exitosamente." });
     } catch (error) {
-        console.error("Error al guardar excepción", error);
-        res.status(500).json({ message: "Error al guardar la excepción." });
+        console.error("Error al procesar rango:", error);
+        res.status(500).json({ message: "Error al guardar el rango de excepciones." });
     }
 };
 

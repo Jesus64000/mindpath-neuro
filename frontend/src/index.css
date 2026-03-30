@@ -55,3 +55,187 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ── React Datepicker – MindPath Theme ──────────────────────────────────── */
+.mindpath-calendar.react-datepicker {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  width: 100%;
+}
+
+.mindpath-calendar .react-datepicker__month-container {
+  width: 100%;
+  float: none;
+}
+
+/* Header */
+.mindpath-calendar .react-datepicker__header {
+  background: transparent;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+  padding: 0 0 12px 0;
+}
+
+.mindpath-calendar .react-datepicker__current-month {
+  color: #f1f5f9;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+/* Day names row */
+.mindpath-calendar .react-datepicker__day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin: 0;
+  padding: 0;
+}
+
+.mindpath-calendar .react-datepicker__day-name {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: auto;
+  text-align: center;
+  margin: 0;
+  padding: 4px 0;
+}
+
+/* Month / weeks */
+.mindpath-calendar .react-datepicker__month {
+  margin: 8px 0 0 0;
+}
+
+.mindpath-calendar .react-datepicker__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* Individual day cells */
+.mindpath-calendar .react-datepicker__day {
+  width: auto;
+  height: 36px;
+  line-height: 36px;
+  margin: 0;
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.mindpath-calendar .react-datepicker__day:hover {
+  background: rgba(109, 40, 217, 0.3);
+  border-color: rgba(109, 40, 217, 0.5);
+  color: #e2e8f0;
+  border-radius: 10px;
+}
+
+/* Range start & end */
+.mindpath-calendar .react-datepicker__day--range-start,
+.mindpath-calendar .react-datepicker__day--range-end,
+.mindpath-calendar .react-datepicker__day--selected {
+  background: #6d28d9 !important;
+  color: #ffffff !important;
+  border-color: #6d28d9 !important;
+  border-radius: 10px !important;
+  font-weight: 800;
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.25);
+}
+
+/* In-range days */
+.mindpath-calendar .react-datepicker__day--in-range {
+  background: rgba(109, 40, 217, 0.2) !important;
+  color: #c4b5fd !important;
+  border-color: rgba(109, 40, 217, 0.2) !important;
+  border-radius: 10px !important;
+}
+
+.mindpath-calendar .react-datepicker__day--in-selecting-range {
+  background: rgba(109, 40, 217, 0.15) !important;
+  color: #c4b5fd !important;
+  border-color: rgba(109, 40, 217, 0.2) !important;
+  border-radius: 10px !important;
+}
+
+/* Today */
+.mindpath-calendar .react-datepicker__day--today {
+  border-color: rgba(109, 40, 217, 0.6) !important;
+  color: #a78bfa;
+}
+.mindpath-calendar .react-datepicker__day--today:not(.react-datepicker__day--selected):not(.react-datepicker__day--in-range) {
+  font-weight: 800;
+}
+
+/* Disabled / outside month */
+.mindpath-calendar .react-datepicker__day--disabled,
+.mindpath-calendar .react-datepicker__day--outside-month {
+  color: #334155;
+  background: transparent;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Nav arrows */
+.mindpath-calendar .react-datepicker__navigation {
+  top: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.mindpath-calendar .react-datepicker__navigation:hover {
+  background: rgba(109, 40, 217, 0.3);
+  border-color: rgba(109, 40, 217, 0.5);
+}
+
+.mindpath-calendar .react-datepicker__navigation-icon::before {
+  border-color: #94a3b8;
+  border-width: 2px 2px 0 0;
+  width: 7px;
+  height: 7px;
+}
+
+/* Light mode overrides */
+:root:not(.dark) .mindpath-calendar .react-datepicker__current-month {
+  color: #1e293b;
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__day-name {
+  color: #94a3b8;
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__day {
+  color: #374151;
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(226, 232, 240, 0.8);
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__day:hover {
+  background: rgba(109, 40, 217, 0.1);
+  color: #6d28d9;
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__day--disabled,
+:root:not(.dark) .mindpath-calendar .react-datepicker__day--outside-month {
+  color: #d1d5db;
+  background: transparent;
+  border-color: transparent;
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__navigation {
+  background: rgba(241, 245, 249, 0.8);
+  border-color: rgba(226, 232, 240, 0.8);
+}
+:root:not(.dark) .mindpath-calendar .react-datepicker__navigation-icon::before {
+  border-color: #64748b;
+}
