@@ -6,117 +6,120 @@ Plataforma integral de telemedicina y gestión clínica para profesionales de la
 
 **Frontend:**
 
-- [React](https://reactjs.org/) (Vite)
-- [Tailwind CSS](https://tailwindcss.com/) (Estilos, Modo Oscuro nativo)
-- [Zustand](https://github.com/pmndrs/zustand) (Manejo de estados globales rápidos)
-- [React Router DOM](https://reactrouter.com/) (Navegación protegida)
-- [Lucide React](https://lucide.dev/) (Iconografía ligera)
-- [Axios](https://axios-http.com/) (Cliente HTTP)
+- [React](https://reactjs.org/) (Vite) — SPA con enrutamiento protegido por rol
+- [Tailwind CSS](https://tailwindcss.com/) — Modo Oscuro nativo, theming dinámico con variables CSS
+- [Zustand](https://github.com/pmndrs/zustand) — Estado global (auth, settings, tema)
+- [React Router DOM](https://reactrouter.com/) — Navegación protegida por `PrivateRoute`
+- [Lucide React](https://lucide.dev/) — Iconografía ligera y consistente
+- [Axios](https://axios-http.com/) — Cliente HTTP con interceptores de JWT
+- [react-datepicker](https://reactdatepicker.com/) — Calendario interactivo para selección de rangos de vacaciones
 
 **Backend:**
 
 - [Node.js](https://nodejs.org/) con [Express.js](https://expressjs.com/)
-- [MySQL2](https://www.npmjs.com/package/mysql2) (Base de Datos Relacional, consultas con Promesas)
-- [JSON Web Tokens (JWT)](https://jwt.io/) (Autenticación y Seguridad)
-- [Bcryptjs](https://www.npmjs.com/package/bcryptjs) (Cifrado de Contraseñas)
-- [Multer](https://www.npmjs.com/package/multer) (Subida y Manejo de Archivos/Avatar)
-- [ZegoCloud Server API](https://www.zegocloud.com/) (Infraestructura de Videollamadas)
+- [MySQL2](https://www.npmjs.com/package/mysql2) — Base de Datos Relacional con Promises
+- [JSON Web Tokens (JWT)](https://jwt.io/) — Autenticación stateless
+- [Bcryptjs](https://www.npmjs.com/package/bcryptjs) — Cifrado de contraseñas
+- [Multer](https://www.npmjs.com/package/multer) — Subida de archivos (logo, avatar)
+- [ZegoCloud Server API](https://www.zegocloud.com/) — Infraestructura de videollamadas WebRTC
 
-**Inteligencia Artificial (Asistencia Clínica):**
+**Inteligencia Artificial:**
 
-- [Google Gemini API](https://ai.google.dev/) (Generador de resúmenes estructurados en formatos SOAP a partir del texto del doctor).
+- [Google Gemini API](https://ai.google.dev/) — Resúmenes clínicos estructurados en formato SOAP a partir de notas del doctor.
 
 ---
 
 ## 💻 Requisitos Previos
 
-Antes de instalar este proyecto en tu entorno local, asegúrate de tener:
-
-1. **Node.js**: Versión `v18.x`, `v20.x` o `v22.x`.
-2. **NPM**: Viene incluido con Node.js.
-3. **Servidor MySQL**: Puedes usar XAMPP, WAMP o un servicio nativo de MySQL (puerto por defecto `3306`).
+1. **Node.js**: Versión `v18.x`, `v20.x` o `v22.x`
+2. **NPM**: Incluido con Node.js
+3. **Servidor MySQL**: XAMPP, WAMP o MySQL nativo (puerto por defecto `3306`)
 
 ---
 
-## 🛠️ Guía de Instalación y Ejecución Local
-
-Sigue estos pasos para arrancar el entorno de desarrollo:
+## 🛠️ Instalación Rápida (Nuevo — Automatizada)
 
 ### 1. Clonar el Repositorio
 
-Abre tu terminal y clona la carpeta (o descomprime el archivo `.zip` si no usas Git).
-\`\`\`bash
-
+```bash
 # git clone <url-del-repo>
-
 cd mindpath-neuro
-\`\`\`
+```
 
 ### 2. Configurar el Backend
 
-1. Abre una terminal dentro de la carpeta `backend/`.
-2. Instala las dependencias de Node:
-   \`\`\`bash
-   npm install
-   \`\`\`
-3. Configura la base de datos:
-   - Importa o ejecuta todos los scripts SQL disponibles en la carpeta `docs/` en orden.
-   - Estos scripts crearán la base de datos `mindpath_db` (o la que hayas definido) y las tablas base.
-4. Variables de Entorno (`.env`):
-   Crea un archivo `.env` en `backend/` e incluye como mínimo:
-   \`\`\`env
-   PORT=3000
-   DB_HOST=localhost
-   DB_USER=root
-   DB_PASSWORD=123
-   DB_NAME=mindpath_db
-   JWT_SECRET=tu_secreto_super_seguro
-   JWT_EXPIRES_IN=7d
-   GEMINI_API_KEY=tu_api_key_de_gemini
-   VIDEO_APP_ID=tu_app_id_de_zegocloud
-   VIDEO_SERVER_SECRET=tu_secreto_de_zegocloud
-   \`\`\`
-5. Arrancar Servidor de Desarrollo Backend:
-   \`\`\`bash
-   npm run dev
-   \`\`\`
-   _(El servidor arrancará típicamente en `http://localhost:3000`)_
+```bash
+cd backend
+npm install
+```
 
-### 3. Configurar el Frontend
+Crea el archivo `backend/.env` con tus credenciales:
 
-1. En una **nueva ventana/pestaña** de la terminal, ve a la carpeta `frontend/`.
-2. Instala las dependencias:
-   \`\`\`bash
-   npm install
-   \`\`\`
-3. Variables de Entorno (`.env`):
-   Crea un archivo `.env` en `frontend/` y especifica la URL de tu backend:
-   \`\`\`env
-   VITE_API_URL=http://localhost:3000/api
-   \`\`\`
-4. Arrancar App React de Desarrollo:
-   \`\`\`bash
-   npm run dev
-   \`\`\`
-   _(El frontend arrancará típicamente en `http://localhost:5173` y se sincronizará con Vite en tiempo real)_
+```env
+PORT=3000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=mindpath_db
+JWT_SECRET=tu_secreto_super_seguro_aqui
+JWT_EXPIRES_IN=7d
+GEMINI_API_KEY=tu_api_key_de_gemini
+VIDEO_APP_ID=tu_app_id_de_zegocloud
+VIDEO_SERVER_SECRET=tu_secreto_de_zegocloud
+```
+
+### 3. Instalar la Base de Datos Automáticamente
+
+```bash
+node setupDB.js
+```
+
+> Este script crea la base de datos `mindpath_db` automáticamente si no existe, lee el archivo `docs/db_mindpath.sql` y construye todas las tablas, columnas, índices y datos iniciales en un solo comando.
+> 
+> **Usuario inicial:** `admin@admin.com` / `admin123`
+
+### 4. Arrancar el Backend
+
+```bash
+npm run dev
+```
+
+### 5. Configurar el Frontend
+
+```bash
+cd ../frontend
+npm install
+```
+
+Crea `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_ZEGO_APP_ID=tu_app_id_numerico
+VITE_ZEGO_SERVER_SECRET=tu_server_secret
+```
+
+```bash
+npm run dev
+```
+
+El frontend arranca en `http://localhost:5173`.
 
 ---
 
-## 📚 Documentación Adicional
+## 📚 Documentación
 
-La documentación detallada sobre cómo opera el código y el manual de los usuarios está dividida metódicamente en la carpeta `/docs`:
-
-- ⚙️ **Técnica (`/docs/technical`):**
-  - [Arquitectura (ARCHITECTURE.md)](docs/technical/ARCHITECTURE.md)
-  - [Modelo de BD (DATABASE_SCHEMA.md)](docs/technical/DATABASE_SCHEMA.md)
-  - [Referencia API (API_REFERENCE.md)](docs/technical/API_REFERENCE.md)
-  - [Reglas de Seguridad (SECURITY_CONFIG.md)](docs/technical/SECURITY_CONFIG.md)
-- 📖 **Manuales (`/docs/manuals`):**
-  - [Para Pacientes (USER_MANUAL_PATIENT.md)](docs/manuals/USER_MANUAL_PATIENT.md)
-  - [Para Doctores (USER_MANUAL_DOCTOR.md)](docs/manuals/USER_MANUAL_DOCTOR.md)
-  - [Para Administradores (ADMIN_MANUAL.md)](docs/manuals/ADMIN_MANUAL.md)
-- 🚀 **Operativa (`/docs/ops`):**
-  - [Pasos para Producción (DEPLOYMENT.md)](docs/ops/DEPLOYMENT.md)
+| Categoría | Archivo |
+|---|---|
+| ⚙️ Arquitectura | [ARCHITECTURE.md](docs/technical/ARCHITECTURE.md) |
+| 🗄️ Modelo de BD | [DATABASE_SCHEMA.md](docs/technical/DATABASE_SCHEMA.md) |
+| 🔌 API REST | [API_REFERENCE.md](docs/technical/API_REFERENCE.md) |
+| 🔒 Seguridad | [SECURITY_CONFIG.md](docs/technical/SECURITY_CONFIG.md) |
+| 👤 Manual Paciente | [USER_MANUAL_PATIENT.md](docs/manuals/USER_MANUAL_PATIENT.md) |
+| 🩺 Manual Doctor | [USER_MANUAL_DOCTOR.md](docs/manuals/USER_MANUAL_DOCTOR.md) |
+| 🛡️ Manual Admin | [ADMIN_MANUAL.md](docs/manuals/ADMIN_MANUAL.md) |
+| 🚀 Despliegue | [DEPLOYMENT.md](docs/ops/DEPLOYMENT.md) |
+| 🔧 Instalación | [manual_instalacion.md](docs/manual_instalacion.md) |
 
 ---
 

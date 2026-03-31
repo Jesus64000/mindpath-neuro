@@ -1,81 +1,192 @@
-# Referencia de la API REST (Mindpath Neuro)
+# Referencia de la API REST — MindPath Neuro
 
-La API de Mindpath Neuro ha sido diseñada siguiendo los principios RESTful, usando JSON como principal formato de intercambio para el Frontend (React).
+La API de Mindpath Neuro sigue los principios RESTful usando JSON como formato de intercambio. Toda ruta protegida requiere el header `Authorization: Bearer <token>`.
 
-La URL base local es siempre: `http://localhost:3000/api`
+**URL Base local:** `http://localhost:3000/api`
 
 ---
 
-## 1. Módulo de Autenticación (`/auth`)
+## 🔐 Autenticación (`/auth`)
 
 ### `POST /auth/register`
-
-**Registra un nuevo usuario.**
-
-- **Body:** `{ email, password, full_name, role }` (`role` = "patient" o "doctor")
-- **Roles secundarios en registro:** (Si es "patient", se acepta `date_of_birth` y `gender`. Si es "doctor", se pide `specialty` y `license_number`).
-- **Responde:** `201 Created` - Devuelve el `token` JWT y los datos públicos del usuario.
+Registra un nuevo usuario.
+- **Body:** `{ email, password, full_name, role }` + campos de rol (paciente: `date_of_birth`, `gender`; doctor: `specialty`, `license_number`)
+- **Responde:** `201` con `{ token, user }`
 
 ### `POST /auth/login`
-
-**Inicia sesión en la plataforma.**
-
+Inicia sesión.
 - **Body:** `{ email, password }`
-- **Responde:** `200 OK` - Devuelve el `token` persistente.
+- **Responde:** `200` con `{ token, user }`
 
 ---
 
-## 2. Módulo de Reserva (`/bookings`)
+## 📅 Reservas / Booking (`/bookings`)
 
 ### `GET /bookings/availability`
-
-**Calcula la agenda precisa del doctor sin solapamientos.**
-
-- **Query Params:** `?doctorId=N&date=YYYY-MM-DD`
-- **Retorno:** Un Array de Strings con los slots de la hora disponibles (por ejemplo `["08:00", "09:30"]`). El algoritmo excluye citas de la tabla `appointments` confirmadas y calcula basándose en `doctor_schedules.slot_duration`.
+Calcula los slots libres del doctor para una fecha, excluyendo citas confirmadas y excepciones.
+- **Query:** `?doctorId=N&date=YYYY-MM-DD`
+- **Responde:** `["08:00", "09:30", ...]`
 
 ### `POST /bookings`
-
-**Crea la orden de Cita Médica.**
-
-- **Body:** `{ doctor_id, appointment_date, start_time, type }` (`type` puede ser `virtual` o `presential`).
-- **Responde:** `201 Created` - Vincula al Paciente (leído desde el `req.user.id` del Token) con el Doctor indicado.
+Crea una cita. El paciente se lee del JWT.
+- **Body:** `{ doctor_id, appointment_date, start_time, type }` (`type`: `virtual` | `presential`)
+- **Responde:** `201` con la cita creada
 
 ---
 
-## 3. Módulo de Consulta Médica (`/consultations`)
+## 🩺 Doctor — Disponibilidad (`/doctors`)
 
-El corazón operativo del doctor para atender videollamadas.
+### `GET /doctors/schedule`
+Obtiene los bloques de horario regular del doctor autenticado.
+
+### `POST /doctors/schedule`
+Crea un bloque de horario regular.
+- **Body:** `{ day_of_week, start_time, end_time, slot_duration }`
+
+### `DELETE /doctors/schedule/:id`
+Elimina un bloque de horario.
+
+### `GET /doctors/exceptions`
+Lista las excepciones futuras del doctor autenticado.
+
+### `POST /doctors/exceptions` *(Sprint 33/35)*
+Crea excepciones para un **rango de fechas** completo.
+- **Body:** `{ startDate, endDate, isDayOff, startTime?, endTime? }`
+- El backend itera día a día entre `startDate` y `endDate` e inserta con `ON DUPLICATE KEY UPDATE`.
+
+### `DELETE /doctors/exceptions/:id`
+Elimina una excepción individual.
+
+---
+
+## 🚨 Bloqueo de Emergencia (`/doctors`)
+
+### `POST /doctors/emergency-block`
+Bloquea la agenda del doctor (cancela todas las citas futuras como `emergency_reschedule`).
+- **Body:** `{ duration }` (`2_days`, `1_week`, `2_weeks`, `1_month`, `3_months`, `indefinite`)
+
+### `PUT /doctors/emergency-block/extend`
+Extiende la duración del bloqueo activo.
+- **Body:** `{ duration }`
+
+### `DELETE /doctors/emergency-block`
+Reactiva la agenda del doctor.
+
+---
+
+## 📋 Citas del Doctor (`/appointments/doctor`)
+
+### `GET /appointments/doctor/summary`
+Devuelve el calendario con conteo de citas por fecha y el listado de citas de un día.
+- **Query:** `?date=YYYY-MM-DD`
+
+### `PUT /appointments/:id/confirm`
+Confirma una cita pendiente.
+
+### `PUT /appointments/:id/cancel`
+Cancela una cita establecida.
+
+---
+
+## 👤 Citas del Paciente (`/appointments/patient` / `/patients`)
+
+### `GET /patients/appointments`
+Lista paginada de todas las citas del paciente autenticado.
+- **Query:** `?page=1&status=confirmed`
+
+### `PUT /appointments/:id/cancel`
+El paciente cancela su propia cita.
+
+### `GET /patients/dashboard`
+Resumen del dashboard del paciente (próxima cita, doctor favorito, stats).
+
+---
+
+## 🎥 Consultas (`/consultations`)
 
 ### `POST /consultations`
-
-**Inicia el encuentro de la sala.**
-
+Inicia la sala de videoconsulta.
 - **Body:** `{ appointment_id }`
-- **Responde:** Marca el `appointments.status` como "in-progress" e inicializa el `clinical_reports` (Expediente Clínico) en blanco.
+- Marca el estado como `in-progress` e inicializa el `clinical_report`.
 
 ### `GET /consultations/history`
-
-**El feed de atenciones finalizadas.**
-
-- Retorna la lista de expedientes compartidos. Pacientes y Doctores pueden leerla (cada rol solo ve sus expedientes si la consulta fue marcada `completed`).
+Historial de consultas completadas del usuario autenticado.
 
 ### `POST /consultations/:id/finalize`
-
-**Da de alta médica el reporte del día.**
-
-- Finaliza la teleconsulta y guarda el PDF del informe con los datos subjetivos y objetivos médicos.
+Finaliza la consulta y guarda el informe SOAP.
+- **Body:** `{ antecedentes, hallazgos, diagnostico, tratamiento, private_notes, is_shared }`
 
 ---
 
-## 4. Respuestas Estandarizadas de Error
+## 📊 Estadísticas del Doctor (`/doctors/stats`)
 
-En caso de un error general, el backend devuelve el siguiente formato (HTTP 400 o 500):
+### `GET /doctors/stats`
+Devuelve KPIs del doctor: total citas, tasa de completitud, distribución por tipo, citas por mes.
+- Usado por `DoctorStats.jsx` para renderizar las barras verticales proporcionales.
+
+---
+
+## 🛡️ Administración (`/admin`) — Solo `admin` / `supervisor`
+
+### `GET /admin/stats`
+KPIs globales de la plataforma.
+
+### `GET /admin/doctors/pending`
+Lista de doctores pendientes de verificación.
+
+### `PUT /admin/doctors/:id/verify`
+Aprueba un doctor.
+
+### `PUT /admin/doctors/:id/reject`
+Rechaza un doctor.
+- **Body:** `{ notes }` (motivo)
+
+### `GET /admin/specialties`
+Lista de especialidades.
+
+### `POST /admin/specialties`
+Crea una especialidad.
+
+### `PUT /admin/specialties/:id`
+Edita una especialidad.
+
+### `DELETE /admin/specialties/:id`
+Elimina una especialidad (falla si tiene doctores asociados).
+
+### `GET /admin/users`
+Lista paginada/filtrada de usuarios.
+- **Query:** `?search=&role=`
+
+### `PUT /admin/users/:id/toggle`
+Suspende o reactiva una cuenta.
+
+### `PUT /admin/users/:id/role`
+Cambia el rol de un usuario (solo admin).
+
+### `GET /admin/settings`
+Obtiene la configuración estética guardada.
+
+### `PUT /admin/settings`
+Guarda la configuración de personalización.
+- **Body:** `{ clinic_name, logo_url, primary_color, primary_hover, font_family }`
+
+### `POST /admin/upload/logo`
+Sube el logo de la clínica.
+- **Content-Type:** `multipart/form-data` con campo `logo`
+
+---
+
+## ⚠️ Respuestas de Error Estandarizadas
 
 ```json
-{
-  "message": "Mensaje legible para el usuario / toast notification"
-}
+{ "message": "Descripción del error legible para el usuario" }
 ```
 
-En caso de tokens JWT fallidos, expirados, o falta de permisos para la ruta (como acceder al `/api/admin` siendo Paciente), el backend corta la conexión prematuramente y envía `HTTP 403 Forbidden` (`Acceso denegado`).
+| Código | Significado |
+|---|---|
+| `400` | Datos inválidos o faltantes |
+| `401` | Token ausente o expirado |
+| `403` | Sin permisos para esta ruta |
+| `404` | Recurso no encontrado |
+| `409` | Conflicto (ej. email duplicado) |
+| `500` | Error interno del servidor |

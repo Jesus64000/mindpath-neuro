@@ -13,51 +13,61 @@ Antes de comenzar, asegúrate de tener instalados los siguientes componentes en 
 3. **XAMPP / WAMP / MySQL Server**: Para gestionar la base de datos localmente.
 4. **Git**: Para clonar o manejar el proyecto.
 5. **Cuentas y API Keys**:
-   - Cuenta en **Groq Cloud** (Para el motor de IA de transcripción y generación de informes).
+   - Cuenta en **Google AI Studio** (Para el motor de IA con Gemini).
    - Cuenta en **ZEGOCLOUD** (Para el servicio de videollamadas).
 
 ---
 
 ## 💾 1. Configuración de la Base de Datos
 
-El proyecto cuenta con un archivo maestro de base de datos que ya incluye todas las tablas, relaciones, roles predefinidos y configuraciones estéticas de la clínica.
+> **✨ Nuevo en Sprint 37:** El sistema incluye un instalador automático (`setupDB.js`) que reemplaza la importación manual desde phpMyAdmin.
 
-1. Abre el panel de control de **XAMPP** y enciende los módulos **Apache** y **MySQL**.
-2. Dirígete a **phpMyAdmin** desde tu navegador: `http://localhost/phpmyadmin`.
-3. Haz clic en **Nueva** en la barra lateral izquierda para crear una nueva base de datos.
-4. Nombra la base de datos exactamente como: `mindpath_db` y asegúrate de usar el cotejamiento `utf8mb4_general_ci`. Haz clic en **Crear**.
-5. Selecciona la recién creada base de datos `mindpath_db`.
-6. Ve a la pestaña **Importar** en el menú superior.
-7. Haz clic en **Seleccionar archivo** y busca el archivo `mindpath_dbv2.sql` ubicado en la carpeta `docs/` del proyecto.
-8. Desplázate hacia abajo y haz clic en **Importar** (o _Go_).
+### Método A — Automatizado (Recomendado)
 
-> **¡Listo!** Tu base de datos ahora contiene todas las tablas (pacientes, doctores, admin, historiales) listas para operar.
+1. Asegúrate de que MySQL esté corriendo (XAMPP encendido).
+2. Configura tu archivo `backend/.env` con las credenciales correctas (ver sección 2.2).
+3. Desde la carpeta `backend/`, ejecuta:
+
+```bash
+node setupDB.js
+```
+
+El script:
+- Crea la base de datos `mindpath_db` si no existe.
+- Lee el archivo `docs/db_mindpath.sql` (el esquema maestro).
+- **Crea un usuario administrador por defecto:** `admin@admin.com` / `admin123`.
+- Construye todas las tablas, columnas, índices y datos de catálogo en un solo paso.
+- Muestra mensajes de progreso y cierra la conexión limpiamente.
+
+Si ves `🎉 ¡ÉXITO! La Base de Datos está lista para producción.` → todo está correcto.
+
+### Método B — Manual (phpMyAdmin)
+
+1. Abre **phpMyAdmin** → `http://localhost/phpmyadmin`.
+2. Crea una base de datos llamada `mindpath_db` con cotejamiento `utf8mb4_unicode_ci`.
+3. Selecciona `mindpath_db` → pestaña **Importar**.
+4. Selecciona el archivo `docs/db_mindpath.sql` → clic en **Importar**.
 
 ---
 
 ## ⚙️ 2. Configuración del Servidor Backend
 
-El Backend es el cerebro que conecta la base de datos con tu aplicación y se encarga de hablar con la Inteligencia Artificial.
-
 ### 2.1. Instalación de dependencias
-
-Abre una terminal, navega a la carpeta del backend y ejecuta el comando de instalación:
 
 ```bash
 cd backend
 npm install
-npm install groq-sdk
 ```
 
 ### 2.2. Variables de Entorno (.env)
 
-Dentro de la carpeta `backend/`, crea un archivo llamado `.env` (si no existe) basado en el archivo de ejemplo o agrega directamente las siguientes líneas. Rellena los datos faltantes con tus claves:
+Dentro de la carpeta `backend/`, crea (o edita) el archivo `.env`:
 
 ```env
 # ── Servidor ──
 PORT=3000
 
-# ── Base de Datos (MySQL XAMPP) ──
+# ── Base de Datos (MySQL) ──
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
@@ -67,111 +77,115 @@ DB_NAME=mindpath_db
 JWT_SECRET=escribe_aqui_un_codigo_secreto_largo_y_dificil_de_adivinar_123!@#
 JWT_EXPIRES_IN=7d
 
-# ── Inteligencia Artificial (Groq IA) ──
-GROQ_API_KEY=tu_api_key_de_groq_aqui
+# ── Inteligencia Artificial ──
+GEMINI_API_KEY=tu_api_key_de_google_gemini_aqui
+
+# ── ZegoCloud (opciones de servidor para tokens de videollamada) ──
+VIDEO_APP_ID=tu_app_id_numerico
+VIDEO_SERVER_SECRET=tu_server_secret
 ```
 
-> **¿Cómo sacar la API Key de Groq?**
->
-> 1. Ve a [console.groq.com](https://console.groq.com)
-> 2. Inicia sesión o regístrate.
-> 3. En el menú izquierdo, busca **API Keys** -> **Create API Key**.
-> 4. Ponle nombre (ej. "MindPath") y copia el texto `gsk_...` generado para pegarlo en tu `.env`.
+> **¿Cómo obtener la API Key de Gemini?**
+> 1. Ve a [aistudio.google.com](https://aistudio.google.com/)
+> 2. Haz clic en **Get API Key** → **Create API Key**.
+> 3. Copia la clave generada y pégala en `GEMINI_API_KEY`.
 
 ### 2.3. Ejecutar el Servidor
-
-Para encender el servidor en modo desarrollo:
 
 ```bash
 npm run dev
 ```
 
-Deberías ver un mensaje que dice: `✅ Socio, Base de Datos conectada exitosamente a: mindpath_db` y `Servidor corriendo en el puerto 3000`.
+Deberías ver: `✅ Base de Datos conectada exitosamente a: mindpath_db` y `Servidor corriendo en el puerto 3000`.
 
 ---
 
-## 🎨 3. Configuración del Frontend (Vista)
-
-El Frontend es la cara de la aplicación y la sala de consultas. Dependerá de ZEGOCLOUD para poder emitir los videos en tiempo real.
+## 🎨 3. Configuración del Frontend
 
 ### 3.1. Instalación de dependencias
-
-Abre una **nueva** terminal (sin cerrar la del backend), navega a la carpeta de frontend e instala las librerías:
 
 ```bash
 cd frontend
 npm install
 ```
 
+Las dependencias instaladas incluyen:
+- `react-datepicker` — Calendario interactivo para selección de rangos (vacaciones del doctor).
+- `zustand` — Estado global de sesión y theming.
+- `lucide-react` — Iconografía.
+
 ### 3.2. Variables de Entorno (.env)
 
-Dentro de la carpeta `frontend/`, crea un archivo `.env` y coloca el siguiente contenido:
+Dentro de la carpeta `frontend/`, crea el archivo `.env`:
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3000/api
 
 # ── ZegoCloud (Videollamadas) ──
 VITE_ZEGO_APP_ID=tu_app_id_numerico_aqui
 VITE_ZEGO_SERVER_SECRET=tu_server_secret_alfanumerico_aqui
 ```
 
-> **¿Cómo sacar las credenciales de ZEGOCLOUD?**
->
+> **¿Cómo obtener credenciales de ZEGOCLOUD?**
 > 1. Ve a [console.zegocloud.com](https://console.zegocloud.com/).
-> 2. Haz clic en **Create Project** -> Elige **Video / Voice Call**.
-> 3. Al finalizar, irás a tu consola de proyecto. En el apartado lateral busca **Project Management**.
-> 4. Copia tu `AppID` (es un número largo, ponlo en VITE_ZEGO_APP_ID).
-> 5. Copia tu `ServerSecret` (escribelo en VITE_ZEGO_SERVER_SECRET).
+> 2. Crea un proyecto de tipo **Video / Voice Call**.
+> 3. Copia tu `AppID` (número) → `VITE_ZEGO_APP_ID`.
+> 4. Copia tu `ServerSecret` → `VITE_ZEGO_SERVER_SECRET`.
 
 ### 3.3. Ejecutar la Web
-
-Para encender el frontend:
 
 ```bash
 npm run dev
 ```
 
-La terminal mostrará que tu web está corriendo (usualmente en `http://localhost:5173/`).
+La aplicación estará disponible en `http://localhost:5173/`.
 
 ---
 
-## 👑 4. Creación de tu primer Usuario Administrador
+## 👑 4. Creación del Primer Usuario Administrador
 
-Como acabamos de importar una base de datos fresca, para poder entrar al sistema es recomendable registrar la cuenta de administrador global.
-Tienes dos opciones para crear el admin inicial:
+Con la base de datos recién instalada, crea el primer admin por cualquiera de estos métodos:
 
-### Opcion A: Usando Postman / ThunderClient
+### Opción A — API REST (Postman / Thunder Client)
 
-Haz una petición **POST** a `http://localhost:3000/api/auth/register` con el siguiente formato JSON en el interior del cuerpo (body):
+Haz una petición **POST** a `http://localhost:3000/api/auth/register`:
 
 ```json
 {
-  "full_name": "Administrador Mindpath",
+  "full_name": "Administrador MindPath",
   "email": "admin@mindpath.com",
   "password": "PasswordSegura123!",
   "role": "admin"
 }
 ```
 
-### Opcion B: Directo desde Base de datos (Insersión Manual)
+### Opción B — phpMyAdmin
 
-Dado que usas contraseñas hasheadas mediante `bcrypt`, para saltarte Postman tendrías que registrar un usuario paciente común desde la web interactiva, buscarlo en **phpMyAdmin**, apuntar a la tabla `users`, editar el renglón de ese paciente y cambiarle el campo `role` de `"patient"` a `"admin"`.
-
-Al loguearte como `admin`, tendrás acceso al **Panel Administrativo Completo** para configurar reportes médicos, validar doctores y controlar toda la clínica.
+1. Regístrate como paciente desde la web.
+2. En phpMyAdmin → tabla `users` → edita tu registro → cambia `role` de `patient` a `admin`.
 
 ---
 
-## 🚀 5. Empaquetado para Producción
+## 🎨 5. Personalización del Sistema (Panel Admin)
 
-Si deseas subir el proyecto a la nube (ej. Hostinger, Render, Vercel), asegúrate de hacer el build de react:
+Una vez logueado como administrador, ve a **Panel → 🎨 Personalización**:
+
+- **Nombre de la clínica** — Se refleja en el sidebar y correos.
+- **Colores del sistema** — Color primario y hover con preview en tiempo real.
+- **Tipografía** — Elige entre 10 fuentes predefinidas de Google Fonts **o escribe cualquier nombre de Google Fonts** (ej. `Playfair Display`, `Space Mono`) para preview y aplicación instantánea en todo el sistema.
+- **Logo** — Sube desde disco o pega una URL externa.
+
+---
+
+## 🚀 6. Empaquetado para Producción
 
 ```bash
 cd frontend
 npm run build
 ```
 
-Esto generará una carpeta `dist/` en el frontend completamente empaquetada y optimizada en HTML, CSS y JS puro que podrás alojar de manera estática en cualquier lugar.
+Esto genera la carpeta `dist/` (HTML + CSS + JS optimizados) lista para alojar en cualquier servidor estático (Netlify, Vercel, Hostinger, etc.).
 
 ---
 
-_Fin del Manual de MindPath Neuro. ¡Mucho éxito en la gestión clínica digital!_
+_Fin del Manual de Instalación de MindPath Neuro — Sprint 37._
