@@ -118,6 +118,7 @@ El frontend arranca en `http://localhost:5173`.
 | 👤 Manual Paciente | [USER_MANUAL_PATIENT.md](docs/manuals/USER_MANUAL_PATIENT.md) |
 | 🩺 Manual Doctor | [USER_MANUAL_DOCTOR.md](docs/manuals/USER_MANUAL_DOCTOR.md) |
 | 🛡️ Manual Admin | [ADMIN_MANUAL.md](docs/manuals/ADMIN_MANUAL.md) |
+| 🚀 Actualización | [guia_actualizacion.md](docs/guia_actualizacion.md) |
 | 🚀 Despliegue | [DEPLOYMENT.md](docs/ops/DEPLOYMENT.md) |
 | 🔧 Instalación | [manual_instalacion.md](docs/manual_instalacion.md) |
 
