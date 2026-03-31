@@ -1,62 +1,64 @@
-# 🚀 Guía de Actualización de Mindpath Neuro (Versión 1.38)
+🚀 Guía de Actualización de Mindpath Neuro (Versión 1.40 - Enterprise)
+¡Hola! Ya está lista la nueva súper-actualización del sistema. Esta versión transforma el panel en una herramienta de grado corporativo e incluye: Motor Avanzado de Agendamiento, Gestión de Vacaciones, Recuperación de Contraseñas por Correo, Cifrado de Seguridad Militar (AES-256), y Tablas Ultra-rápidas con Paginación.
 
-¡Hola! Ya está lista la nueva versión del sistema. Esta actualización incluye el Motor Avanzado de Agendamiento, gestión de vacaciones para doctores, gráficos de estadísticas mejorados y nuevas tipografías.
+Para instalar estas mejoras sin perder la información de tus pacientes o citas actuales, por favor sigue estos 5 pasos exactos:
 
-Para instalar estas mejoras sin perder la información de tus pacientes o citas actuales, por favor sigue estos 4 pasos exactos:
+📦 PASO 1: Descargar el nuevo código
+Abre tu terminal (o consola de comandos) en la carpeta principal del proyecto.
 
----
+Si el servidor está encendido, apágalo presionando Ctrl + C.
 
-### 📦 PASO 1: Descargar el nuevo código
+Escribe el siguiente comando y presiona Enter para traer la última versión:
 
-1. Abre tu terminal (o consola de comandos) en la carpeta principal del proyecto.
-2. Si el servidor está encendido, apágalo presionando **Ctrl + C**.
-3. Escribe el siguiente comando y presiona Enter para traer la última versión:
-
-```bash
+Bash
 git pull origin main
-```
+🛠️ PASO 2: Instalar las nuevas herramientas
+Como agregamos nuevas funciones críticas (motor de correos y calendarios), el sistema necesita descargar esas librerías.
 
----
+Entra a la carpeta del backend y actualiza:
 
-### 🛠️ PASO 2: Instalar las nuevas herramientas
-Como agregamos nuevas funciones (calendarios visuales y tareas automáticas), el sistema necesita descargar esas librerías.
+Bash
+cd backend
+npm install
+Vuelve atrás, entra a la carpeta del frontend y actualiza:
 
-1. Entra a la carpeta del **backend** y actualiza:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Vuelve atrás, entra a la carpeta del **frontend** y actualiza:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
+Bash
+cd ../frontend
+npm install
+🔐 PASO 3: Configurar la Llave de Seguridad (¡CRÍTICO!)
+Hemos blindado el sistema. Para que los correos y contraseñas estén a salvo, necesitas agregar una llave maestra a tu servidor.
 
----
+En la carpeta backend, abre el archivo llamado .env (si no lo ves, asegúrate de mostrar los archivos ocultos).
 
-### 🗄️ PASO 3: Parchar la Base de Datos (Seguro y sin perder datos)
-Te he enviado un archivo llamado `pendiente.sql`. Este archivo inyectará las nuevas columnas necesarias sin borrar a tus pacientes actuales.
+Agrega esta línea exacta al final del archivo y guárdalo:
 
-1. Abre XAMPP/WAMP y asegúrate de que MySQL esté encendido.
-2. Entra a **phpMyAdmin** (`http://localhost/phpmyadmin`) y haz clic en tu base de datos `mindpath_db` en el panel izquierdo.
-3. Ve a la pestaña **Importar** en el menú superior.
-4. Haz clic en "Seleccionar archivo", busca el archivo `docs/pendiente.sql` y presiona el botón **Importar** (o Continuar) al final de la página.
+Fragmento de código
+ENCRYPTION_KEY="MindpathSecr3tK3y!2026@NeuroApp$"
+🗄️ PASO 4: Parchar la Base de Datos (Sin perder datos)
+Te he enviado un archivo llamado actualizacion_v1_40.sql. Este archivo inyectará las nuevas funciones (como el soporte para correos y DNI) sin borrar a tus pacientes.
 
-> **Nota:** Si te sale un error de *"Duplicate column"*, ignóralo; significa que esa parte ya estaba actualizada.
+Abre XAMPP/WAMP y asegúrate de que MySQL esté encendido.
 
----
+Entra a phpMyAdmin (http://localhost/phpmyadmin) y haz clic en tu base de datos mindpath_db en el panel izquierdo.
 
-### 🚀 PASO 4: Encender los motores
+Ve a la pestaña Importar en el menú superior.
 
-1. Vuelve a tu terminal y enciende el sistema como lo haces normalmente:
-   ```bash
-   # En una terminal para el backend
-   cd backend
-   npm run dev
+Haz clic en "Seleccionar archivo", busca el archivo actualizacion_v1_40.sql y presiona el botón Importar (o Continuar) al final de la página.
 
-   # En otra terminal para el frontend
-   cd frontend
-   npm run dev
-   ```
+Nota: Si te sale un error de "Duplicate column", ignóralo; significa que esa parte ya estaba actualizada.
 
-¡Listo! Al recargar la página en tu navegador ya tendrás acceso a todas las nuevas herramientas. ✨
+🚀 PASO 5: Encender los motores y Configurar Correo
+Vuelve a tu terminal y enciende el sistema como lo haces normalmente:
+
+Bash
+
+# En una terminal para el backend
+
+cd backend
+npm run dev
+
+# En otra terminal para el frontend
+
+cd frontend
+npm run dev
+¡Toque Final! Entra al Panel de Administración en tu navegador, ve a la pestaña Personalización, y en la nueva sección de "Configuración de Servidor de Correo" ingresa tu correo de soporte y tu Contraseña de Aplicación de Gmail. ¡Guarda los cambios y el sistema estará 100% operativo! ✨
