@@ -48,6 +48,8 @@ router.put('/specialties/:id',    authMiddleware, isStaff, adminController.updat
 router.delete('/specialties/:id', authMiddleware, isStaff, adminController.deleteSpecialty);
 
 router.get('/users',              authMiddleware, isStaff, adminController.getUsers);
+router.get('/users/:id/history',  authMiddleware, isStaff, adminController.getUserDetailsAndHistory);
 router.put('/users/:id/toggle',   authMiddleware, isStaff, adminController.toggleUserActive);
+router.post('/users/:id/send-reset', authMiddleware, isSuperAdmin, adminController.sendResetEmail);
 
 module.exports = router;

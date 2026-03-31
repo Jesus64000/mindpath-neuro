@@ -133,3 +133,38 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor durante el login.' });
     }
 };
+
+// RESTABLECER CONTRASEÑA (Fase 3)
+exports.resetPassword = async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    try {
+        // 1. Buscar usuario con un token válido y no expirado
+        const [users] = await db.query(
+            'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ message: 'El token de recuperación es inválido o ha expirado.' });
+        }
+
+        const userId = users[0].id;
+
+        // 2. Encriptar la nueva contraseña
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(newPassword, salt);
+
+        // 3. Actualizar contraseña y limpiar token (One-time use)
+        await db.query(
+            'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+            [password_hash, userId]
+        );
+
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.' });
+
+    } catch (error) {
+        console.error("Error en resetPassword:", error);
+        res.status(500).json({ message: 'Error al restablecer la contraseña.' });
+    }
+};

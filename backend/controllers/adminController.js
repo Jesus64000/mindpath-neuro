@@ -1,6 +1,9 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const path = require("path");
+const crypto = require("crypto");
+const { encrypt } = require("../utils/encryption");
+const { sendResetPasswordEmail } = require("../utils/emailService");
 
 // ── Bootstrap: crear primer admin ─────────────────────────────────────────────
 exports.bootstrapAdmin = async (req, res) => {
@@ -282,19 +285,33 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { clinic_name, logo_url, primary_color, primary_hover, font_family } = req.body;
+    const { 
+        clinic_name, logo_url, primary_color, primary_hover, font_family,
+        smtp_email, smtp_password 
+    } = req.body;
+
+    let encryptedPassword = null;
+    if (smtp_password) {
+        encryptedPassword = encrypt(smtp_password);
+    }
+
     await db.query(
       `
-            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family)
-            VALUES (1, ?, ?, ?, ?, ?)
+            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family, smtp_email, smtp_password)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 clinic_name   = VALUES(clinic_name),
                 logo_url      = VALUES(logo_url),
                 primary_color = VALUES(primary_color),
                 primary_hover = VALUES(primary_hover),
-                font_family   = VALUES(font_family)
+                font_family   = VALUES(font_family),
+                smtp_email    = VALUES(smtp_email),
+                smtp_password = COALESCE(VALUES(smtp_password), smtp_password)
         `,
-      [clinic_name, logo_url, primary_color, primary_hover, font_family || 'Inter'],
+      [
+          clinic_name, logo_url, primary_color, primary_hover, font_family || 'Inter',
+          smtp_email || null, encryptedPassword || null
+      ],
     );
     res.status(200).json({ message: "Configuración guardada exitosamente." });
   } catch (error) {
@@ -469,4 +486,97 @@ exports.createSupervisor = async (req, res) => {
     console.error("Error en createSupervisor:", error);
     res.status(500).json({ message: "Error al crear supervisor." });
   }
+};
+// ── Historial cruzado y Perfil Completo (Fase 2.3 - Datos Exhaustivos) ─────────
+exports.getUserDetailsAndHistory = async (req, res) => {
+    const { id } = req.params; 
+
+    try {
+        // 1. Datos Base del Usuario
+        const [userRes] = await db.query('SELECT id, email, full_name, role, is_active, created_at FROM users WHERE id = ?', [id]);
+        if (userRes.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
+        const baseUser = userRes[0];
+
+        let profile = {};
+        let history = [];
+
+        // 2. Si es PACIENTE: Traemos su ficha médica/personal completa
+        if (baseUser.role === 'patient') {
+            const [patRes] = await db.query(`
+                SELECT dni, date_of_birth, gender, phone, address, 
+                       health_insurance, emergency_contact 
+                FROM patients WHERE user_id = ?
+            `, [id]);
+            if (patRes.length > 0) profile = patRes[0];
+
+            const [appointments] = await db.query(`
+                SELECT a.appointment_date, a.start_time, a.status, d.specialty, u.full_name as counterparty_name
+                FROM appointments a
+                JOIN doctors d ON a.doctor_id = d.id
+                JOIN users u ON d.user_id = u.id
+                WHERE a.patient_id = (SELECT id FROM patients WHERE user_id = ?)
+                ORDER BY a.appointment_date DESC
+                LIMIT 10
+            `, [id]);
+            history = appointments;
+        } 
+        // 3. Si es DOCTOR: Traemos su ficha profesional completa (incluyendo experiencia, bio, rif, etc)
+        else if (baseUser.role === 'doctor') {
+            const [docRes] = await db.query(`
+                SELECT dni, specialty, license_number, modality, clinic_name, clinic_address,
+                       consultation_fee, experience_years, languages, education, bio, rif
+                FROM doctors WHERE user_id = ?
+            `, [id]);
+            if (docRes.length > 0) profile = docRes[0];
+
+            const [appointments] = await db.query(`
+                SELECT a.appointment_date, a.start_time, a.status, u.full_name as counterparty_name
+                FROM appointments a
+                JOIN patients p ON a.patient_id = p.id
+                JOIN users u ON p.user_id = u.id
+                WHERE a.doctor_id = (SELECT id FROM doctors WHERE user_id = ?)
+                ORDER BY a.appointment_date DESC
+                LIMIT 10
+            `, [id]);
+            history = appointments;
+        }
+
+        res.json({ user: baseUser, profile, history });
+
+    } catch (error) {
+        console.error("Error obteniendo detalles del usuario:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+// ── Enviar Email de Recuperación (Fase 3) ──────────────────────────────────────
+exports.sendResetEmail = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // 1. Verificar usuario
+        const [users] = await db.query('SELECT email, full_name FROM users WHERE id = ?', [id]);
+        if (users.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
+        
+        const user = users[0];
+
+        // 2. Generar Token Seguro (64 caracteres)
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hora de validez
+
+        // 3. Guardar en DB
+        await db.query(
+            'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+            [resetToken, expires, id]
+        );
+
+        // 4. Disparar Correo Electrónico
+        await sendResetPasswordEmail(user.email, user.full_name, resetToken);
+
+        res.status(200).json({ message: `Correo de recuperación enviado a ${user.email}` });
+
+    } catch (error) {
+        console.error("Error enviando email de recuperación:", error);
+        res.status(500).json({ message: error.message || "Error al enviar el correo." });
+    }
 };

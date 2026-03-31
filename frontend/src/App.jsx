@@ -26,6 +26,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminSetup from './pages/admin/SuperAdminSetup';
 import MyHistory from './pages/patient/MyHistory';
 import DoctorStats from './pages/doctor/DoctorStats';
+import ResetPassword from './pages/auth/ResetPassword';
 import useSettingsStore from './store/useSettingsStore';
 
 import api from './api/axiosConfig';

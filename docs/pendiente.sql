@@ -44,3 +44,7 @@ CREATE TABLE IF NOT EXISTS doctor_exceptions (
     FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE,
     UNIQUE KEY unique_doctor_date (doctor_id, exception_date)
 );
+
+ALTER TABLE system_settings 
+ADD COLUMN smtp_email VARCHAR(255) DEFAULT NULL,
+ADD COLUMN smtp_password VARCHAR(255) DEFAULT NULL;
