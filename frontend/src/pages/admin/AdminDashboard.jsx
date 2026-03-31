@@ -25,17 +25,6 @@ import ThemingTab from '../../components/admin/tabs/ThemingTab';
 import AppointmentsTab from '../../components/admin/tabs/AppointmentsTab';
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
-const getDynamicChartColors = () => {
-    const root = document.documentElement;
-    const baseRGB = getComputedStyle(root).getPropertyValue('--color-primary-rgb').trim() || '109 40 217';
-    return [
-        `rgb(${baseRGB})`,
-        `rgb(${baseRGB} / 0.8)`,
-        `rgb(${baseRGB} / 0.6)`,
-        `rgb(${baseRGB} / 0.4)`,
-        `rgb(${baseRGB} / 0.2)`,
-    ];
-};
 const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 const ROLE_LABEL = {
@@ -75,7 +64,13 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab]     = useState(TAB.verification);
     const [stats, setStats]             = useState(null);
     const [pending, setPending]         = useState([]);
+    const [pendingPagination, setPendingPagination] = useState(null);
+    const [pendingPage, setPendingPage] = useState(1);
+    
     const [specialties, setSpecialties] = useState([]);
+    const [specialtiesPagination, setSpecialtiesPagination] = useState(null);
+    const [specialtiesPage, setSpecialtiesPage] = useState(1);
+
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
     const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, applySettings } = useSettingsStore();
@@ -98,7 +93,13 @@ const AdminDashboard = () => {
 
     // Usuarios
     const [staff, setStaff]               = useState([]);
+    const [staffPagination, setStaffPagination] = useState(null);
+    const [staffPage, setStaffPage]       = useState(1);
+
     const [users, setUsers]               = useState([]);
+    const [usersPagination, setUsersPagination] = useState(null);
+    const [usersPage, setUsersPage]       = useState(1);
+
     const [userSearch, setUserSearch]     = useState('');
     const [userRoleFilter, setUserRoleFilter] = useState('');
     const [changingRole, setChangingRole]     = useState(null);
@@ -115,33 +116,52 @@ const AdminDashboard = () => {
     }, [isAdmin]);
 
     const loadPending = useCallback(async () => {
-        try { const res = await api.get('/admin/doctors/pending'); setPending(res.data); }
+        setLoading(p => ({ ...p, pending: true }));
+        try { 
+            const res = await api.get(`/admin/doctors/pending?page=${pendingPage}&limit=10`); 
+            setPending(res.data.data); 
+            setPendingPagination(res.data.pagination);
+        }
         catch { /* silencioso */ }
         finally { setLoading(p => ({ ...p, pending: false })); }
-    }, []);
+    }, [pendingPage]);
 
     const loadSpecialties = useCallback(async () => {
-        try { const res = await api.get('/admin/specialties'); setSpecialties(res.data); }
+        setLoading(p => ({ ...p, spe: true }));
+        try { 
+            const res = await api.get(`/admin/specialties?page=${specialtiesPage}&limit=10`); 
+            setSpecialties(res.data.data); 
+            setSpecialtiesPagination(res.data.pagination);
+        }
         catch { /* silencioso */ }
         finally { setLoading(p => ({ ...p, spe: false })); }
-    }, []);
+    }, [specialtiesPage]);
 
     const loadUsers = useCallback(async () => {
+        setLoading(p => ({ ...p, users: true }));
         try {
             const params = new URLSearchParams();
             if (userSearch) params.set('search', userSearch);
             if (userRoleFilter) params.set('role', userRoleFilter);
+            params.set('page', usersPage);
+            params.set('limit', 10);
             const res = await api.get(`/admin/users?${params.toString()}`);
-            setUsers(res.data);
+            setUsers(res.data.data);
+            setUsersPagination(res.data.pagination);
         } catch { showToast('Error al cargar usuarios.', 'error'); }
         finally { setLoading(p => ({ ...p, users: false })); }
-    }, [userSearch, userRoleFilter]);
+    }, [userSearch, userRoleFilter, usersPage]);
 
     const loadStaff = useCallback(async () => {
-        try { const res = await api.get('/admin/users?role=staff'); setStaff(res.data); }
+        setLoading(p => ({ ...p, staff: true }));
+        try { 
+            const res = await api.get(`/admin/users?role=staff&page=${staffPage}&limit=10`); 
+            setStaff(res.data.data); 
+            setStaffPagination(res.data.pagination);
+        }
         catch { showToast('Error al cargar equipo.', 'error'); }
         finally { setLoading(p => ({ ...p, staff: false })); }
-    }, []);
+    }, [staffPage]);
 
     useEffect(() => {
         loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff();
@@ -291,6 +311,8 @@ const AdminDashboard = () => {
             {activeTab === TAB.verification && (
                 <VerificationTab 
                     pending={pending}
+                    pagination={pendingPagination}
+                    onPageChange={setPendingPage}
                     loading={loading.pending}
                     onVerify={verifyDoctor}
                     onReject={rejectDoctor}
@@ -304,6 +326,8 @@ const AdminDashboard = () => {
             {activeTab === TAB.catalogs && (
                 <CatalogsTab 
                     specialties={specialties}
+                    pagination={specialtiesPagination}
+                    onPageChange={setSpecialtiesPage}
                     loading={loading.spe}
                     newSpe={newSpe}
                     setNewSpe={setNewSpe}
@@ -318,6 +342,8 @@ const AdminDashboard = () => {
             {activeTab === TAB.staff && isAdmin && (
                 <UsersTab 
                     users={staff}
+                    pagination={staffPagination}
+                    onPageChange={setStaffPage}
                     loading={loading.staff}
                     userSearch=""
                     setUserSearch={() => {}}
@@ -336,6 +362,8 @@ const AdminDashboard = () => {
             {activeTab === TAB.users && (
                 <UsersTab 
                     users={users}
+                    pagination={usersPagination}
+                    onPageChange={setUsersPage}
                     loading={loading.users}
                     userSearch={userSearch}
                     setUserSearch={setUserSearch}

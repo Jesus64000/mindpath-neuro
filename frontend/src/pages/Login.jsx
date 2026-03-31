@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
@@ -107,9 +107,9 @@ const Login = () => {
                                     Recordarme
                                 </label>
                             </div>
-                            <a href="#" className="text-sm text-mindpath-primary hover:text-mindpath-primaryHover font-medium">
+                            <Link to="/forgot-password" size="sm" className="text-sm text-mindpath-primary hover:text-mindpath-primaryHover font-medium">
                                 ¿Olvidaste tu contraseña?
-                            </a>
+                            </Link>
                         </div>
 
                         {/* Botón Principal */}

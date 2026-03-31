@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Users, Search } from 'lucide-react';
 import UserList from '../UserList';
 import UserDetailModal from '../shared/UserDetailModal';
+import CustomSelect from '../shared/CustomSelect';
+import Pagination from '../shared/Pagination';
 
 const UsersTab = ({ 
     users, 
@@ -16,7 +18,9 @@ const UsersTab = ({
     onChangeRole, 
     roleDropdown, 
     setRoleDropdown, 
-    changingRole 
+    changingRole,
+    pagination,
+    onPageChange
 }) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
@@ -40,17 +44,23 @@ const UsersTab = ({
                         />
                     </div>
                     
-                    <select
+                    <CustomSelect 
+                        className="w-44"
                         value={userRoleFilter}
-                        onChange={e => setUserRoleFilter(e.target.value)}
-                        className="px-3 py-2 text-sm border border-gray-200 dark:border-[var(--border-color)] rounded-xl focus:outline-none focus:border-mindpath-primary dark:bg-[var(--bg-card)] dark:text-white"
-                    >
-                        <option value="">Todos los roles</option>
-                        <option value="admin">Admin</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="doctor">Doctor</option>
-                        <option value="patient">Paciente</option>
-                    </select>
+                        onChange={setUserRoleFilter}
+                        options={[
+                            { value: '', label: 'Todos los roles' },
+                            ...(userRoleFilter === 'staff' ? [] : [
+                                { value: 'admin', label: 'Admin' },
+                                { value: 'supervisor', label: 'Supervisor' },
+                                { value: 'doctor', label: 'Doctor' },
+                                { value: 'patient', label: 'Paciente' }
+                            ])
+                        ].filter(opt => {
+                            if (userRoleFilter === 'staff') return opt.value === '' || opt.value === 'staff';
+                            return true;
+                        })}
+                    />
 
                     <button 
                         onClick={onSearch} 
@@ -80,6 +90,8 @@ const UsersTab = ({
                     changingRole={changingRole}
                 />
             )}
+
+            <Pagination pagination={pagination} onPageChange={onPageChange} />
 
             {selectedUser && (
                 <UserDetailModal 

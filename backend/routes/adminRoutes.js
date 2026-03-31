@@ -52,4 +52,6 @@ router.get('/users/:id/history',  authMiddleware, isStaff, adminController.getUs
 router.put('/users/:id/toggle',   authMiddleware, isStaff, adminController.toggleUserActive);
 router.post('/users/:id/send-reset', authMiddleware, isSuperAdmin, adminController.sendResetEmail);
 
+router.get('/appointments', authMiddleware, isStaff, adminController.getAllAppointments);
+
 module.exports = router;

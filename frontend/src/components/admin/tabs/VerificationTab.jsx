@@ -1,4 +1,5 @@
 import { ShieldCheck, ShieldX } from 'lucide-react';
+import Pagination from '../shared/Pagination';
 
 const VerificationTab = ({ 
     pending, 
@@ -8,7 +9,9 @@ const VerificationTab = ({
     rejectTarget, 
     setRejectTarget, 
     rejectNotes, 
-    setRejectNotes 
+    setRejectNotes,
+    pagination,
+    onPageChange
 }) => {
     
     if (loading) return <p className="text-gray-400 animate-pulse p-6">Cargando...</p>;
@@ -60,6 +63,8 @@ const VerificationTab = ({
                     </div>
                 ))
             )}
+
+            <Pagination pagination={pagination} onPageChange={onPageChange} />
 
             {rejectTarget && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">

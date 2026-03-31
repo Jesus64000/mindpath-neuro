@@ -1,4 +1,5 @@
 import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import Pagination from '../shared/Pagination';
 
 const CatalogsTab = ({ 
     specialties, 
@@ -9,7 +10,9 @@ const CatalogsTab = ({
     setEditSpe, 
     onCreate, 
     onUpdate, 
-    onDelete 
+    onDelete,
+    pagination,
+    onPageChange
 }) => {
     return (
         <div className="space-y-4 animate-fadeIn">
@@ -61,6 +64,8 @@ const CatalogsTab = ({
                     ))
                 )}
             </div>
+
+            <Pagination pagination={pagination} onPageChange={onPageChange} />
             <p className="text-xs text-gray-400 flex items-center gap-1">
                 <AlertTriangle size={12}/> Las especialidades con doctores asociados no pueden eliminarse.
             </p>

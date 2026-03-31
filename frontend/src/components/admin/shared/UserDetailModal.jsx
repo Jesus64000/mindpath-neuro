@@ -9,7 +9,7 @@ import api from '../../../api/axiosConfig';
 const UserDetailModal = ({ user, onClose }) => {
     const [fullData, setFullData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [sendingReset, setSendingReset] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [resetSent, setResetSent] = useState(false);
 
     useEffect(() => {
@@ -29,17 +29,18 @@ const UserDetailModal = ({ user, onClose }) => {
         return () => { document.body.style.overflow = 'unset'; };
     }, [user.id]);
 
-    const handleSendReset = async () => {
-        if (sendingReset || resetSent) return;
-        setSendingReset(true);
+    const handleSendResetEmail = async () => {
+        if (isSending || resetSent) return;
+        setIsSending(true);
         try {
             await api.post(`/admin/users/${user.id}/send-reset`);
             setResetSent(true);
             setTimeout(() => setResetSent(false), 5000);
         } catch (error) {
+            console.error(error);
             alert(error.response?.data?.message || "Error al enviar correo de recuperación");
         } finally {
-            setSendingReset(false);
+            setIsSending(false);
         }
     };
 
@@ -220,38 +221,38 @@ const UserDetailModal = ({ user, onClose }) => {
                     )}
                 </div>
 
-                {/* 3. FOOTER: ZONA DE SEGURIDAD (Fase 3) */}
+                {/* SECCIÓN C: SEGURIDAD Y ACCESO (DISEÑO FINAL) */}
                 <div className="p-8 bg-gray-50 dark:bg-slate-900/80 border-t border-gray-100 dark:border-slate-800">
-                    <div className="relative overflow-hidden p-6 bg-gradient-to-br from-red-100/50 dark:from-red-950/20 to-transparent border border-red-500/20 dark:border-red-900/30 rounded-[2rem] group">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]"></div>
+                    <div className="relative overflow-hidden p-6 bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700 rounded-2xl group shadow-sm">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-mindpath-primary"></div>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                             <div className="flex items-start gap-4">
-                                <div className="h-12 w-12 bg-red-600/10 rounded-2xl flex items-center justify-center text-red-500 shrink-0 border border-red-600/20">
+                                <div className="h-12 w-12 bg-mindpath-primary/10 rounded-2xl flex items-center justify-center text-mindpath-primary shrink-0 border border-mindpath-primary/20">
                                     <Shield size={24}/>
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-red-600 dark:text-red-500 flex items-center gap-3 uppercase tracking-widest">
-                                        Zona de Seguridad
+                                    <h3 className="text-[13px] font-bold text-gray-800 dark:text-slate-200 flex items-center gap-2 mb-1.5 tracking-wide">
+                                        Gestión de Acceso y Seguridad
                                     </h3>
-                                    <p className="text-xs text-red-600/60 dark:text-red-300/40 mt-1 font-bold leading-relaxed max-w-lg">
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium leading-relaxed max-w-lg">
                                         {resetSent 
-                                            ? `¡Enlace enviado a ${user.email}! El token expirará en 1 hora.`
-                                            : `Gestión de credenciales para ${user.full_name}. Motor de recuperación por email activo.`
+                                            ? `✅ ¡Enlace enviado a ${user.email}! El token expirará en 1 hora.`
+                                            : `Envía un enlace seguro y temporal a la cuenta registrada para que el usuario restablezca su contraseña de forma privada.`
                                         }
                                     </p>
                                 </div>
                             </div>
                             <button 
-                                onClick={handleSendReset}
-                                disabled={sendingReset || resetSent} 
-                                className={`w-full sm:w-auto px-8 py-4 border rounded-2xl text-[11px] font-black tracking-[0.2em] uppercase flex items-center justify-center gap-3 transition-all duration-500 shadow-xl ${
+                                onClick={handleSendResetEmail}
+                                disabled={isSending || resetSent} 
+                                className={`w-full sm:w-auto px-8 py-3.5 border rounded-xl text-[11px] font-black tracking-[0.1em] uppercase flex items-center justify-center gap-3 transition-all duration-300 shadow-sm ${
                                     resetSent 
-                                    ? 'bg-green-600/20 border-green-500 text-green-500' 
-                                    : 'bg-red-600/10 border-red-600/20 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 shadow-red-900/10'
+                                    ? 'bg-green-600/20 border-green-500 text-green-500 cursor-default' 
+                                    : 'bg-mindpath-primary/10 border-mindpath-primary/30 text-mindpath-primary hover:bg-mindpath-primary hover:text-white hover:border-mindpath-primary hover:shadow-mindpath-primary/20'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                                {sendingReset ? <RefreshCw className="animate-spin" size={16}/> : (resetSent ? <CheckCircle2 size={16}/> : <Mail size={16}/>)}
-                                {sendingReset ? 'ENVIANDO...' : (resetSent ? '¡ENVIADO CON ÉXITO!' : 'ENVIAR RECUPERACIÓN')}
+                                {isSending ? <RefreshCw className="animate-spin" size={16}/> : (resetSent ? <CheckCircle2 size={16}/> : <Mail size={16}/>)}
+                                {isSending ? 'PROCESANDO...' : (resetSent ? 'ENLACE ENVIADO' : 'ENVIAR RECUPERACIÓN')}
                             </button>
                         </div>
                     </div>

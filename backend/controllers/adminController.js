@@ -129,6 +129,13 @@ exports.getStats = async (req, res) => {
 // ── Verificación de doctores ──────────────────────────────────────────────────
 exports.getPendingDoctors = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM doctors WHERE is_verified = FALSE");
+    const total = totalRes[0].total;
+
     const [doctors] = await db.query(`
             SELECT
                 d.id,
@@ -143,8 +150,13 @@ exports.getPendingDoctors = async (req, res) => {
             JOIN users u ON d.user_id = u.id
             WHERE d.is_verified = FALSE
             ORDER BY u.created_at DESC
-        `);
-    res.status(200).json(doctors);
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+    res.status(200).json({
+        data: doctors,
+        pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+    });
   } catch (error) {
     console.error("Error en getPendingDoctors:", error);
     res.status(500).json({ message: "Error al cargar doctores pendientes." });
@@ -187,11 +199,24 @@ exports.rejectDoctor = async (req, res) => {
 // ── Catálogo de especialidades ─────────────────────────────────────────────────
 exports.getSpecialties = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM specialties");
+    const total = totalRes[0].total;
+
     const [rows] = await db.query(
-      "SELECT * FROM specialties ORDER BY name ASC",
+      "SELECT * FROM specialties ORDER BY name ASC LIMIT ? OFFSET ?",
+      [limit, offset]
     );
-    res.status(200).json(rows);
+
+    res.status(200).json({
+        data: rows,
+        pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+    });
   } catch (error) {
+    console.error("Error en getSpecialties:", error);
     res.status(500).json({ message: "Error al cargar especialidades." });
   }
 };
@@ -348,7 +373,37 @@ exports.uploadLogo = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const { search = "", role = "" } = req.query;
-    let sql = `
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    let baseQuery = `
+            FROM users u
+            LEFT JOIN doctors d ON d.user_id = u.id
+            WHERE 1=1
+        `;
+    const params = [];
+
+    if (search.trim()) {
+      baseQuery += " AND (u.full_name LIKE ? OR u.email LIKE ?)";
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (role === "staff") {
+      baseQuery += " AND u.role IN ('admin', 'supervisor')";
+    } else if (role) {
+      baseQuery += " AND u.role = ?";
+      params.push(role);
+    } else {
+      baseQuery += " AND u.role NOT IN ('admin', 'supervisor')";
+    }
+
+    // Contar total
+    const [totalRes] = await db.query(`SELECT COUNT(*) AS total ${baseQuery}`, params);
+    const total = totalRes[0].total;
+
+    // Ejecutar paginación
+    const sql = `
             SELECT
                 u.id, u.email, u.full_name, u.role,
                 COALESCE(u.is_active, 1) AS is_active,
@@ -356,27 +411,16 @@ exports.getUsers = async (req, res) => {
                 d.specialty,
                 d.is_verified,
                 d.license_number
-            FROM users u
-            LEFT JOIN doctors d ON d.user_id = u.id
-            WHERE 1=1
+            ${baseQuery}
+            ORDER BY u.created_at DESC
+            LIMIT ? OFFSET ?
         `;
-    const params = [];
-    if (search.trim()) {
-      sql += " AND (u.full_name LIKE ? OR u.email LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
-    }
-    if (role === "staff") {
-      sql += " AND u.role IN ('admin', 'supervisor')";
-    } else if (role) {
-      sql += " AND u.role = ?";
-      params.push(role);
-    } else {
-      sql += " AND u.role NOT IN ('admin', 'supervisor')";
-    }
-    sql += " ORDER BY u.created_at DESC LIMIT 200";
+    const [users] = await db.query(sql, [...params, limit, offset]);
 
-    const [users] = await db.query(sql, params);
-    res.status(200).json(users);
+    res.status(200).json({
+        data: users,
+        pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+    });
   } catch (error) {
     console.error("Error en getUsers:", error);
     res.status(500).json({ message: "Error al cargar usuarios." });
@@ -578,5 +622,60 @@ exports.sendResetEmail = async (req, res) => {
     } catch (error) {
         console.error("Error enviando email de recuperación:", error);
         res.status(500).json({ message: error.message || "Error al enviar el correo." });
+    }
+};
+
+// ── Gestión de Citas Globales (Sprint 39-40) ──────────────────────────────────
+exports.getAllAppointments = async (req, res) => {
+    try {
+        const { status, search } = req.query;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        let baseQuery = `
+            FROM appointments a
+            JOIN patients p ON a.patient_id = p.id
+            JOIN users p_user ON p.user_id = p_user.id
+            JOIN doctors d ON a.doctor_id = d.id
+            JOIN users d_user ON d.user_id = d_user.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (status) {
+            baseQuery += ` AND a.status = ?`;
+            params.push(status);
+        }
+
+        if (search && search.trim()) {
+            baseQuery += ` AND (p_user.full_name LIKE ? OR d_user.full_name LIKE ? OR p_user.email LIKE ?)`;
+            const s = `%${search}%`;
+            params.push(s, s, s);
+        }
+
+        // 1. Contar totales
+        const [countRes] = await db.query(`SELECT COUNT(*) as total ${baseQuery}`, params);
+        const total = countRes[0].total;
+
+        // 2. Obtener datos paginados
+        const query = `
+            SELECT a.id, a.appointment_date, a.start_time, a.status, a.type, 
+                   p_user.full_name AS patient_name, 
+                   d_user.full_name AS doctor_name, d.specialty
+            ${baseQuery}
+            ORDER BY a.appointment_date DESC, a.start_time DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const [appointments] = await db.query(query, [...params, limit, offset]);
+        
+        res.json({
+            data: appointments,
+            pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+        });
+    } catch (error) {
+        console.error("Error obteniendo todas las citas:", error);
+        res.status(500).json({ message: "Error al obtener citas" });
     }
 };

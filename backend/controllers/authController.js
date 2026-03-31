@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../config/db');
+const { sendResetPasswordEmail } = require('../utils/emailService');
 
 // REGISTRO DE USUARIO
 exports.register = async (req, res) => {
@@ -131,6 +133,41 @@ exports.login = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error en el servidor durante el login.' });
+    }
+};
+
+// SOLICITAR RECUPERACIÓN (Self-Service)
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // 1. Verificar si el usuario existe
+        const [users] = await db.query('SELECT id, full_name, email FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            // Por seguridad, no revelamos si el email existe o no, pero detenemos aquí.
+            return res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
+        }
+
+        const user = users[0];
+
+        // 2. Generar Token Seguro
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hora
+
+        // 3. Guardar en DB (Limpiando tokens previos)
+        await db.query(
+            'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+            [resetToken, expires, user.id]
+        );
+
+        // 4. Enviar Email
+        await sendResetPasswordEmail(user.email, user.full_name, resetToken);
+
+        res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
+
+    } catch (error) {
+        console.error("Error en forgotPassword:", error);
+        res.status(500).json({ message: 'Error al procesar la solicitud de recuperación.' });
     }
 };
 
