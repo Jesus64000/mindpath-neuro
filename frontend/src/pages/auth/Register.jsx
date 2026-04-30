@@ -29,6 +29,7 @@ const Register = () => {
     const [clinicName,     setClinicName]     = useState('');
     const [modality,       setModality]       = useState('ambas');
     const [rif,            setRif]            = useState('');
+    const [doctorPhone,    setDoctorPhone]    = useState('');
 
     // Cargar especialidades y clínicas al montar
     useEffect(() => {
@@ -56,7 +57,7 @@ const Register = () => {
                 // Paciente
                 date_of_birth: role === 'patient' ? dateOfBirth : undefined,
                 gender:        role === 'patient' ? gender       : undefined,
-                phone:         role === 'patient' ? phone        : undefined,
+                phone:         role === 'patient' ? phone        : (role === 'doctor' ? doctorPhone : undefined),
                 // Doctor
                 specialty:      role === 'doctor' ? specialty      : undefined,
                 license_number: role === 'doctor' ? licenseNumber  : undefined,
@@ -193,6 +194,17 @@ const Register = () => {
                                             ))}
                                         </select>
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
+                                    </div>
+                                </div>
+
+                                {/* Teléfono */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400" /></div>
+                                        <input type="tel" value={doctorPhone} onChange={e => setDoctorPhone(e.target.value)}
+                                            className={inputClass}
+                                            placeholder="+58 412 000 0000" required={role === 'doctor'} />
                                     </div>
                                 </div>
 
