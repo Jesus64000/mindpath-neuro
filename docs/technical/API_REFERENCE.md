@@ -27,9 +27,14 @@ Calcula los slots libres del doctor para una fecha, excluyendo citas confirmadas
 - **Query:** `?doctorId=N&date=YYYY-MM-DD`
 - **Responde:** `["08:00", "09:30", ...]`
 
+### `GET /bookings/quote`
+Calcula la tarifa final de una cita antes de reservarla.
+- **Query:** `?doctorId=N&date=YYYY-MM-DD&type=virtual|presencial&start_time=HH:MM:SS`
+- **Responde:** `{ price, currency, source, ruleId, dayOfWeek }`
+
 ### `POST /bookings`
 Crea una cita. El paciente se lee del JWT.
-- **Body:** `{ doctor_id, appointment_date, start_time, type }` (`type`: `virtual` | `presential`)
+- **Body:** `{ doctor_id, appointment_date, start_time, type, payment_method }` (`type`: `virtual` | `presencial`)
 - **Responde:** `201` con la cita creada
 
 ---
@@ -114,7 +119,7 @@ Historial de consultas completadas del usuario autenticado.
 
 ### `POST /consultations/:id/finalize`
 Finaliza la consulta y guarda el informe SOAP.
-- **Body:** `{ antecedentes, hallazgos, diagnostico, tratamiento, private_notes, is_shared }`
+- **Body:** `{ antecedentes, hallazgos, diagnostico, tratamiento, private_notes, is_shared, paymentReceived, paymentReference }`
 
 ---
 

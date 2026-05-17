@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { BACKEND_URL } from '../../api/constants';
 import Avatar from '../../components/ui/Avatar';
+import UploadProofModal from '../../components/UploadProofModal';
 
 // ── Componente de Valoración con Estrellas ────────────────────────────────────
 const StarRating = ({ value, onChange, readonly = false }) => (
@@ -36,6 +37,15 @@ const PatientAppointments = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+
+    // Modal de comprobante de pago
+    const [proofModal, setProofModal] = useState({ open: false, appointmentId: null });
+    
+    // Refrescar citas tras subir comprobante
+    const handleProofSuccess = () => {
+        setProofModal({ open: false, appointmentId: null });
+        fetchAppointments();
+    };
 
     // Modal del informe
     const [selectedReport, setSelectedReport] = useState(null);
@@ -253,6 +263,11 @@ const PatientAppointments = () => {
                                     <p className="text-sm font-bold text-gray-500 dark:text-slate-400 flex items-center">
                                         {app.type === 'virtual' ? <><Video size={16} className="text-blue-500 mr-2" /> Telemedicina (Online)</> : <><MapPin size={16} className="text-green-500 mr-2" /> Presencial</>}
                                     </p>
+                                    {/* Monto y método de pago */}
+                                    <div className="text-xs mt-2 text-gray-700 dark:text-slate-300">
+                                        <b>Monto:</b> {app.consultation_fee_snapshot ? `$${Number(app.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>
+                                        <b>Método de pago:</b> {app.payment_method === 'platform' ? 'Pago por plataforma' : app.payment_method === 'in_person' ? 'En consultorio' : (app.payment_method || 'No definido')}
+                                    </div>
                                     <span className={`inline-flex items-center mt-2.5 px-2.5 py-1 text-xs font-bold rounded-lg border flex-shrink-0 w-fit ${sc.color}`}>
                                         {app.status === 'emergency_reschedule' && <AlertCircle size={14} className="mr-1.5" />}
                                         {sc.label}
@@ -261,17 +276,50 @@ const PatientAppointments = () => {
 
                                 {/* BOTONES DINÁMICOS POR PESTAÑA */}
                                 <div className="w-full md:w-1/3 flex flex-wrap gap-2 md:justify-end">
+                                    {/* Botón para subir comprobante de pago */}
+                                    {activeTab === 'upcoming' && (app.status === 'pending' || app.status === 'scheduled') && !app.payment_proof_url && (
+                                        <button
+                                            onClick={() => setProofModal({ open: true, appointmentId: app.appointment_id })}
+                                            className="w-full md:w-auto px-6 py-2.5 text-sm bg-mindpath-primary text-white font-bold rounded-xl hover:bg-mindpath-primaryHover transition flex items-center justify-center"
+                                        >
+                                            Subir comprobante de pago
+                                        </button>
+                                    )}
+                                                {/* MODAL: SUBIR COMPROBANTE DE PAGO */}
+                                                <UploadProofModal
+                                                    isOpen={proofModal.open}
+                                                    onClose={() => setProofModal({ open: false, appointmentId: null })}
+                                                    onSuccess={handleProofSuccess}
+                                                    appointment={appointments.find(a => a.appointment_id === proofModal.appointmentId) || null}
+                                                />
                                     {activeTab === 'upcoming' && (
                                         <>
                                             {app.type === 'virtual' && app.status === 'confirmed' && (
-                                                <button 
-                                                    onClick={() => handleJoinVideoCall(app.appointment_id)}
-                                                    disabled={!isToday}
-                                                    className={`w-full md:w-auto px-6 py-2.5 text-sm font-bold rounded-xl flex items-center justify-center transition-all ${isToday ? 'bg-mindpath-primary hover:bg-mindpath-primaryHover text-white shadow-md' : 'bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-slate-600'}`}
-                                                >
-                                                    <Video size={16} className="mr-2" />
-                                                    {isToday ? 'Entrar a Consulta' : `Disponible ` + new Date(app.appointment_date).getDate()}
-                                                </button>
+                                                (() => {
+                                                    const canJoin = (isToday || app.doctor_ready) && app.payment_status === 'paid';
+                                                    const formattedDate = new Date(app.appointment_date).toLocaleDateString('es-ES');
+                                                    return (
+                                                        <button 
+                                                            onClick={() => handleJoinVideoCall(app.appointment_id)}
+                                                            disabled={!canJoin}
+                                                            className={`w-full md:w-auto px-6 py-2.5 text-sm font-bold rounded-xl flex items-center justify-center transition-all ${
+                                                                canJoin 
+                                                                ? 'bg-mindpath-primary hover:bg-mindpath-primaryHover text-white shadow-md' 
+                                                                : 'bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-slate-600'
+                                                            }`}
+                                                        >
+                                                            <Video size={16} className="mr-2" />
+                                                            {app.payment_status !== 'paid' 
+                                                                ? 'Esperando Confirmación Pago'
+                                                                : app.doctor_ready 
+                                                                    ? 'Entrar (Doctor en sala)' 
+                                                                    : isToday 
+                                                                        ? 'Entrar a Consulta' 
+                                                                        : `Disponible: ${formattedDate}`
+                                                            }
+                                                        </button>
+                                                    );
+                                                })()
                                             )}
                                             {app.type === 'presencial' && app.status === 'confirmed' && (
                                                  <button className="w-full md:w-auto px-6 py-2.5 text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition flex items-center justify-center">

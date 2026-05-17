@@ -67,6 +67,8 @@ const WrapUp = () => {
         return localStorage.getItem(`private_notes_${appointmentId}`) || '';
     });
     const [isShared,     setIsShared]     = useState(true);
+    const [paymentReceived, setPaymentReceived] = useState(false);
+    const [paymentReference, setPaymentReference] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving,     setIsSaving]     = useState(false);
     const [sidebarOpen,  setSidebarOpen]  = useState(true);
@@ -128,6 +130,10 @@ const WrapUp = () => {
             setToast({ message: 'Debes generar el informe con IA antes de firmar.', type: 'error' });
             return;
         }
+        if (headerData?.type === 'presencial' && headerData?.payment_method === 'in_person' && !paymentReceived) {
+            setToast({ message: 'Debes confirmar el pago en consultorio antes de finalizar esta consulta.', type: 'error' });
+            return;
+        }
         setIsSaving(true);
         try {
             await api.post('/reports/wrap-up', {
@@ -135,6 +141,8 @@ const WrapUp = () => {
                 ...report,
                 privateNotes,
                 isShared,
+                paymentReceived,
+                paymentReference,
             });
             
             // Limpiar todo rastro local tras firma exitosa
@@ -301,6 +309,47 @@ const WrapUp = () => {
                                 `}>
                                     {headerData.type === 'online' ? 'Online' : 'Presencial'}
                                 </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-100 dark:border-white/10 px-8 pb-8 pt-6">
+                        <h3 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
+                            Pago y reembolso
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estado de pago</p>
+                                <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">
+                                    {headerData.payment_method === 'in_person'
+                                        ? 'Pago en consultorio'
+                                        : 'Pago por plataforma'}
+                                </p>
+                                <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-slate-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={paymentReceived}
+                                        onChange={(e) => setPaymentReceived(e.target.checked)}
+                                        className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
+                                    />
+                                    Confirmo que el pago fue recibido
+                                </label>
+                                <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
+                                    Úsalo para casos presenciales en consultorio o cuando el cobro externo ya esté verificado.
+                                </p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Referencia de pago</p>
+                                <input
+                                    type="text"
+                                    value={paymentReference}
+                                    onChange={(e) => setPaymentReference(e.target.value)}
+                                    className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
+                                    placeholder="Ej: efectivo, transferencia, comprobante..."
+                                />
+                                <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
+                                    Este dato queda como trazabilidad para el expediente y el kit de reembolso.
+                                </p>
                             </div>
                         </div>
                     </div>

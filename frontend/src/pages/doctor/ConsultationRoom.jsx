@@ -266,13 +266,19 @@ const ConsultationRoom = () => {
             <button
               onClick={endConsultation}
               disabled={!finalText.trim() && !interimText.trim()}
-              className="flex items-center justify-center gap-2 w-full bg-mindpath-primary hover:bg-mindpath-primary disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-colors"
+              className="flex items-center justify-center gap-2 w-full bg-mindpath-primary hover:bg-[#6c48ff] disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-colors"
             >
-              <StopCircle size={18} /> Finalizar consulta
+              <StopCircle size={18} /> Procesar grabación
+            </button>
+            <button
+              onClick={endConsultation}
+              className="flex items-center justify-center gap-2 w-full border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold py-3 rounded-xl transition-colors mt-2 text-sm"
+            >
+              Finalizar sin grabar
             </button>
           </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mt-6">
             <p className="text-xs font-bold text-blue-400 mb-2">💡 Consejos</p>
             <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
               <li>Habla directo al micrófono</li>

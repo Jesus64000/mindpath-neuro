@@ -1,9 +1,66 @@
 const db = require('../config/db');
 
+const DAYS_BY_INDEX = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 // Función auxiliar para obtener el patient_id del usuario logueado
 const getPatientId = async (userId) => {
     const [rows] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
     return rows.length > 0 ? rows[0].id : null;
+};
+
+const getDoctorPrice = async ({ doctorId, date, type, startTime }) => {
+    const requestDate = new Date(date);
+    const dayOfWeek = DAYS_BY_INDEX[requestDate.getUTCDay()];
+
+    const [doctorRows] = await db.query(
+        'SELECT consultation_fee FROM doctors WHERE id = ?',
+        [doctorId]
+    );
+
+    const doctorFee = doctorRows[0]?.consultation_fee ?? 0;
+
+    const [ruleRows] = await db.query(
+        `SELECT id, price, currency
+         FROM doctor_rate_rules
+         WHERE doctor_id = ?
+           AND is_active = 1
+           AND (modality = ? OR modality = 'ambas')
+           AND (day_of_week IS NULL OR day_of_week = ?)
+           AND (start_time IS NULL OR start_time <= ?)
+           AND (end_time IS NULL OR end_time >= ?)
+         ORDER BY priority ASC, id DESC
+         LIMIT 1`,
+        [doctorId, type, dayOfWeek, startTime || '00:00:00', startTime || '00:00:00']
+    );
+
+    const rule = ruleRows[0] || null;
+
+    return {
+        doctorId,
+        type,
+        date,
+        dayOfWeek,
+        price: Number(rule?.price ?? doctorFee),
+        currency: rule?.currency || 'USD',
+        source: rule ? 'doctor_rate_rules' : 'doctor.consultation_fee',
+        ruleId: rule?.id || null,
+    };
+};
+
+exports.getAppointmentQuote = async (req, res) => {
+    try {
+        const { doctorId, date, type, start_time: startTime } = req.query;
+
+        if (!doctorId || !date || !type) {
+            return res.status(400).json({ message: 'Se requiere doctorId, date y type.' });
+        }
+
+        const quote = await getDoctorPrice({ doctorId, date, type, startTime });
+        res.status(200).json(quote);
+    } catch (error) {
+        console.error('Error calculando tarifa de cita:', error);
+        res.status(500).json({ message: 'Error al calcular la tarifa.' });
+    }
 };
 
 // 1. Calcular disponibilidad real de un doctor para una fecha específica
@@ -115,10 +172,19 @@ exports.getAvailability = async (req, res) => {
 
 // 2. Crear la cita médica
 exports.bookAppointment = async (req, res) => {
-    const { doctor_id, appointment_date, start_time, type, patient_id } = req.body;
+    const { doctor_id, appointment_date, start_time, type, patient_id, payment_method } = req.body;
 
     try {
         let finalPatientId = null;
+        const normalizedType = type === 'presencial' ? 'presencial' : 'virtual';
+        const normalizedPaymentMethod = payment_method || (normalizedType === 'presencial' ? 'in_person' : 'platform');
+
+        const quote = await getDoctorPrice({
+            doctorId: doctor_id,
+            date: appointment_date,
+            type: normalizedType,
+            startTime: start_time,
+        });
 
         // Verificar si el doctor tiene Bloqueo de Emergencia activo
         const [doctorRows] = await db.query('SELECT is_blocked, emergency_block_until FROM doctors WHERE id = ?', [doctor_id]);
@@ -152,13 +218,29 @@ exports.bookAppointment = async (req, res) => {
             return res.status(403).json({ message: 'Rol no autorizado para agendar citas.' });
         }
 
-        // Inserción directa en la BD (El estado por defecto en SQL es 'pending')
+        // Inserción directa en la BD explícitamente fijando el status a 'pending'
         const [result] = await db.query(
-            'INSERT INTO appointments (doctor_id, patient_id, appointment_date, start_time, type) VALUES (?, ?, ?, ?, ?)',
-            [doctor_id, finalPatientId, appointment_date, start_time, type]
+            `INSERT INTO appointments 
+                (doctor_id, patient_id, appointment_date, start_time, type, consultation_fee_snapshot, payment_method, payment_status, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                doctor_id,
+                finalPatientId,
+                appointment_date,
+                start_time,
+                normalizedType,
+                quote.price,
+                payment_method || normalizedPaymentMethod,
+                'pending',
+                'pending'
+            ]
         );
 
-        res.status(201).json({ message: 'Cita agendada con éxito.', appointment_id: result.insertId });
+        res.status(201).json({
+            message: 'Cita agendada con éxito.',
+            appointment_id: result.insertId,
+            quote,
+        });
     } catch (error) {
         console.error(error);
         // Podríamos capturar error de choque de horas exacto aquí si tuviéramos un UNIQUE KEY para (doctor, fecha, hora)

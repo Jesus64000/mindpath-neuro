@@ -33,6 +33,8 @@ const useSettingsStore = create((set) => ({
   primaryColor: "#6D28D9",
   primaryHover: "#5B21B6",
   fontFamily: "Inter",
+  exchangeRate: 36.50,
+  exchangeRateMode: "auto",
 
   applySettings: (settings) => {
     // Inyectar CSS variables en el documento para el theming dinámico
@@ -75,6 +77,8 @@ const useSettingsStore = create((set) => ({
       primaryColor: settings.primary_color || "#6D28D9",
       primaryHover: settings.primary_hover || "#5B21B6",
       fontFamily: font,
+      exchangeRate: parseFloat(settings.exchange_rate) || 36.50,
+      exchangeRateMode: settings.exchange_rate_mode || "auto",
     });
   },
 }));

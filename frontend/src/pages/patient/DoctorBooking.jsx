@@ -45,11 +45,15 @@ const DoctorBooking = () => {
     const [availableSlots, setAvailableSlots] = useState([]);
     const [selectedSlot, setSelectedSlot]   = useState(null);
     const [modality, setModality]           = useState('virtual');
+    const [paymentMethod, setPaymentMethod] = useState('platform');
+    const [quote, setQuote] = useState(null);
+    const [quoteLoading, setQuoteLoading] = useState(false);
     const [loadingSlots, setLoadingSlots]   = useState(false);
     const [toast, setToast]                 = useState(null);
 
     useEffect(() => {
-        if (!state?.doctor) {
+        const needsRefresh = !state?.doctor || !state.doctor.payment_methods;
+        if (needsRefresh) {
             const fetchDoctor = async () => {
                 try {
                     const res = await api.get(`/doctors/${doctorId}`);
@@ -62,6 +66,8 @@ const DoctorBooking = () => {
                 }
             };
             fetchDoctor();
+        } else {
+            setLoadingDoctor(false);
         }
     }, [doctorId, state?.doctor]);
 
@@ -97,14 +103,58 @@ const DoctorBooking = () => {
         fetchAvailability();
     }, [doctorId, selectedDate]);
 
+
+    // Cuando cambia la modalidad, selecciona el primer método compatible
+    useEffect(() => {
+        if (doctor && Array.isArray(doctor.payment_methods) && doctor.payment_methods.length > 0) {
+            setPaymentMethod(doctor.payment_methods[0]?.method_name || '');
+        } else {
+            setPaymentMethod('');
+        }
+    }, [modality, doctor]);
+
+    useEffect(() => {
+        const fetchQuote = async () => {
+            if (!selectedSlot) {
+                setQuote(null);
+                return;
+            }
+
+            setQuoteLoading(true);
+            try {
+                const res = await api.get('/bookings/quote', {
+                    params: {
+                        doctorId,
+                        date: selectedDate,
+                        type: modality,
+                        start_time: `${selectedSlot}:00`,
+                    }
+                });
+                setQuote(res.data);
+            } catch (error) {
+                console.error('Error calculando tarifa', error);
+                setQuote(null);
+            } finally {
+                setQuoteLoading(false);
+            }
+        };
+
+        fetchQuote();
+    }, [doctorId, selectedDate, selectedSlot, modality]);
+
     const handleBooking = async () => {
         if (!selectedSlot) return;
+        if (!paymentMethod) {
+            setToast({ message: 'Selecciona un método de pago antes de continuar.', type: 'error' });
+            return;
+        }
         try {
             await api.post('/bookings/book', {
                 doctor_id:        doctorId,
                 appointment_date: selectedDate,
                 start_time:       `${selectedSlot}:00`,
                 type:             modality,
+                payment_method:   paymentMethod,
             });
             setToast({ message: '¡Cita agendada con éxito! Te notificaremos cuando el médico confirme.', type: 'success' });
             setTimeout(() => navigate('/patient/appointments'), 2800);
@@ -160,10 +210,10 @@ const DoctorBooking = () => {
                 </div>
             </div>
 
-            {/* Modalidad */}
+            {/* Modalidad y método de pago */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-4">Modalidad de Atención</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                     <button
                         onClick={() => setModality('virtual')}
                         className={`p-4 rounded-2xl border-2 flex flex-col items-center transition-all ${
@@ -186,6 +236,41 @@ const DoctorBooking = () => {
                         <MapPin size={28} className="mb-2" />
                         <span className="font-bold text-sm">Presencial</span>
                     </button>
+                </div>
+                {/* Selector de método de pago */}
+                <div className="mt-2">
+                    <label className="block text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-300 mb-2">Selecciona método de pago</label>
+                    {Array.isArray(doctor?.payment_methods) && doctor.payment_methods.length > 0 ? (
+                        <>
+                        <select
+                            className="w-full p-3 rounded-xl border text-sm font-bold bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-200"
+                            value={paymentMethod}
+                            onChange={e => setPaymentMethod(e.target.value)}
+                        >
+                            <option value="">Selecciona...</option>
+                            {doctor.payment_methods.map(method => (
+                                <option key={method.id} value={method.method_name}>
+                                    {method.method_name}
+                                </option>
+                            ))}
+                        </select>
+                        {/* Mostrar detalles del método seleccionado */}
+                        {doctor.payment_methods.some(m => String(m.method_name) === String(paymentMethod)) && (
+                            <div className="mt-3 bg-white dark:bg-slate-800/70 rounded-xl p-3 border border-amber-100 dark:border-amber-500/20">
+                                <p className="font-bold text-sm text-gray-900 dark:text-white">
+                                    {doctor.payment_methods.find(m => String(m.method_name) === String(paymentMethod))?.method_name}
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-slate-300 mt-1 whitespace-pre-line">
+                                    {doctor.payment_methods.find(m => String(m.method_name) === String(paymentMethod))?.account_details}
+                                </p>
+                            </div>
+                        )}
+                        </>
+                    ) : (
+                        <div className="p-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-200 text-sm font-bold">
+                            Este especialista aún no tiene métodos de pago configurados. No podrás reservar hasta que los configure.
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -276,6 +361,15 @@ const DoctorBooking = () => {
                                 <CalendarIcon size={15} className="mr-2 text-mindpath-primary" />
                                 {new Date(selectedDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} a las {selectedSlot}
                             </span>
+                            <span className="flex items-center">
+                                <span className="mr-2 text-mindpath-primary">$</span>
+                                {quoteLoading ? 'Calculando tarifa...' : quote ? `${quote.price.toFixed(2)} ${quote.currency}` : 'Tarifa por confirmar'}
+                            </span>
+                            {modality === 'presencial' && (
+                                <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
+                                    {paymentMethod === 'in_person' ? 'Pago en consultorio' : 'Pago por plataforma'}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button

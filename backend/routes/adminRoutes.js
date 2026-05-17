@@ -33,6 +33,7 @@ router.post('/bootstrap', adminController.bootstrapAdmin);
 // ── Solo Super Admin (admin) ──────────────────────────────────────────────────
 router.get('/stats',              authMiddleware, isSuperAdmin, adminController.getStats);
 router.put('/settings',           authMiddleware, isSuperAdmin, adminController.updateSettings);
+router.post('/settings/sync-bcv',  authMiddleware, isSuperAdmin, adminController.syncBcv);
 router.post('/upload/logo',       authMiddleware, isSuperAdmin, upload.single('logo'), adminController.uploadLogo);
 router.post('/create-supervisor', authMiddleware, isSuperAdmin, adminController.createSupervisor);
 router.put('/users/:id/role',     authMiddleware, isSuperAdmin, adminController.changeUserRole);
@@ -46,6 +47,11 @@ router.get('/specialties',        authMiddleware, isStaff, adminController.getSp
 router.post('/specialties',       authMiddleware, isStaff, adminController.createSpecialty);
 router.put('/specialties/:id',    authMiddleware, isStaff, adminController.updateSpecialty);
 router.delete('/specialties/:id', authMiddleware, isStaff, adminController.deleteSpecialty);
+
+router.get('/payment-methods',        authMiddleware, isSuperAdmin, adminController.getPaymentMethodCatalog);
+router.post('/payment-methods',       authMiddleware, isSuperAdmin, adminController.createPaymentMethodCatalog);
+router.put('/payment-methods/:id',    authMiddleware, isSuperAdmin, adminController.updatePaymentMethodCatalog);
+router.delete('/payment-methods/:id',  authMiddleware, isSuperAdmin, adminController.deletePaymentMethodCatalog);
 
 router.get('/users',              authMiddleware, isStaff, adminController.getUsers);
 router.get('/users/:id/history',  authMiddleware, isStaff, adminController.getUserDetailsAndHistory);

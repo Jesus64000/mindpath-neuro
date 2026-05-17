@@ -10,6 +10,7 @@ const Register = () => {
     const [success, setSuccess]   = useState('');
     const [specialties, setSpecialties] = useState([]);
     const [clinics, setClinics]   = useState([]);
+    const [paymentCatalogs, setPaymentCatalogs] = useState([]);
     const navigate = useNavigate();
 
     // Campos comunes
@@ -30,8 +31,11 @@ const Register = () => {
     const [modality,       setModality]       = useState('ambas');
     const [rif,            setRif]            = useState('');
     const [doctorPhone,    setDoctorPhone]    = useState('');
+    const [consultationFee, setConsultationFee] = useState('');
+    const [catalogMethodId, setCatalogMethodId] = useState('');
+    const [accountDetails,  setAccountDetails]  = useState('');
 
-    // Cargar especialidades y clínicas al montar
+    // Cargar especialidades, clínicas y catálogo de pagos al montar
     useEffect(() => {
         api.get('/doctors/specialties')
             .then(res => setSpecialties(res.data))
@@ -39,6 +43,9 @@ const Register = () => {
         api.get('/doctors/clinics')
             .then(res => setClinics(res.data))
             .catch(() => setClinics([]));
+        api.get('/doctors/payment-catalog')
+            .then(res => setPaymentCatalogs(res.data))
+            .catch(() => setPaymentCatalogs([]));
     }, []);
 
     const handleRegister = async (e) => {
@@ -64,6 +71,9 @@ const Register = () => {
                 clinic_name:    role === 'doctor' ? clinicName     : undefined,
                 modality:       role === 'doctor' ? modality       : undefined,
                 rif:            role === 'doctor' ? rif            : undefined,
+                consultation_fee: role === 'doctor' ? consultationFee : undefined,
+                catalog_method_id: role === 'doctor' ? catalogMethodId : undefined,
+                account_details:   role === 'doctor' ? accountDetails  : undefined,
             };
 
             await api.post('/auth/register', payload);
@@ -232,6 +242,40 @@ const Register = () => {
                                         <input type="text" value={rif} onChange={e => setRif(e.target.value)}
                                             className={inputClass}
                                             placeholder="J-12345678-9" />
+                                    </div>
+                                </div>
+
+                                {/* ── CONFIGURACIÓN DE COBRO (OBLIGATORIA) ── */}
+                                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
+                                    <h4 className="text-sm font-bold text-amber-800 flex items-center">
+                                        <CreditCard size={16} className="mr-2" /> Configuración de Cobro
+                                    </h4>
+                                    
+                                    <div>
+                                        <label className="block text-xs font-bold text-amber-700 mb-1">Monto por Consulta ($)</label>
+                                        <input type="number" value={consultationFee} onChange={e => setConsultationFee(e.target.value)}
+                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                                            placeholder="Ej. 40" required={role === 'doctor'} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-amber-700 mb-1">Primer Método de Pago</label>
+                                        <select value={catalogMethodId} onChange={e => setCatalogMethodId(e.target.value)}
+                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                                            required={role === 'doctor'}>
+                                            <option value="">Selecciona un método...</option>
+                                            {paymentCatalogs.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-amber-700 mb-1">Datos de Cuenta / Instrucciones</label>
+                                        <textarea value={accountDetails} onChange={e => setAccountDetails(e.target.value)}
+                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm resize-none"
+                                            placeholder="Ej. Zelle: correo@ejemplo.com (Titular: Juan Pérez)" 
+                                            rows={2} required={role === 'doctor'} />
                                     </div>
                                 </div>
                             </>

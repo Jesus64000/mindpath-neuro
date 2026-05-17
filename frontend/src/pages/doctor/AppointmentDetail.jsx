@@ -26,14 +26,26 @@ const AppointmentDetail = () => {
     const [error, setError] = useState('');
     const [expandedHistory, setExpandedHistory] = useState(null);
     const [statusLoading, setStatusLoading] = useState(false);
+    // Hooks de comprobante de pago siempre al inicio
+    const [verifying, setVerifying] = useState(false);
+    const [verifyMsg, setVerifyMsg] = useState('');
+
+    // Función para recargar el detalle de la cita
+    const fetchDetail = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get(`/appointments/doctor/${id}/detail`);
+            setData(res.data);
+        } catch (err) {
+            setError(err.response?.data?.message || 'No se pudo cargar la cita.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        api.get(`/appointments/doctor/${id}/detail`)
-            .then(res => { setData(res.data); setLoading(false); })
-            .catch(err => {
-                setError(err.response?.data?.message || 'No se pudo cargar la cita.');
-                setLoading(false);
-            });
+        fetchDetail();
+        // eslint-disable-next-line
     }, [id]);
 
     const handleStatus = async (newStatus) => {
@@ -67,7 +79,65 @@ const AppointmentDetail = () => {
         </div>
     );
 
-    const { appointment: appt, patient, history } = data;
+    // Desestructuración segura para evitar errores de hooks
+    const { appointment: appt, patient, history } = data || { appointment: {}, patient: {}, history: [] };
+
+    // Aprobar o rechazar comprobante
+    const handleVerifyProof = async (approved) => {
+        if (!appt || !appt.appointment_id) return;
+        setVerifying(true);
+        setVerifyMsg('');
+        try {
+            await api.post(`/appointments/${appt.appointment_id}/verify-payment`, { approved });
+            setVerifyMsg(approved ? 'Pago verificado correctamente.' : 'Comprobante rechazado. El paciente podrá volver a subirlo.');
+            // Recargar el detalle desde el backend para reflejar cambios reales
+            await fetchDetail();
+        } catch (e) {
+            setVerifyMsg(e.response?.data?.message || 'Error al procesar la verificación.');
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+        const renderPaymentProof = () => {
+            if (!appt.payment_proof_url) return null;
+            const url = appt.payment_proof_url.startsWith('http') ? appt.payment_proof_url : `${BACKEND_URL}${appt.payment_proof_url}`;
+            const isPDF = url.toLowerCase().endsWith('.pdf');
+            return (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 my-4">
+                    <p className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase mb-2">Comprobante de pago enviado por el paciente</p>
+                    {appt.payment_reference && (
+                        <p className="text-xs text-gray-700 dark:text-slate-300 mb-2"><b>Referencia:</b> {appt.payment_reference}</p>
+                    )}
+                    {isPDF ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-mindpath-primary underline font-bold">Ver PDF</a>
+                    ) : (
+                        <img src={url} alt="Comprobante de pago" className="max-w-xs rounded-xl border mt-2" />
+                    )}
+
+                    {/* Botones de verificación solo si está pendiente */}
+                    {appt.payment_status !== 'paid' && appt.status !== 'completed' && (
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={() => handleVerifyProof(true)}
+                                disabled={verifying}
+                                className="px-5 py-2 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:bg-gray-400"
+                            >
+                                {verifying ? 'Verificando...' : 'Aprobar pago'}
+                            </button>
+                            <button
+                                onClick={() => handleVerifyProof(false)}
+                                disabled={verifying}
+                                className="px-5 py-2 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:bg-gray-400"
+                            >
+                                {verifying ? 'Procesando...' : 'Rechazar'}
+                            </button>
+                        </div>
+                    )}
+                    {verifyMsg && <div className="mt-2 text-sm font-bold text-mindpath-primary">{verifyMsg}</div>}
+                </div>
+            );
+        };
     const sc = statusConfig[appt.status] || statusConfig.pending;
 
     const avatarSrc = patient.profile_picture
@@ -101,20 +171,35 @@ const AppointmentDetail = () => {
                 <div className="flex gap-3 flex-wrap">
                     {appt.status === 'pending' && (
                         <>
-                            <button onClick={() => handleStatus('confirmed')} disabled={statusLoading}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 font-bold rounded-2xl hover:bg-green-100 transition-colors">
+                            <button 
+                                onClick={() => handleStatus('confirmed')} 
+                                disabled={statusLoading || (appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')}
+                                className={`flex items-center gap-2 px-4 py-2.5 font-bold rounded-2xl transition-colors ${
+                                    (appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')
+                                    ? 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed border border-gray-200 dark:border-slate-600'
+                                    : 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-100 dark:border-green-800'
+                                }`}
+                                title={appt.payment_method !== 'in_person' && appt.payment_status !== 'paid' ? 'Debes verificar el pago antes de confirmar' : 'Confirmar Cita'}
+                            >
                                 <CheckCircle size={18}/> Confirmar
                             </button>
                             <button onClick={() => handleStatus('cancelled')} disabled={statusLoading}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 font-bold rounded-2xl hover:bg-red-100 transition-colors">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 font-bold rounded-2xl hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-100 dark:border-red-800 transition-colors">
                                 <XCircle size={18}/> Cancelar
                             </button>
                         </>
                     )}
                     {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'virtual' && (
-                        <button onClick={() => navigate(`/doctor/video-room/${id}`)}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black rounded-2xl shadow-lg shadow-mindpath-primary transition-all">
-                            <Video size={20}/> INICIAR LLAMADA
+                        <button 
+                            onClick={() => navigate(`/doctor/video-room/${id}`)}
+                            disabled={appt.payment_status !== 'paid'}
+                            className={`flex items-center gap-2 px-6 py-2.5 font-black rounded-2xl transition-all ${
+                                appt.payment_status !== 'paid'
+                                ? 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed border border-gray-300 dark:border-slate-600'
+                                : 'bg-mindpath-primary hover:bg-mindpath-primaryHover text-white shadow-lg shadow-mindpath-primary/20'
+                            }`}
+                        >
+                            <Video size={20}/> {appt.payment_status !== 'paid' ? 'LLAMADA BLOQUEADA (PAGO PENDIENTE)' : 'INICIAR LLAMADA'}
                         </button>
                     )}
                     {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'presencial' && (
@@ -184,6 +269,8 @@ const AppointmentDetail = () => {
 
                     {/* Detalles de la cita */}
                     <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
+                                                {/* Comprobante de pago */}
+                                                {renderPaymentProof()}
                         <h2 className="font-black text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2 border-b dark:border-white/10 pb-4">
                             <Calendar size={18} className="text-mindpath-primary"/> Detalles de la Cita
                         </h2>
@@ -203,8 +290,13 @@ const AppointmentDetail = () => {
                             </div>
                             <span className="font-bold text-gray-700 dark:text-slate-300">
                                 {appt.start_time?.slice(0, 5)}
-                                {appt.end_time ? ` — ${appt.end_time.slice(0, 5)}` : ''}
+                                {appt.end_time ? `  ${appt.end_time.slice(0, 5)}` : ''}
                             </span>
+                        </div>
+                        {/* Monto y método de pago */}
+                        <div className="text-xs mt-2 text-gray-700 dark:text-slate-300">
+                            <b>Monto:</b> {appt.consultation_fee_snapshot ? `$${Number(appt.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>
+                            <b>Método de pago:</b> {appt.payment_method === 'platform' ? 'Pago por plataforma' : appt.payment_method === 'in_person' ? 'En consultorio' : (appt.payment_method || 'No definido')}
                         </div>
                         {appt.notes && (
                             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50 p-4 rounded-2xl">

@@ -27,6 +27,13 @@ router.delete('/schedules/:id', authMiddleware, scheduleController.deleteSchedul
 router.get('/profile/settings', authMiddleware, doctorController.getProfileSettings);
 router.put('/profile/settings', authMiddleware, doctorController.updateProfileSettings);
 
+// Sprint 42: Métodos de pago del doctor
+router.get('/payment-methods/catalog', authMiddleware, doctorController.getMyPaymentMethods);
+router.get('/payment-methods', authMiddleware, doctorController.getMyPaymentMethods);
+router.post('/payment-methods', authMiddleware, doctorController.addMyPaymentMethod);
+router.put('/payment-methods/:id', authMiddleware, doctorController.updateMyPaymentMethod);
+router.delete('/payment-methods/:id', authMiddleware, doctorController.deleteMyPaymentMethod);
+
 // Emergencia Médica
 router.post('/emergency-block', authMiddleware, doctorController.toggleEmergencyBlock);
 
@@ -38,6 +45,9 @@ router.get('/specialties', doctorController.getSpecialties);
 
 // Sprint 29: Catálogo público de clínicas/hospitales (sin auth — para el registro)
 router.get('/clinics', doctorController.getClinics);
+
+// Catálogo público de métodos de pago (sin auth — para el registro)
+router.get('/payment-catalog', doctorController.getPublicPaymentCatalog);
 
 // Sprint 33: Motor de Agendamiento Avanzado (Excepciones)
 router.get('/exceptions', authMiddleware, doctorController.getExceptions);

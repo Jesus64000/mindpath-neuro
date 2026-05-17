@@ -4,6 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { encrypt } = require("../utils/encryption");
 const { sendResetPasswordEmail } = require("../utils/emailService");
+const axios = require("axios");
 
 // ── Bootstrap: crear primer admin ─────────────────────────────────────────────
 exports.bootstrapAdmin = async (req, res) => {
@@ -280,6 +281,72 @@ exports.deleteSpecialty = async (req, res) => {
   }
 };
 
+// ── Helper para tasa de cambio de Bolívares (VES / BCV) con múltiples APIs ──────
+const performBcvSyncInternal = async () => {
+    try {
+        let newRate = null;
+
+        // INTENTO 1: API pública dolarapi.com (Oficial)
+        try {
+            const response1 = await axios.get('https://ve.dolarapi.com/v1/dolares/oficial', { timeout: 3500 });
+            if (response1.status === 200 && response1.data) {
+                newRate = parseFloat(response1.data.promedio || response1.data.venta || response1.data.compra); 
+            }
+        } catch (err) {
+            console.warn("Intento 1 falló (dolarapi.com oficial). Probando respaldo...");
+        }
+
+        // INTENTO 2: API de respaldo (pydolarve.org - Nueva API de la comunidad)
+        if (!newRate) {
+            try {
+                const response2 = await axios.get('https://pydolarve.org/api/v1/dollar?page=bcv', { timeout: 3500 });
+                if (response2.status === 200 && response2.data) {
+                    const data2 = response2.data;
+                    newRate = parseFloat(data2.monitors?.bcv?.price || data2.monitors?.usd?.price || data2.price);
+                }
+            } catch (err) {
+                console.warn("Intento 2 falló (pydolarve.org).");
+            }
+        }
+
+        // Si ambas APIs fallan o devuelven valores nulos
+        if (!newRate || isNaN(newRate)) {
+            throw new Error('Las APIs de consulta están caídas en este momento.');
+        }
+
+        // Guardamos la tasa correcta en la Base de Datos
+        await db.query(
+            'UPDATE system_settings SET exchange_rate = ?, exchange_rate_updated_at = CURRENT_TIMESTAMP WHERE id = 1',
+            [newRate]
+        );
+        
+        console.log(`[CRON] Tasa BCV sincronizada automáticamente: Bs. ${newRate}`);
+        return { success: true, rate: newRate };
+
+    } catch (error) {
+        console.error("[CRON] Error sincronizando BCV:", error.message || error);
+        return { success: false, error: 'Falló la conexión automática con el Banco Central.' };
+    }
+};
+
+// Exportar para uso interno y CRON
+exports.performBcvSyncInternal = performBcvSyncInternal;
+
+// 1. Sincronización Automática con la API (Ruta Invocada Manualmente)
+exports.syncBcv = async (req, res) => {
+    const result = await performBcvSyncInternal();
+    if (result.success) {
+        res.json({ 
+            message: 'Tasa BCV sincronizada con éxito 🇻🇪', 
+            bcv_rate: result.rate 
+        });
+    } else {
+        res.status(500).json({ 
+            message: result.error + ' Por favor, actualice la tasa manualmente.' 
+        });
+    }
+};
+
 // ── Configuración del sistema (theming) ───────────────────────────────────────
 exports.getSettings = async (req, res) => {
   try {
@@ -290,11 +357,25 @@ exports.getSettings = async (req, res) => {
         logo_url: null,
         primary_color: "#6D28D9",
         primary_hover: "#5B21B6",
+        exchange_rate: 36.50,
+        exchange_rate_mode: "auto",
+        exchange_rate_updated_at: null
       });
     }
-    res.status(200).json(rows[0]);
+
+    const settings = rows[0];
+
+    // Si está en modo automático, verificar si la tasa tiene más de 2 horas sin actualizarse
+    if (settings.exchange_rate_mode === 'auto') {
+      const lastUpdated = settings.exchange_rate_updated_at;
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      if (!lastUpdated || new Date(lastUpdated) < twoHoursAgo) {
+        performBcvSyncInternal().catch(err => console.warn("⚠️ Falló la sincronización BCV automática de fondo:", err.message));
+      }
+    }
+
+    res.status(200).json(settings);
   } catch (error) {
-    // Si la tabla no existe aún, devolvemos defaults sin error
     console.warn(
       "system_settings no disponible, usando defaults:",
       error.message,
@@ -304,6 +385,9 @@ exports.getSettings = async (req, res) => {
       logo_url: null,
       primary_color: "#6D28D9",
       primary_hover: "#5B21B6",
+      exchange_rate: 36.50,
+      exchange_rate_mode: "auto",
+      exchange_rate_updated_at: null
     });
   }
 };
@@ -312,7 +396,7 @@ exports.updateSettings = async (req, res) => {
   try {
     const { 
         clinic_name, logo_url, primary_color, primary_hover, font_family,
-        smtp_email, smtp_password 
+        smtp_email, smtp_password, exchange_rate, exchange_rate_mode
     } = req.body;
 
     let encryptedPassword = null;
@@ -322,8 +406,8 @@ exports.updateSettings = async (req, res) => {
 
     await db.query(
       `
-            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family, smtp_email, smtp_password)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 clinic_name   = VALUES(clinic_name),
                 logo_url      = VALUES(logo_url),
@@ -331,11 +415,17 @@ exports.updateSettings = async (req, res) => {
                 primary_hover = VALUES(primary_hover),
                 font_family   = VALUES(font_family),
                 smtp_email    = VALUES(smtp_email),
-                smtp_password = COALESCE(VALUES(smtp_password), smtp_password)
+                smtp_password = COALESCE(VALUES(smtp_password), smtp_password),
+                exchange_rate = VALUES(exchange_rate),
+                exchange_rate_mode = VALUES(exchange_rate_mode),
+                exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
         `,
       [
           clinic_name, logo_url, primary_color, primary_hover, font_family || 'Inter',
-          smtp_email || null, encryptedPassword || null
+          smtp_email || null, encryptedPassword || null,
+          exchange_rate !== undefined ? exchange_rate : 36.50,
+          exchange_rate_mode || 'auto',
+          exchange_rate_mode === 'manual' ? new Date() : null
       ],
     );
     res.status(200).json({ message: "Configuración guardada exitosamente." });
@@ -366,6 +456,83 @@ exports.uploadLogo = async (req, res) => {
   } catch (error) {
     console.error("Error en uploadLogo:", error);
     res.status(500).json({ message: "Error al subir el logo." });
+  }
+};
+
+// ── Catálogo global de métodos de pago ───────────────────────────────────────
+exports.getPaymentMethodCatalog = async (_req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM payment_method_catalog ORDER BY sort_order ASC, name ASC'
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(200).json([]);
+  }
+};
+
+exports.createPaymentMethodCatalog = async (req, res) => {
+  try {
+    const { name, description, is_active = true, sort_order = 100 } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'El nombre del método es requerido.' });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO payment_method_catalog (name, description, is_active, sort_order)
+       VALUES (?, ?, ?, ?)`,
+      [name.trim(), description || null, is_active ? 1 : 0, sort_order]
+    );
+
+    const [rows] = await db.query('SELECT * FROM payment_method_catalog WHERE id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Ese método ya existe en el catálogo.' });
+    }
+    res.status(500).json({ message: 'Error al crear el método de pago.' });
+  }
+};
+
+exports.updatePaymentMethodCatalog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, is_active = true, sort_order = 100 } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'El nombre del método es requerido.' });
+    }
+
+    const [result] = await db.query(
+      `UPDATE payment_method_catalog
+       SET name = ?, description = ?, is_active = ?, sort_order = ?
+       WHERE id = ?`,
+      [name.trim(), description || null, is_active ? 1 : 0, sort_order, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Método no encontrado.' });
+    }
+
+    const [rows] = await db.query('SELECT * FROM payment_method_catalog WHERE id = ?', [id]);
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Ese nombre ya existe en el catálogo.' });
+    }
+    res.status(500).json({ message: 'Error al actualizar el método de pago.' });
+  }
+};
+
+exports.deletePaymentMethodCatalog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.query('DELETE FROM payment_method_catalog WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Método no encontrado.' });
+    }
+    res.status(200).json({ message: 'Método eliminado.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar el método de pago.' });
   }
 };
 

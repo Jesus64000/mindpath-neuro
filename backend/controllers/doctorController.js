@@ -48,6 +48,16 @@ exports.getSpecialties = async (_req, res) => {
 };
 
 // Sprint 29: Catálogo público de clínicas/hospitales
+exports.getPublicPaymentCatalog = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM payment_method_catalog ORDER BY name ASC');
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al obtener catálogo de pagos.' });
+    }
+};
+
 exports.getClinics = async (_req, res) => {
     try {
         const [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
@@ -87,7 +97,28 @@ exports.getDoctorById = async (req, res) => {
             return res.status(404).json({ message: 'Especialista no encontrado.' });
         }
 
-        res.status(200).json(doctor[0]);
+        let paymentMethods = [];
+        try {
+            const [paymentRows] = await db.query(
+                `SELECT
+                    dpm.id,
+                    dpm.method_name,
+                    dpm.account_details,
+                    dpm.sort_order,
+                    pmc.name AS catalog_name,
+                    pmc.description AS catalog_description
+                 FROM doctor_payment_methods dpm
+                 LEFT JOIN payment_method_catalog pmc ON pmc.id = dpm.catalog_method_id
+                 WHERE dpm.doctor_id = ? AND dpm.is_active = TRUE
+                 ORDER BY dpm.sort_order ASC, dpm.id DESC`,
+                [id]
+            );
+            paymentMethods = paymentRows;
+        } catch (paymentError) {
+            console.warn('payment_methods no disponible en perfil público:', paymentError.message);
+        }
+
+        res.status(200).json({ ...doctor[0], payment_methods: paymentMethods });
     } catch (error) {
         console.error('Error al obtener perfil del doctor:', error);
         res.status(500).json({ message: 'Error interno del servidor.' });
@@ -261,6 +292,8 @@ exports.updateProfileSettings = async (req, res) => {
             languages, education, full_name
         } = req.body;
 
+        const finalConsultationFee = consultation_fee === '' ? null : consultation_fee;
+
         await db.query(`
             UPDATE doctors SET 
                 specialty = ?, bio = ?, clinic_name = ?, clinic_address = ?,
@@ -268,7 +301,7 @@ exports.updateProfileSettings = async (req, res) => {
                 languages = ?, education = ?
             WHERE user_id = ?
         `, [specialty, bio, clinic_name, clinic_address, license_number,
-            experience_years, consultation_fee, languages, education, userId]);
+            experience_years, finalConsultationFee, languages, education, userId]);
 
         // Actualizar nombre en tabla users si vino
         if (full_name) {
@@ -279,6 +312,184 @@ exports.updateProfileSettings = async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar perfil del doctor', error);
         res.status(500).json({ message: 'Error al actualizar perfil' });
+    }
+};
+
+// ── Sprint 42: Métodos de pago del doctor ────────────────────────────────────
+exports.getMyPaymentMethods = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        let catalog = [];
+        try {
+            const [catalogRows] = await db.query(
+                'SELECT id, name, description, template_key, default_details_template, sort_order FROM payment_method_catalog WHERE is_active = TRUE ORDER BY sort_order ASC, name ASC'
+            );
+            catalog = catalogRows;
+        } catch (catalogError) {
+            console.warn('payment_method_catalog no disponible, se devuelve catálogo vacío:', catalogError.message);
+        }
+
+        let methods = [];
+        try {
+            const [methodsRows] = await db.query(
+                `SELECT dpm.id, dpm.doctor_id, dpm.catalog_method_id, dpm.method_name, dpm.account_details,
+                        dpm.is_active, dpm.sort_order,
+                        pmc.name AS catalog_name, pmc.description AS catalog_description
+                 FROM doctor_payment_methods dpm
+                 LEFT JOIN payment_method_catalog pmc ON pmc.id = dpm.catalog_method_id
+                 WHERE dpm.doctor_id = ?
+                 ORDER BY dpm.sort_order ASC, dpm.id DESC`,
+                [doctorId]
+            );
+            methods = methodsRows;
+        } catch (methodsError) {
+            console.warn('payment_methods no disponible en getMyPaymentMethods:', methodsError.message);
+        }
+
+        res.status(200).json({ catalog, methods });
+    } catch (error) {
+        console.error('Error en getMyPaymentMethods:', error);
+        res.status(500).json({ message: 'Error al obtener métodos de pago.' });
+    }
+};
+
+exports.addMyPaymentMethod = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { catalog_method_id, method_name, account_details, is_active = true, sort_order = 100 } = req.body;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        let finalName = (method_name || '').trim();
+        let finalCatalogId = catalog_method_id || null;
+        let finalDetails = (account_details || '').trim();
+
+        if (finalCatalogId) {
+            const [catalogRows] = await db.query('SELECT name, default_details_template FROM payment_method_catalog WHERE id = ?', [finalCatalogId]);
+            if (catalogRows.length === 0) {
+                return res.status(400).json({ message: 'El método global seleccionado no existe.' });
+            }
+            finalName = finalName || catalogRows[0].name;
+            finalDetails = finalDetails || (catalogRows[0].default_details_template || '').trim();
+        }
+
+        if (!finalName) {
+            return res.status(400).json({ message: 'Debes indicar un nombre o elegir un método global.' });
+        }
+        if (!finalDetails) {
+            return res.status(400).json({ message: 'Debes indicar los detalles de cobro.' });
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO doctor_payment_methods
+                (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [doctorId, finalCatalogId, finalName, finalDetails, is_active ? 1 : 0, sort_order]
+        );
+
+        const [rows] = await db.query(
+            `SELECT dpm.id, dpm.doctor_id, dpm.catalog_method_id, dpm.method_name, dpm.account_details,
+                    dpm.is_active, dpm.sort_order,
+                    pmc.name AS catalog_name, pmc.description AS catalog_description
+             FROM doctor_payment_methods dpm
+             LEFT JOIN payment_method_catalog pmc ON pmc.id = dpm.catalog_method_id
+             WHERE dpm.id = ?`,
+            [result.insertId]
+        );
+
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Error en addMyPaymentMethod:', error);
+        res.status(500).json({ message: 'Error al guardar método de pago.' });
+    }
+};
+
+exports.updateMyPaymentMethod = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+        const { catalog_method_id, method_name, account_details, is_active = true, sort_order = 100 } = req.body;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        let finalName = (method_name || '').trim();
+        let finalCatalogId = catalog_method_id || null;
+        let finalDetails = (account_details || '').trim();
+
+        if (finalCatalogId) {
+            const [catalogRows] = await db.query('SELECT name, default_details_template FROM payment_method_catalog WHERE id = ?', [finalCatalogId]);
+            if (catalogRows.length === 0) {
+                return res.status(400).json({ message: 'El método global seleccionado no existe.' });
+            }
+            finalName = finalName || catalogRows[0].name;
+            finalDetails = finalDetails || (catalogRows[0].default_details_template || '').trim();
+        }
+
+        if (!finalName) {
+            return res.status(400).json({ message: 'Debes indicar un nombre o elegir un método global.' });
+        }
+        if (!finalDetails) {
+            return res.status(400).json({ message: 'Debes indicar los detalles de cobro.' });
+        }
+
+        const [result] = await db.query(
+            `UPDATE doctor_payment_methods
+             SET catalog_method_id = ?, method_name = ?, account_details = ?, is_active = ?, sort_order = ?
+             WHERE id = ? AND doctor_id = ?`,
+            [finalCatalogId, finalName, finalDetails, is_active ? 1 : 0, sort_order, id, doctorId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Método no encontrado o sin permisos.' });
+        }
+
+        const [rows] = await db.query(
+            `SELECT dpm.id, dpm.doctor_id, dpm.catalog_method_id, dpm.method_name, dpm.account_details,
+                    dpm.is_active, dpm.sort_order,
+                    pmc.name AS catalog_name, pmc.description AS catalog_description
+             FROM doctor_payment_methods dpm
+             LEFT JOIN payment_method_catalog pmc ON pmc.id = dpm.catalog_method_id
+             WHERE dpm.id = ?`,
+            [id]
+        );
+
+        res.status(200).json(rows[0]);
+    } catch (error) {
+        console.error('Error en updateMyPaymentMethod:', error);
+        res.status(500).json({ message: 'Error al actualizar método de pago.' });
+    }
+};
+
+exports.deleteMyPaymentMethod = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'DELETE FROM doctor_payment_methods WHERE id = ? AND doctor_id = ?',
+            [id, doctorId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Método no encontrado o sin permisos.' });
+        }
+
+        res.status(200).json({ message: 'Método eliminado.' });
+    } catch (error) {
+        console.error('Error en deleteMyPaymentMethod:', error);
+        res.status(500).json({ message: 'Error al eliminar método de pago.' });
     }
 };
 

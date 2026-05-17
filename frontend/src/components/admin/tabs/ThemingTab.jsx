@@ -1,4 +1,4 @@
-import { Palette, Upload, Save, RefreshCw, Mail } from 'lucide-react';
+import { Palette, Upload, Save, RefreshCw, Mail, Landmark } from 'lucide-react';
 import { BACKEND_URL } from '../../../api/constants';
 
 const PRESET_FONTS = ['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'];
@@ -12,7 +12,9 @@ const ThemingTab = ({
     setCustomFontName, 
     onSave, 
     onPreviewColor, 
-    saving 
+    saving,
+    onSyncBcv,
+    syncingBcv
 }) => {
     
     const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
@@ -195,6 +197,87 @@ const ThemingTab = ({
                                     Usa una <strong>Contraseña de Aplicación</strong> de Google. Por seguridad, este valor se guarda cifrado en el servidor.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* CONFIGURACIÓN DE TASA DE CAMBIO BCV (Bs/$) */}
+                    <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 border-l-4 border-l-emerald-500">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
+                                <Landmark size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-white">Tasa de Cambio Bolívares (BCV)</h3>
+                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">Conversión oficial de citas en Bs</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 tracking-widest text-slate-500">Modo de Tasa</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setTheme(p => ({ ...p, exchange_rate_mode: 'auto' }))}
+                                        className={`p-2.5 rounded-xl text-xs font-bold transition-all border ${
+                                            theme.exchange_rate_mode === 'auto' 
+                                                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' 
+                                                : 'bg-slate-800/20 border-white/5 text-slate-400 hover:bg-slate-800/40'
+                                        }`}
+                                    >
+                                        🌐 Automático (APIs)
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setTheme(p => ({ ...p, exchange_rate_mode: 'manual' }))}
+                                        className={`p-2.5 rounded-xl text-xs font-bold transition-all border ${
+                                            theme.exchange_rate_mode === 'manual' 
+                                                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' 
+                                                : 'bg-slate-800/20 border-white/5 text-slate-400 hover:bg-slate-800/40'
+                                        }`}
+                                    >
+                                        ✍️ Manual (Fijo)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {theme.exchange_rate_mode === 'auto' ? (
+                                <div className="p-3 bg-slate-800/40 rounded-xl border border-white/5 text-xs text-slate-400 leading-relaxed">
+                                    <p className="font-semibold text-slate-300 mb-1">🔍 Monitoreo Automático Activo</p>
+                                    El servidor consulta en paralelo y selecciona la tasa de cambio oficial de dos APIs estables <strong>(DolarApi oficial y PyDolarVe)</strong> con reintentos y tolerancia a fallos.
+                                    <div className="mt-3 p-2.5 rounded-xl bg-slate-900/60 border border-white/5 space-y-2.5">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-200">
+                                            <span>Tasa Actual:</span>
+                                            <span className="text-emerald-400 font-black text-sm">{Number(theme.exchange_rate || 36.50).toFixed(2)} Bs/$</span>
+                                        </div>
+                                        <button 
+                                            type="button"
+                                            onClick={onSyncBcv}
+                                            disabled={syncingBcv}
+                                            className="w-full flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-[0.98] text-emerald-400 font-bold py-2 px-3 rounded-lg border border-emerald-500/20 text-[10px] uppercase tracking-wider transition-all disabled:opacity-50"
+                                        >
+                                            <RefreshCw size={11} className={syncingBcv ? 'animate-spin' : ''} />
+                                            {syncingBcv ? 'Sincronizar ahora con la API 🇻🇪' : 'Sincronizar ahora con la API 🇻🇪'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-slate-500">Valor de la Tasa Manual (Bs/$)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={theme.exchange_rate || ''}
+                                            onChange={e => setTheme(p => ({ ...p, exchange_rate: parseFloat(e.target.value) || 0 }))}
+                                            placeholder="Ej: 36.50"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white font-bold" 
+                                        />
+                                        <span className="text-xs font-bold text-slate-500">Bs.</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -307,6 +307,11 @@ const DoctorDashboard = () => {
                                                 <p className="text-xs text-gray-500 dark:text-slate-400 flex items-center mt-1">
                                                     <Clock size={14} className="mr-1" /> {app.start_time.slice(0,5)} • {app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}
                                                 </p>
+                                                {app.payment_proof_url && app.payment_status !== 'paid' && (
+                                                    <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-block mt-1 animate-pulse">
+                                                        📄 Pago por Verificar
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-xs font-bold px-3 py-1 rounded-full bg-white dark:bg-slate-600 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-300">
                                                 {app.status}
@@ -379,25 +384,18 @@ const DoctorDashboard = () => {
                                             <p className="text-xs font-bold text-gray-400 dark:text-slate-500 mt-1 uppercase tracking-tighter">
                                                 {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString('es-ES', {day:'numeric',month:'short'})}
                                             </p>
+                                            {app.payment_proof_url && app.payment_status !== 'paid' && (
+                                                <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-block mt-1 animate-pulse">
+                                                    📄 Pago por Verificar
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex gap-2 mt-3">
                                             <button 
-                                                onClick={() => handleStatus(app.id, 'confirmed')}
-                                                className="flex-1 py-2.5 bg-mindpath-primary text-white text-[10px] font-black rounded-xl hover:scale-105 transition-transform"
-                                            >
-                                                ACEPTAR
-                                            </button>
-                                            <button 
                                                 onClick={() => navigate(`/doctor/appointment/${app.id}`)}
-                                                className="p-2.5 bg-white dark:bg-slate-600 text-gray-400 dark:text-slate-300 rounded-xl border border-gray-200 dark:border-white/10 hover:text-mindpath-primary hover:border-mindpath-primary/30 transition-all"
+                                                className="w-full py-2.5 bg-mindpath-primary text-white text-xs font-bold rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-1.5"
                                             >
-                                                <CalendarClock size={16}/>
-                                            </button>
-                                            <button 
-                                                onClick={() => handleStatus(app.id, 'cancelled')}
-                                                className="p-2.5 bg-white dark:bg-slate-600 text-gray-400 dark:text-slate-300 rounded-xl border border-gray-200 dark:border-white/10 hover:text-red-500 hover:border-red-200 transition-all"
-                                            >
-                                                <XCircle size={16}/>
+                                                <CalendarClock size={14}/> Ver Cita
                                             </button>
                                         </div>
                                     </div>
@@ -428,6 +426,11 @@ const DoctorDashboard = () => {
                                                 {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}
                                             </p>
                                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}</p>
+                                            {app.payment_proof_url && app.payment_status !== 'paid' && (
+                                                <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-block mt-1 animate-pulse">
+                                                    📄 Pago por Verificar
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <span className="text-[10px] font-black text-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30 px-2 py-1 rounded-full border border-mindpath-light dark:border-mindpath-primary/30">

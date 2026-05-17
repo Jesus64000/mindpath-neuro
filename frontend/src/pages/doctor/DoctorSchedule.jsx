@@ -486,28 +486,15 @@ const DoctorSchedule = () => {
                                                 <span className={`text-xs px-2.5 py-1 rounded-full border font-bold inline-block self-start ${sc.color}`}>
                                                     {sc.label}
                                                 </span>
+                                                {app.payment_proof_url && app.payment_status !== 'paid' && (
+                                                    <span className="text-[10px] uppercase font-black tracking-wider px-2 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-block self-start mt-1.5 animate-pulse">
+                                                        📄 Pago por Verificar
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Acciones */}
                                             <div className="flex gap-2 shrink-0">
-                                                {app.status === 'pending' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => updateStatus(app.appointment_id, 'confirmed')}
-                                                            className="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-xl transition-colors border border-green-100 dark:border-green-500/30"
-                                                            title="Confirmar"
-                                                        >
-                                                            <CheckCircle size={20} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => updateStatus(app.appointment_id, 'cancelled')}
-                                                            className="p-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-500/30"
-                                                            title="Cancelar"
-                                                        >
-                                                            <XCircle size={20} />
-                                                        </button>
-                                                    </>
-                                                )}
                                                 {(app.status === 'pending' || app.status === 'confirmed') && (
                                                     <button
                                                         onClick={() => navigate(`/doctor/appointment/${app.appointment_id}`)}
@@ -517,12 +504,22 @@ const DoctorSchedule = () => {
                                                     </button>
                                                 )}
                                                 {(app.status === 'confirmed' || app.status === 'pending') && app.type === 'virtual' && (
-                                                    <button
-                                                        onClick={() => navigate(`/doctor/video-room/${app.appointment_id}`)}
-                                                        className="px-4 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm text-sm"
-                                                    >
-                                                        <Video size={16} className="mr-1.5" />Iniciar
-                                                    </button>
+                                                    app.payment_status === 'paid' ? (
+                                                        <button
+                                                            onClick={() => navigate(`/doctor/video-room/${app.appointment_id}`)}
+                                                            className="px-4 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm text-sm"
+                                                        >
+                                                            <Video size={16} className="mr-1.5" />Iniciar
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            disabled
+                                                            className="px-4 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed font-bold rounded-xl flex items-center text-sm border border-gray-300 dark:border-slate-600"
+                                                            title="El paciente aún no ha pagado o el pago no ha sido verificado"
+                                                        >
+                                                            <Video size={16} className="mr-1.5" />Iniciar (Sin Pago)
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         </div>

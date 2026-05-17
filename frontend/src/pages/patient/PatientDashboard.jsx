@@ -31,11 +31,11 @@ const PatientDashboard = () => {
                     : (appsResponse.data?.data ?? []);
                 const today = new Date().toDateString();
 
-                const todayApp = appointments.find(app =>
-                    new Date(app.appointment_date).toDateString() === today &&
-                    app.status === 'confirmed' &&
-                    app.type === 'virtual'
-                );
+                const todayApp = appointments.find(app => {
+                    const isToday = new Date(app.appointment_date).toDateString() === today;
+                    const isDoctorReady = app.doctor_ready === 1 || app.doctor_ready === true;
+                    return app.status === 'confirmed' && app.type === 'virtual' && (isToday || isDoctorReady);
+                });
                 if (todayApp) setNextAppointment(todayApp);
 
                 const futureApps = appointments
@@ -159,18 +159,29 @@ const PatientDashboard = () => {
                             <Video size={32} className="text-white animate-pulse" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold mb-1">Tienes una consulta HOY</h2>
+                            <h2 className="text-xl font-bold mb-1">
+                                {nextAppointment.doctor_ready ? 'Tu Doctor está en la sala' : 'Tienes una consulta HOY'}
+                            </h2>
                             <p className="text-gray-400 opacity-90">
                                 Con el Dr(a). {nextAppointment.doctor_name} a las {nextAppointment.start_time.slice(0,5)}
                             </p>
                         </div>
                     </div>
-                    <button 
-                        onClick={() => navigate(`/patient/video-room/${nextAppointment.appointment_id}`)}
-                        className="w-full md:w-auto px-8 py-3 bg-white text-mindpath-primary font-bold rounded-xl shadow-lg hover:bg-gray-50 transition-all flex items-center justify-center hover:scale-105"
-                    >
-                        Entrar a la Sala <ArrowRight size={18} className="ml-2" />
-                    </button>
+                    {nextAppointment.payment_status === 'paid' ? (
+                        <button 
+                            onClick={() => navigate(`/patient/video-room/${nextAppointment.appointment_id}`)}
+                            className="w-full md:w-auto px-8 py-3 bg-white text-mindpath-primary font-bold rounded-xl shadow-lg hover:bg-gray-50 transition-all flex items-center justify-center hover:scale-105"
+                        >
+                            {nextAppointment.doctor_ready ? 'Entrar a Consulta' : 'Entrar a la Sala'} <ArrowRight size={18} className="ml-2" />
+                        </button>
+                    ) : (
+                        <button 
+                            disabled
+                            className="w-full md:w-auto px-8 py-3 bg-white/20 text-white/70 font-bold rounded-xl flex items-center justify-center cursor-not-allowed border border-white/30"
+                        >
+                            Espera de Confirmación de Pago <Clock size={16} className="ml-2 animate-spin" />
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 flex justify-between items-center border border-gray-100 dark:border-white/10 shadow-sm">

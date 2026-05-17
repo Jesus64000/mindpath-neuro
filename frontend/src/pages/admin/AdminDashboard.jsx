@@ -70,16 +70,29 @@ const AdminDashboard = () => {
     const [specialties, setSpecialties] = useState([]);
     const [specialtiesPagination, setSpecialtiesPagination] = useState(null);
     const [specialtiesPage, setSpecialtiesPage] = useState(1);
+    const [paymentCatalog, setPaymentCatalog] = useState([]);
+    const [paymentCatalogLoading, setPaymentCatalogLoading] = useState(true);
+    const [paymentCatalogForm, setPaymentCatalogForm] = useState({ name: '', description: '', sort_order: 100, is_active: true });
+    const [editingPaymentCatalog, setEditingPaymentCatalog] = useState(null);
 
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
-    const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, applySettings } = useSettingsStore();
+    const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
 
     // Theming
     const PRESET_FONTS = ['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'];
-    const [theme, setTheme]         = useState({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: fontFamily || 'Inter' });
+    const [theme, setTheme]         = useState({ 
+        clinic_name: clinicName, 
+        logo_url: logoUrl || '', 
+        primary_color: primaryColor, 
+        primary_hover: primaryHover, 
+        font_family: fontFamily || 'Inter',
+        exchange_rate: exchangeRate,
+        exchange_rate_mode: exchangeRateMode
+    });
     const [logoFile, setLogoFile]   = useState(null);
     const [savingTheme, setSavingTheme] = useState(false);
+    const [syncingBcv, setSyncingBcv]   = useState(false);
     const [customFontName, setCustomFontName] = useState('');
     const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
 
@@ -137,6 +150,18 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, spe: false })); }
     }, [specialtiesPage]);
 
+    const loadPaymentCatalog = useCallback(async () => {
+        setPaymentCatalogLoading(true);
+        try {
+            const res = await api.get('/admin/payment-methods');
+            setPaymentCatalog(res.data || []);
+        } catch {
+            setPaymentCatalog([]);
+        } finally {
+            setPaymentCatalogLoading(false);
+        }
+    }, []);
+
     const loadUsers = useCallback(async () => {
         setLoading(p => ({ ...p, users: true }));
         try {
@@ -164,12 +189,20 @@ const AdminDashboard = () => {
     }, [staffPage]);
 
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff();
-    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff]);
+        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog();
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog]);
 
     useEffect(() => {
-        setTheme({ clinic_name: clinicName, logo_url: logoUrl || '', primary_color: primaryColor, primary_hover: primaryHover, font_family: fontFamily || 'Inter' });
-    }, [clinicName, logoUrl, primaryColor, primaryHover, fontFamily]);
+        setTheme({ 
+            clinic_name: clinicName, 
+            logo_url: logoUrl || '', 
+            primary_color: primaryColor, 
+            primary_hover: primaryHover, 
+            font_family: fontFamily || 'Inter',
+            exchange_rate: exchangeRate,
+            exchange_rate_mode: exchangeRateMode
+        });
+    }, [clinicName, logoUrl, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode]);
 
     const verifyDoctor = async (id) => {
         try { await api.put(`/admin/doctors/${id}/verify`); showToast('Doctor verificado.'); loadPending(); loadStats(); }
@@ -186,6 +219,54 @@ const AdminDashboard = () => {
         if (!newSpe.trim()) return;
         try { const res = await api.post('/admin/specialties', { name: newSpe.trim() }); setSpecialties(p => [...p, res.data]); setNewSpe(''); showToast('Especialidad creada.'); }
         catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
+    };
+
+    const resetPaymentCatalogForm = () => {
+        setPaymentCatalogForm({ name: '', description: '', sort_order: 100, is_active: true });
+        setEditingPaymentCatalog(null);
+    };
+
+    const createPaymentCatalog = async () => {
+        if (!paymentCatalogForm.name.trim()) return;
+        try {
+            const res = await api.post('/admin/payment-methods', {
+                ...paymentCatalogForm,
+                sort_order: Number(paymentCatalogForm.sort_order || 100),
+                is_active: !!paymentCatalogForm.is_active,
+            });
+            setPaymentCatalog(prev => [...prev, res.data]);
+            resetPaymentCatalogForm();
+            showToast('Método global creado.');
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Error al crear método global.', 'error');
+        }
+    };
+
+    const updatePaymentCatalog = async () => {
+        if (!editingPaymentCatalog?.id || !paymentCatalogForm.name.trim()) return;
+        try {
+            const res = await api.put(`/admin/payment-methods/${editingPaymentCatalog.id}`, {
+                ...paymentCatalogForm,
+                sort_order: Number(paymentCatalogForm.sort_order || 100),
+                is_active: !!paymentCatalogForm.is_active,
+            });
+            setPaymentCatalog(prev => prev.map(item => item.id === editingPaymentCatalog.id ? res.data : item));
+            resetPaymentCatalogForm();
+            showToast('Método global actualizado.');
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Error al actualizar método global.', 'error');
+        }
+    };
+
+    const deletePaymentCatalog = async (id) => {
+        if (!confirm('¿Eliminar este método global?')) return;
+        try {
+            await api.delete(`/admin/payment-methods/${id}`);
+            setPaymentCatalog(prev => prev.filter(item => item.id !== id));
+            showToast('Método global eliminado.');
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Error al eliminar método global.', 'error');
+        }
     };
 
     const updateSpe = async () => {
@@ -236,10 +317,41 @@ const AdminDashboard = () => {
                 : theme.font_family;
             const payload = { ...theme, logo_url, font_family: finalFont };
             await api.put('/admin/settings', payload);
-            applySettings({ clinic_name: payload.clinic_name, logo_url: payload.logo_url, primary_color: payload.primary_color, primary_hover: payload.primary_hover, font_family: finalFont });
+            applySettings({ 
+                clinic_name: payload.clinic_name, 
+                logo_url: payload.logo_url, 
+                primary_color: payload.primary_color, 
+                primary_hover: payload.primary_hover, 
+                font_family: finalFont,
+                exchange_rate: payload.exchange_rate,
+                exchange_rate_mode: payload.exchange_rate_mode
+            });
             showToast('Configuracion guardada y aplicada!');
         } catch { showToast('Error al guardar configuracion.', 'error'); }
         finally { setSavingTheme(false); }
+    };
+
+    const syncBcvRate = async () => {
+        setSyncingBcv(true);
+        try {
+            const res = await api.post('/admin/settings/sync-bcv');
+            const newRate = parseFloat(res.data.bcv_rate);
+            setTheme(prev => ({ ...prev, exchange_rate: newRate }));
+            applySettings({ 
+                clinic_name: theme.clinic_name, 
+                logo_url: theme.logo_url, 
+                primary_color: theme.primary_color, 
+                primary_hover: theme.primary_hover, 
+                font_family: theme.font_family,
+                exchange_rate: newRate,
+                exchange_rate_mode: theme.exchange_rate_mode
+            });
+            showToast(res.data.message || 'Tasa BCV sincronizada con éxito 🇻🇪');
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al conectar con las APIs de BCV.', 'error');
+        } finally {
+            setSyncingBcv(false);
+        }
     };
 
     const handleKpiClick = (type) => {
@@ -336,6 +448,25 @@ const AdminDashboard = () => {
                     onCreate={createSpe}
                     onUpdate={updateSpe}
                     onDelete={deleteSpe}
+                    isAdmin={isAdmin}
+                    paymentCatalog={paymentCatalog}
+                    paymentCatalogLoading={paymentCatalogLoading}
+                    paymentCatalogForm={paymentCatalogForm}
+                    setPaymentCatalogForm={setPaymentCatalogForm}
+                    editingPaymentCatalog={editingPaymentCatalog}
+                    setEditingPaymentCatalog={(method) => {
+                        if (!method) return resetPaymentCatalogForm();
+                        setEditingPaymentCatalog(method);
+                        setPaymentCatalogForm({
+                            name: method.name || '',
+                            description: method.description || '',
+                            sort_order: method.sort_order ?? 100,
+                            is_active: !!method.is_active,
+                        });
+                    }}
+                    onCreatePaymentCatalog={createPaymentCatalog}
+                    onUpdatePaymentCatalog={updatePaymentCatalog}
+                    onDeletePaymentCatalog={deletePaymentCatalog}
                 />
             )}
 
@@ -394,6 +525,8 @@ const AdminDashboard = () => {
                     onSave={saveTheme}
                     onPreviewColor={previewColor}
                     saving={savingTheme}
+                    onSyncBcv={syncBcvRate}
+                    syncingBcv={syncingBcv}
                 />
             )}
         </div>

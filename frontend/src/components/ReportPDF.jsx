@@ -80,6 +80,21 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     privateText: { fontSize: 10, color: '#e5e7eb', fontStyle: 'italic' },
+    paymentBox: {
+        marginBottom: 12,
+        padding: 10,
+        borderRadius: 6,
+        backgroundColor: '#eff6ff',
+        border: '1pt solid #dbeafe',
+    },
+    paymentTitle: {
+        fontSize: 8,
+        fontFamily: 'Helvetica-Bold',
+        color: '#1d4ed8',
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    paymentText: { fontSize: 10, color: '#1f2937', lineHeight: 1.5 },
     footer: {
         position: 'absolute',
         bottom: 24,
@@ -115,6 +130,7 @@ export const ReportPDFDocument = ({ report, header }) => {
                         {header?.doctor_name  && <Text style={styles.metaRow}>Dr(a). {header.doctor_name}</Text>}
                         {header?.specialty    && <Text style={styles.metaRow}>{header.specialty}</Text>}
                         {header?.clinic_name  && <Text style={styles.metaRow}>{header.clinic_name}</Text>}
+                        {header?.rif          && <Text style={styles.metaRow}>RIF: {header.rif}</Text>}
                         {fecha                && <Text style={styles.metaRow}>{fecha}</Text>}
                     </View>
                 </View>
@@ -126,6 +142,27 @@ export const ReportPDFDocument = ({ report, header }) => {
                     {'   •   '}
                     Modalidad: {header?.type === 'virtual' ? 'Telemedicina' : 'Presencial'}
                 </Text>
+
+                {(header?.payment_method || header?.payment_status || header?.consultation_fee_snapshot || header?.legal_verification_code) && (
+                    <View style={styles.paymentBox}>
+                        <Text style={styles.paymentTitle}>Evidencia de reembolso</Text>
+                        {header?.consultation_fee_snapshot != null && (
+                            <Text style={styles.paymentText}>Monto registrado: {Number(header.consultation_fee_snapshot).toFixed(2)} USD</Text>
+                        )}
+                        {header?.payment_method && (
+                            <Text style={styles.paymentText}>Método de pago: {header.payment_method === 'in_person' ? 'Pago en consultorio' : 'Pago por plataforma'}</Text>
+                        )}
+                        {header?.payment_status && (
+                            <Text style={styles.paymentText}>Estado de pago: {header.payment_status}</Text>
+                        )}
+                        {header?.payment_reference && (
+                            <Text style={styles.paymentText}>Referencia: {header.payment_reference}</Text>
+                        )}
+                        {header?.legal_verification_code && (
+                            <Text style={styles.paymentText}>Código legal: {header.legal_verification_code}</Text>
+                        )}
+                    </View>
+                )}
 
                 {/* Motivo y síntomas */}
                 {report.motivo_sintomas && (

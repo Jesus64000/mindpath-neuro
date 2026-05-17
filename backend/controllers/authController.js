@@ -36,21 +36,39 @@ exports.register = async (req, res) => {
                 const { 
                     specialty, phone, license_number, experience_years, 
                     clinic_name, clinic_address, education, languages,
-                    dni, modality, rif, title_picture, specialty_certificate
+                    dni, modality, rif, title_picture, specialty_certificate,
+                    consultation_fee, catalog_method_id, account_details
                 } = req.body;
 
                 if (!specialty || !license_number) {
                     throw new Error('Especialidad y número de licencia son requeridos para doctores.');
                 }
-                await connection.query(
+                if (!consultation_fee || !catalog_method_id || !account_details) {
+                    throw new Error('La tarifa de consulta y al menos un método de pago son requeridos.');
+                }
+
+                const [docResult] = await connection.query(
                     `INSERT INTO doctors 
-                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         userId, specialty, phone || null, license_number, experience_years || null, 
                         clinic_name || null, clinic_address || null, education || null, languages || null,
-                        dni || null, modality || 'ambas', rif || null, title_picture || null, specialty_certificate || null
+                        dni || null, modality || 'ambas', rif || null, title_picture || null, specialty_certificate || null,
+                        consultation_fee
                     ]
+                );
+                const doctorId = docResult.insertId;
+
+                // Insertar primer método de pago
+                const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
+                const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+
+                await connection.query(
+                    `INSERT INTO doctor_payment_methods
+                        (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                     VALUES (?, ?, ?, ?, 1, 1)`,
+                    [doctorId, catalog_method_id, methodName, account_details]
                 );
             } else if (role === 'patient') {
                 const { phone, date_of_birth, gender, address, dni } = req.body;

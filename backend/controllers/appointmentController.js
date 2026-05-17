@@ -1,3 +1,60 @@
+// Doctor verifica o rechaza comprobante de pago
+exports.verifyPaymentProof = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params; // appointmentId
+        const { approved } = req.body;
+        if (typeof approved !== 'boolean') return res.status(400).json({ message: 'Falta el campo "approved" (boolean).' });
+
+        // Verificar que la cita pertenezca al doctor logueado
+        const [doctor] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (!doctor.length) return res.status(404).json({ message: 'Doctor no encontrado.' });
+        const doctorId = doctor[0].id;
+        const [appt] = await db.query('SELECT id FROM appointments WHERE id = ? AND doctor_id = ?', [id, doctorId]);
+        if (!appt.length) return res.status(404).json({ message: 'Cita no encontrada o no tienes permisos.' });
+
+        if (approved) {
+            await db.query('UPDATE appointments SET payment_status = "paid" WHERE id = ?', [id]);
+            return res.status(200).json({ message: 'Pago verificado correctamente.' });
+        } else {
+            await db.query('UPDATE appointments SET payment_status = "rejected", payment_proof_url = NULL WHERE id = ?', [id]);
+            return res.status(200).json({ message: 'Comprobante rechazado. El paciente podrá volver a subirlo.' });
+        }
+    } catch (error) {
+        console.error('Error al verificar comprobante de pago:', error);
+        res.status(500).json({ message: 'Error interno al verificar comprobante.' });
+    }
+};
+// Subir comprobante de pago (PDF/imagen) para una cita
+exports.uploadPaymentProof = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params; // appointmentId
+        const { proof_url, reference, payment_method } = req.body;
+        if (!proof_url) return res.status(400).json({ message: 'Falta la URL del comprobante.' });
+
+        // Verificar que la cita pertenezca al paciente logueado
+        const [patient] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+        if (!patient.length) return res.status(404).json({ message: 'Paciente no encontrado.' });
+        const patientId = patient[0].id;
+        const [appt] = await db.query('SELECT id FROM appointments WHERE id = ? AND patient_id = ?', [id, patientId]);
+        if (!appt.length) return res.status(404).json({ message: 'Cita no encontrada o no tienes permisos.' });
+
+        // Guardar comprobante, referencia y opcionalmente actualizar método de pago
+        await db.query(
+            `UPDATE appointments 
+             SET payment_proof_url = ?, 
+                 payment_reference = ?,
+                 payment_method = COALESCE(?, payment_method)
+             WHERE id = ?`, 
+            [proof_url, reference || null, payment_method || null, id]
+        );
+        res.status(200).json({ message: 'Comprobante de pago subido correctamente.' });
+    } catch (error) {
+        console.error('Error al subir comprobante de pago:', error);
+        res.status(500).json({ message: 'Error interno al subir comprobante.' });
+    }
+};
 const db = require('../config/db');
 
 // Resumen completo para el Dashboard del Doctor
@@ -12,7 +69,7 @@ exports.getDoctorDashboardSummary = async (req, res) => {
 
         // 2. Solicitudes Pendientes (las que el doctor debe aprobar)
         const [pending] = await db.query(`
-            SELECT a.id, a.appointment_date, a.start_time, a.type, u.full_name AS patient_name 
+            SELECT a.id, a.appointment_date, a.start_time, a.type, a.payment_proof_url, a.payment_status, u.full_name AS patient_name 
             FROM appointments a 
             JOIN patients p ON a.patient_id = p.id 
             JOIN users u ON p.user_id = u.id
@@ -22,7 +79,7 @@ exports.getDoctorDashboardSummary = async (req, res) => {
 
         // 2b. Próximas citas confirmadas
         const [upcoming] = await db.query(`
-            SELECT a.id, a.appointment_date, a.start_time, a.type, u.full_name AS patient_name 
+            SELECT a.id, a.appointment_date, a.start_time, a.type, a.payment_proof_url, a.payment_status, a.status, u.full_name AS patient_name 
             FROM appointments a 
             JOIN patients p ON a.patient_id = p.id 
             JOIN users u ON p.user_id = u.id
@@ -118,6 +175,7 @@ exports.getDoctorAppointments = async (req, res) => {
         const dataQuery = `
             SELECT 
                 a.id AS appointment_id, a.appointment_date, a.start_time, a.status, a.type,
+                a.payment_method, a.payment_status, a.payment_reference, a.payment_proof_url, a.consultation_fee_snapshot,
                 u.full_name AS patient_name, u.email AS patient_email,
                 p.date_of_birth, p.gender, p.phone
             FROM appointments a
@@ -161,6 +219,23 @@ exports.updateAppointmentStatus = async (req, res) => {
         const [doctor] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
         if (doctor.length === 0) return res.status(403).json({ message: 'Acceso denegado.' });
         const doctorId = doctor[0].id;
+
+        if (status === 'completed') {
+            const [appointmentRows] = await db.query(
+                'SELECT type, payment_method, payment_status FROM appointments WHERE id = ? AND doctor_id = ?',
+                [id, doctorId]
+            );
+            if (appointmentRows.length === 0) {
+                return res.status(404).json({ message: 'Cita no encontrada o no tienes permisos.' });
+            }
+
+            const appointment = appointmentRows[0];
+            if (appointment.type === 'presencial' && appointment.payment_method === 'in_person' && appointment.payment_status !== 'paid') {
+                return res.status(409).json({
+                    message: 'No puedes cerrar una cita presencial sin confirmar primero el pago recibido en consultorio.'
+                });
+            }
+        }
 
         // Actualizar la cita (Asegurándonos de que esta cita le pertenece a este doctor)
         const [result] = await db.query(`
@@ -292,6 +367,11 @@ exports.getAppointmentDetail = async (req, res) => {
                 a.start_time,
                 a.type,
                 a.status,
+                a.payment_method,
+                a.payment_status,
+                a.payment_reference,
+                a.payment_proof_url,
+                a.consultation_fee_snapshot,
                 p.id AS patient_id,
                 p.date_of_birth,
                 p.gender,
@@ -382,16 +462,21 @@ exports.getAppointmentDetail = async (req, res) => {
 // ── Sprint 27: Sala de Espera Virtual ─────────────────────────────────────────
 
 // GET /api/appointments/:id/room-status
-// Paciente consulta si el doctor ya entró a la sala
 exports.getRoomStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await db.query(
-            'SELECT doctor_ready FROM appointments WHERE id = ?',
+            'SELECT doctor_ready, type, payment_status, payment_method FROM appointments WHERE id = ?',
             [id]
         );
         if (rows.length === 0) return res.status(404).json({ message: 'Cita no encontrada.' });
-        res.status(200).json({ doctorReady: rows[0].doctor_ready === 1 });
+        const appt = rows[0];
+
+        if (appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid') {
+            return res.status(400).json({ message: 'No se puede consultar la sala sin verificar primero el pago de la consulta.' });
+        }
+
+        res.status(200).json({ doctorReady: appt.doctor_ready === 1 });
     } catch (error) {
         console.error('Error en getRoomStatus:', error.message);
         res.status(500).json({ message: 'Error interno.' });
@@ -410,6 +495,18 @@ exports.setDoctorReady = async (req, res) => {
         );
         if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
         const doctorId = doctorRows[0].id;
+
+        // Verificar que la cita esté pagada
+        const [apptRows] = await db.query(
+            'SELECT type, payment_status, payment_method FROM appointments WHERE id = ? AND doctor_id = ?',
+            [id, doctorId]
+        );
+        if (apptRows.length === 0) return res.status(404).json({ message: 'Cita no encontrada.' });
+        const appt = apptRows[0];
+
+        if (appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid') {
+            return res.status(400).json({ message: 'No se puede iniciar el video chat sin verificar primero el pago de la consulta.' });
+        }
 
         const [result] = await db.query(
             'UPDATE appointments SET doctor_ready = TRUE WHERE id = ? AND doctor_id = ?',

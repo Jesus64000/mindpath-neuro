@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosConfig';
 import {
     User, MapPin, Award, BookOpen, Save, Camera, CheckCircle,
-    GraduationCap, Building2, AlertCircle, ChevronDown, Globe
+    GraduationCap, Building2, AlertCircle, ChevronDown, Globe, CreditCard
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import DoctorPaymentMethods from './DoctorPaymentMethods';
 
 const BACKEND_URL = 'http://localhost:3000';
 
@@ -16,13 +17,16 @@ const LANGUAGE_OPTIONS = [
 
 const DoctorProfileSettings = () => {
     const { updateUser } = useAuthStore();
+    const [activeTab, setActiveTab] = useState('profile');
     const [formData, setFormData] = useState({
         full_name: '', specialty: '', bio: '', clinic_name: '',
         clinic_address: '', license_number: '', experience_years: '',
-        education: ''
+        education: '', consultation_fee: ''
     });
     const [selectedLanguages, setSelectedLanguages] = useState([]);
     const [specialties, setSpecialties] = useState([]);
+    const [paymentCatalog, setPaymentCatalog] = useState([]);
+    const [paymentMethods, setPaymentMethods] = useState([]);
     const [profilePicture, setProfilePicture] = useState(null);
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -33,8 +37,9 @@ const DoctorProfileSettings = () => {
     useEffect(() => {
         Promise.all([
             api.get('/doctors/profile/settings'),
-            api.get('/doctors/specialties')
-        ]).then(([profileRes, specialtiesRes]) => {
+            api.get('/doctors/specialties'),
+            api.get('/doctors/payment-methods'),
+        ]).then(([profileRes, specialtiesRes, paymentRes]) => {
             const d = profileRes.data;
             setFormData({
                 full_name:        d.full_name        ?? '',
@@ -45,6 +50,7 @@ const DoctorProfileSettings = () => {
                 license_number:   d.license_number   ?? '',
                 experience_years: d.experience_years ?? '',
                 education:        d.education        ?? '',
+                consultation_fee: d.consultation_fee ?? '',
             });
             // Idiomas: parsear CSV guardado
             if (d.languages) {
@@ -52,8 +58,12 @@ const DoctorProfileSettings = () => {
             }
             if (d.profile_picture) setProfilePicture(d.profile_picture);
             setSpecialties(specialtiesRes.data.map(s => s.name));
+            setPaymentCatalog(paymentRes.data.catalog || []);
+            setPaymentMethods(paymentRes.data.methods || []);
             setLoading(false);
-        }).catch(() => setLoading(false));
+        }).catch(() => {
+            setLoading(false);
+        });
     }, []);
 
     const toggleLanguage = (lang) => {
@@ -110,15 +120,32 @@ const DoctorProfileSettings = () => {
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white italic">Mi Perfil Profesional</h1>
                     <p className="text-gray-500 dark:text-slate-400">Configura cómo te ven tus pacientes en el directorio.</p>
                 </div>
-                {saved && (
+                {saved && activeTab === 'profile' && (
                     <div className="flex items-center text-green-600 font-bold animate-bounce">
                         <CheckCircle size={20} className="mr-2"/> ¡Cambios guardados!
                     </div>
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* COLUMNA IZQUIERDA */}
+            {/* TAB NAVIGATION */}
+            <div className="flex gap-4 border-b border-gray-200 dark:border-white/10 mb-6 px-2">
+                <button 
+                    onClick={() => setActiveTab('profile')} 
+                    className={`pb-3 font-black transition-colors ${activeTab === 'profile' ? 'text-mindpath-primary border-b-4 border-mindpath-primary' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                >
+                    Datos del Perfil
+                </button>
+                <button 
+                    onClick={() => setActiveTab('payments')} 
+                    className={`pb-3 font-black transition-colors ${activeTab === 'payments' ? 'text-mindpath-primary border-b-4 border-mindpath-primary' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                >
+                    Métodos de Pago
+                </button>
+            </div>
+
+            {activeTab === 'profile' ? (
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* COLUMNA IZQUIERDA */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* Avatar */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm text-center">
@@ -219,6 +246,17 @@ const DoctorProfileSettings = () => {
                                     className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
                                     placeholder="0" min={0} />
                             </div>
+
+                            {/* Tarifa de consulta */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2 flex items-center gap-2">
+                                    <span className="bg-mindpath-primary text-white text-[10px] px-1.5 py-0.5 rounded-md font-black">$</span> Monto por Consulta
+                                </label>
+                                <input type="number" value={formData.consultation_fee}
+                                    onChange={e => setFormData({...formData, consultation_fee: e.target.value})}
+                                    className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
+                                    placeholder="Ej. 40" min={0} step="0.01" />
+                            </div>
                         </div>
                     </div>
 
@@ -287,12 +325,21 @@ const DoctorProfileSettings = () => {
                         </div>
                     </div>
 
-                    <button type="submit"
-                        className="w-full py-5 bg-gray-900 text-white font-black rounded-[1.5rem] hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-gray-200">
-                        <Save size={20}/> ACTUALIZAR MI PERFIL PÚBLICO
-                    </button>
+                    <div className="flex justify-end pt-8">
+                        <button type="submit" disabled={loading}
+                            className="bg-mindpath-primary hover:bg-[#5C27C7] text-white px-10 py-4 rounded-xl font-bold uppercase tracking-wider text-sm transition-all shadow-[4px_4px_0px_#5C27C7] hover:shadow-none hover:translate-y-1 hover:translate-x-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            <Save size={18} className="animate-pulse" /> Guardar Todos los Cambios
+                        </button>
+                    </div>
                 </div>
-            </form>
+                </form>
+            ) : (
+                <DoctorPaymentMethods 
+                    paymentCatalog={paymentCatalog} 
+                    paymentMethods={paymentMethods} 
+                    setPaymentMethods={setPaymentMethods} 
+                />
+            )}
         </div>
     );
 };
