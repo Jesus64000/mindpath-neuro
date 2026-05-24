@@ -6,6 +6,16 @@ const db = require('../config/db');
 // Logo path — se usa desde la carpeta raíz del backend
 const LOGO_PATH = path.join(__dirname, '..', 'public', 'logo.png');
 
+// Limpiador de texto de residuos de URL-encode (ej: Neurolog% ia -> Neurología)
+const sanitizeText = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/%20/g, ' ')
+        .replace(/% ia/g, 'ía')
+        .replace(/%i/g, 'í')
+        .replace(/%/g, '');
+};
+
 exports.generateInvoicePDF = async (invoiceData, filePath) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -33,23 +43,23 @@ exports.generateInvoicePDF = async (invoiceData, filePath) => {
             const headerStartY = 50;
 
             if (logoExists) {
-                // Logo en la esquina izquierda
-                doc.image(logoToUse, 50, headerStartY, { width: 60, height: 60 });
+                // Logo en la esquina izquierda (tamaño aumentado de 60 a 85)
+                doc.image(logoToUse, 50, headerStartY, { width: 85, height: 85 });
                 // Datos del doctor a la derecha del logo
-                doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e293b').text(invoiceData.doctorName, 125, headerStartY + 2, { width: 400 });
-                doc.fontSize(9.5).font('Helvetica').fillColor('#64748b').text(`Especialidad: ${invoiceData.specialty}`, 125, doc.y + 3);
-                doc.text(`RIF: ${invoiceData.doctorRif}`, 125, doc.y + 2);
+                doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e293b').text(sanitizeText(invoiceData.doctorName), 150, headerStartY + 5, { width: 395 });
+                doc.fontSize(9.5).font('Helvetica').fillColor('#64748b').text(`Especialidad: ${sanitizeText(invoiceData.specialty)}`, 150, doc.y + 3);
+                doc.text(`RIF: ${sanitizeText(invoiceData.doctorRif)}`, 150, doc.y + 2);
                 if (invoiceData.doctorPhone) {
-                    doc.text(`Teléfono: ${invoiceData.doctorPhone}`, 125, doc.y + 2);
+                    doc.text(`Teléfono: ${sanitizeText(invoiceData.doctorPhone)}`, 150, doc.y + 2);
                 }
-                doc.y = Math.max(doc.y, headerStartY + 68); // Asegurar espacio para el logo
+                doc.y = Math.max(doc.y, headerStartY + 93); // Asegurar espacio para el logo
             } else {
                 // Sin logo — centrado
-                doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e293b').text(invoiceData.doctorName, { align: 'center' });
-                doc.fontSize(9.5).font('Helvetica').fillColor('#64748b').text(`Especialidad: ${invoiceData.specialty}`, { align: 'center' });
-                doc.text(`RIF: ${invoiceData.doctorRif}`, { align: 'center' });
+                doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e293b').text(sanitizeText(invoiceData.doctorName), { align: 'center' });
+                doc.fontSize(9.5).font('Helvetica').fillColor('#64748b').text(`Especialidad: ${sanitizeText(invoiceData.specialty)}`, { align: 'center' });
+                doc.text(`RIF: ${sanitizeText(invoiceData.doctorRif)}`, { align: 'center' });
                 if (invoiceData.doctorPhone) {
-                    doc.text(`Teléfono: ${invoiceData.doctorPhone}`, { align: 'center' });
+                    doc.text(`Teléfono: ${sanitizeText(invoiceData.doctorPhone)}`, { align: 'center' });
                 }
             }
 
@@ -87,16 +97,17 @@ exports.generateInvoicePDF = async (invoiceData, filePath) => {
             doc.y = patientBoxY + 10;
             doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e293b').text('  Datos del Paciente:', 60);
             doc.font('Helvetica').fillColor('#334155').fontSize(9.5);
-            doc.text(`  Nombre: ${invoiceData.patientName}`, 60, doc.y + 4);
-            doc.text(`  C.I. / RIF: ${invoiceData.patientDni || 'N/A'}`, 60, doc.y + 3);
+            doc.text(`  Nombre: ${sanitizeText(invoiceData.patientName)}`, 60, doc.y + 4);
+            doc.text(`  C.I. / RIF: ${sanitizeText(invoiceData.patientDni || 'N/A')}`, 60, doc.y + 3);
             if (invoiceData.patientPhone) {
-                doc.text(`  Teléfono: ${invoiceData.patientPhone}`, 60, doc.y + 3);
+                doc.text(`  Teléfono: ${sanitizeText(invoiceData.patientPhone)}`, 60, doc.y + 3);
             }
             
             doc.y = patientBoxY + 90;
 
             // ================= CONCEPT & DESCRIPTION TABLE =================
-            doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text('Concepto:');
+            const cleanSpecialty = sanitizeText(invoiceData.specialty || 'Servicio Médico');
+            doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text(`Concepto: Consulta Médica Especializada de ${cleanSpecialty}`);
             doc.moveDown(0.4);
             
             const tableTop = doc.y;
