@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+let apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Red de seguridad: Si el usuario olvidó colocar http:// o https://, se lo agregamos automáticamente para evitar rutas relativas
+if (apiURL && !apiURL.startsWith('http://') && !apiURL.startsWith('https://')) {
+    apiURL = 'https://' + apiURL;
+}
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', // Ruta base de nuestro backend
+    baseURL: apiURL, // Ruta base de nuestro backend
     headers: {
         'Content-Type': 'application/json',
     },
