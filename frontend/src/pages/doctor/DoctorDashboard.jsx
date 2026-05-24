@@ -204,24 +204,24 @@ const DoctorDashboard = () => {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-mindpath-primary p-7 rounded-[2rem] text-white shadow-xl shadow-mindpath-primary dark:shadow-mindpath-primary/30">
+                <div className="bg-mindpath-primary p-7 rounded-[2rem] text-white shadow-premium-primary transition-all hover:scale-[1.02] duration-300">
                     <TrendingUp className="mb-4 opacity-50" size={30} />
-                    <p className="text-gray-400 text-sm font-medium">Consultas / Semana</p>
-                    <h3 className="text-4xl font-black">{data?.stats.avgPerWeek}</h3>
+                    <p className="text-gray-400/80 text-xs font-semibold uppercase tracking-wider">Consultas / Semana</p>
+                    <h3 className="text-4xl font-black mt-1">{data?.stats.avgPerWeek}</h3>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 flex items-center justify-between">
+                <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 flex items-center justify-between shadow-premium-card transition-all hover:scale-[1.02] duration-300">
                     <div>
-                        <p className="text-gray-400 dark:text-slate-400 text-sm font-medium">Pacientes Totales</p>
-                        <h3 className="text-4xl font-black text-gray-900 dark:text-white">{data?.stats.totalPatients}</h3>
+                        <p className="text-gray-400 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Pacientes Totales</p>
+                        <h3 className="text-4xl font-black text-gray-900 dark:text-white mt-1">{data?.stats.totalPatients}</h3>
                     </div>
                     <div className="h-14 w-14 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-500 dark:text-blue-400">
                         <Users size={30}/>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 flex items-center justify-between">
+                <div className="bg-white dark:bg-slate-800 p-7 rounded-[2rem] border border-gray-100 dark:border-white/10 flex items-center justify-between shadow-premium-card transition-all hover:scale-[1.02] duration-300">
                     <div>
-                        <p className="text-gray-400 dark:text-slate-400 text-sm font-medium">Por Aprobar</p>
-                        <h3 className="text-4xl font-black text-yellow-600 dark:text-yellow-400">{data?.pending.length}</h3>
+                        <p className="text-gray-400 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Por Aprobar</p>
+                        <h3 className="text-4xl font-black text-yellow-600 dark:text-yellow-400 mt-1">{data?.pending.length}</h3>
                     </div>
                     <div className="h-14 w-14 bg-yellow-50 dark:bg-yellow-900/30 rounded-2xl flex items-center justify-center text-yellow-500 dark:text-yellow-400">
                         <Bell size={30}/>

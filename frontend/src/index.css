@@ -239,3 +239,41 @@
 :root:not(.dark) .mindpath-calendar .react-datepicker__navigation-icon::before {
   border-color: #64748b;
 }
+
+/* ── Estilos de Diseño Premium Apple SF Style & Glassmorphism ───────────────── */
+
+/* Simular estilo "SF Symbols" de Apple: trazo más fino y elegante */
+svg.lucide {
+  stroke-width: 1.6px !important;
+}
+
+/* Sombras orgánicas y difuminadas premium */
+.shadow-premium-card {
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.04), 0 4px 12px -5px rgba(0, 0, 0, 0.02);
+}
+.dark .shadow-premium-card {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+/* Sombra premium con brillo violeta (usada en la tarjeta del KPI principal) */
+.shadow-premium-primary {
+  box-shadow: 0 20px 45px -12px rgba(109, 40, 217, 0.45), 0 8px 20px -8px rgba(109, 40, 217, 0.25);
+}
+.dark .shadow-premium-primary {
+  box-shadow: 0 25px 50px -15px rgba(109, 40, 217, 0.55), 0 0 1px 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+/* Efecto de cristal esmerilado premium (Glassmorphism de Apple) */
+.glass-premium {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+.dark .glass-premium {
+  background: rgba(30, 41, 59, 0.7) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
