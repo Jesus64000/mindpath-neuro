@@ -163,7 +163,7 @@ const DoctorProfileSettings = () => {
                         </div>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                         <button type="button" onClick={() => fileInputRef.current?.click()}
-                            className="text-xs font-bold text-mindpath-primary hover:underline">
+                            className="text-xs font-bold text-mindpath-primary hover:underline block mx-auto mt-3">
                             Cambiar foto
                         </button>
                         {uploadError && (

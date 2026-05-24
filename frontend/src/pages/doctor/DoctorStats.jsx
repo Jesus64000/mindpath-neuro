@@ -81,7 +81,7 @@ const DoctorStats = () => {
                     onClick={() => navigate('/doctor/dashboard')}
                     className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-mindpath-primary dark:hover:text-mindpath-primary transition-colors"
                 >
-                    <ChevronLeft size={16}/> Dashboard
+                    <ChevronLeft size={16}/> Panel
                 </button>
             </div>
 

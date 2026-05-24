@@ -696,15 +696,15 @@ const DoctorSchedule = () => {
                 {/* 🔄 VACACIONES Y EXCEPCIONES */}
                     {activeSubTab === 'exceptions' && (
                         <div className="animate-fadeIn space-y-8">
-                            <div className="bg-gray-50 dark:bg-slate-700/30 p-6 rounded-2xl border border-gray-100 dark:border-slate-700">
+                            <div className="bg-gray-50 dark:bg-slate-700/30 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-slate-700">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🌴 Días Libres y Horarios Especiales</h3>
                                 <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
                                     Selecciona el rango de fechas en el calendario interactivo. Esta excepción anulará tu horario de la semana regular.
                                 </p>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-white dark:bg-slate-800 p-3 sm:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-8">
                                     {/* COLUMNA IZQUIERDA: EL CALENDARIO VISUAL */}
-                                    <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
+                                    <div className="w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-900 p-2 sm:p-6 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto">
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 text-center">
                                             Selecciona el rango en el calendario
                                         </label>

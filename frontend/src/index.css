@@ -249,18 +249,18 @@ svg.lucide {
 
 /* Sombras orgánicas y difuminadas premium */
 .shadow-premium-card {
-  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.04), 0 4px 12px -5px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
 }
 .dark .shadow-premium-card {
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
 }
 
 /* Sombra premium con brillo violeta (usada en la tarjeta del KPI principal) */
 .shadow-premium-primary {
-  box-shadow: 0 20px 45px -12px rgba(109, 40, 217, 0.45), 0 8px 20px -8px rgba(109, 40, 217, 0.25);
+  box-shadow: 0 8px 20px -4px rgba(109, 40, 217, 0.25), 0 4px 10px -4px rgba(109, 40, 217, 0.15);
 }
 .dark .shadow-premium-primary {
-  box-shadow: 0 25px 50px -15px rgba(109, 40, 217, 0.55), 0 0 1px 1px rgba(255, 255, 255, 0.1) inset;
+  box-shadow: 0 10px 25px -5px rgba(109, 40, 217, 0.35);
 }
 
 /* Efecto de cristal esmerilado premium (Glassmorphism de Apple) */
