@@ -305,11 +305,11 @@ const ThemingTab = ({
                                 <div className="flex items-center gap-1.5 mb-2">
                                     {(theme.logo_url || logoFile) ? (
                                         <img src={logoFile ? URL.createObjectURL(logoFile) : (theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`)} 
-                                            alt="Logo" className={`${theme.hide_sidebar_text ? 'h-8 max-w-[75px]' : 'h-5'} w-auto object-contain mr-1 shrink-0 rounded`} />
+                                            alt="Logo" className={`${(theme.hide_sidebar_text && (theme.logo_url || logoFile)) ? 'h-8 max-w-[75px]' : 'h-5'} w-auto object-contain mr-1 shrink-0 rounded`} />
                                     ) : (
                                         <div className="h-4 w-4 rounded-full" style={{ backgroundColor: theme.primary_color }} />
                                     )}
-                                    {!theme.hide_sidebar_text && (
+                                    {!(theme.hide_sidebar_text && (theme.logo_url || logoFile)) && (
                                         <span className="text-xs font-bold text-gray-700 dark:text-white truncate">{theme.clinic_name}</span>
                                     )}
                                 </div>
