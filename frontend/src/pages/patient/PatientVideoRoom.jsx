@@ -19,6 +19,7 @@ const PatientVideoRoom = () => {
     const [connectionError, setConnectionError] = useState(false);
     const intervalRef = useRef(null);
     const hasJoinedRef = useRef(false);
+    const joinTimeRef = useRef(0);
 
     // ── Animación de puntos ─────────────────────────────────────────────────
     useEffect(() => {
@@ -81,9 +82,13 @@ const PatientVideoRoom = () => {
             showPinButton: false,
             onJoinRoom: () => {
                 hasJoinedRef.current = true;
+                joinTimeRef.current = Date.now(); // Guardar el momento de conexión exitosa
             },
             onLeaveRoom: () => {
-                if (hasJoinedRef.current) {
+                const duration = Date.now() - joinTimeRef.current;
+                
+                // Si la sesión duró menos de 4 segundos, se considera fallo inmediato de inicio de sesión o aborto prematuro de ZegoCloud
+                if (hasJoinedRef.current && duration > 4000) {
                     navigate('/patient/appointments');
                 } else {
                     setConnectionError(true);

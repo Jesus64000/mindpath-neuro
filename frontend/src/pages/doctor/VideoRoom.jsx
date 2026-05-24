@@ -121,6 +121,7 @@ const VideoRoom = () => {
     // ── ZegoCloud ──────────────────────────────────────────────────────────
     const joinedRef = useRef(false);
     const hasJoinedRef = useRef(false);
+    const joinTimeRef = useRef(0);
     const [isJoining, setIsJoining] = useState(false);
     const [connectionError, setConnectionError] = useState(false);
     const [showTranscript, setShowTranscript] = useState(true);
@@ -160,10 +161,14 @@ const VideoRoom = () => {
                 clearTimeout(reloadTimeout);
                 setIsJoining(false);
                 hasJoinedRef.current = true; // La llamada realmente comenzó
+                joinTimeRef.current = Date.now(); // Guardar el momento de conexión exitosa
             },
             onLeaveRoom: () => {
                 if (recognitionRef.current) recognitionRef.current.stop();
-                if (hasJoinedRef.current) {
+                const duration = Date.now() - joinTimeRef.current;
+                
+                // Si la sesión duró menos de 4 segundos, se considera fallo inmediato de inicio de sesión o aborto prematuro de ZegoCloud
+                if (hasJoinedRef.current && duration > 4000) {
                     navigateToWrapUp(finalTranscriptRef.current);
                 } else {
                     setConnectionError(true);
