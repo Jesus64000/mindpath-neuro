@@ -173,13 +173,13 @@ const AppointmentDetail = () => {
                         <>
                             <button 
                                 onClick={() => handleStatus('confirmed')} 
-                                disabled={statusLoading || (appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')}
+                                disabled={statusLoading || (appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')}
                                 className={`flex items-center gap-2 px-4 py-2.5 font-bold rounded-2xl transition-colors ${
-                                    (appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')
+                                    (appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid')
                                     ? 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed border border-gray-200 dark:border-slate-600'
                                     : 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-100 dark:border-green-800'
                                 }`}
-                                title={appt.payment_method !== 'in_person' && appt.payment_status !== 'paid' ? 'Debes verificar el pago antes de confirmar' : 'Confirmar Cita'}
+                                title={appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid' ? 'Debes verificar el pago antes de confirmar' : 'Confirmar Cita'}
                             >
                                 <CheckCircle size={18}/> Confirmar
                             </button>

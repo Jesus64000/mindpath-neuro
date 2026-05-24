@@ -90,7 +90,12 @@ const WrapUp = () => {
     // Cargar membrete + prevención de cierre accidental
     useEffect(() => {
         api.get(`/reports/header/${appointmentId}`)
-            .then(res => setHeaderData(res.data))
+            .then(res => {
+                setHeaderData(res.data);
+                if (res.data?.payment_status === 'paid') {
+                    setPaymentReceived(true);
+                }
+            })
             .catch(err => console.error('Error cargando membrete:', err));
 
         const guard = (e) => { e.preventDefault(); e.returnValue = ''; };
@@ -130,7 +135,7 @@ const WrapUp = () => {
             setToast({ message: 'Debes generar el informe con IA antes de firmar.', type: 'error' });
             return;
         }
-        if (headerData?.type === 'presencial' && headerData?.payment_method === 'in_person' && !paymentReceived) {
+        if (headerData?.type === 'presencial' && headerData?.payment_method === 'in_person' && headerData?.payment_status !== 'paid' && !paymentReceived) {
             setToast({ message: 'Debes confirmar el pago en consultorio antes de finalizar esta consulta.', type: 'error' });
             return;
         }

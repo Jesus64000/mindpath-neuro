@@ -88,7 +88,7 @@ exports.wrapUpConsultation = async (req, res) => {
         }
         const appointment = appointmentRows[0];
 
-        if (appointment.type === 'presencial' && appointment.payment_method === 'in_person' && !paymentReceived) {
+        if (appointment.type === 'presencial' && appointment.payment_method === 'in_person' && appointment.payment_status !== 'paid' && !paymentReceived) {
             return res.status(409).json({ message: 'Debes confirmar el pago en consultorio antes de cerrar y emitir el kit de reembolso.' });
         }
 
@@ -204,6 +204,12 @@ exports.wrapUpConsultation = async (req, res) => {
 
             const invoiceLocalPath = path.join(__dirname, '..', 'public', 'uploads', 'invoices', `invoice_${invoiceNumber}.pdf`);
             pdfPath = `/uploads/invoices/invoice_${invoiceNumber}.pdf`;
+
+            // Asegurar que la carpeta exista antes de escribir el PDF (Evita el error 500 ENOENT)
+            const dir = path.dirname(invoiceLocalPath);
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir, { recursive: true });
+            }
 
             // Preparamos el payload a mandar al PDFKit
             const payload = {
