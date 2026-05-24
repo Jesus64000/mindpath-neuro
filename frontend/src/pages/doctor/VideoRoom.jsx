@@ -11,11 +11,28 @@ const VideoRoom = () => {
     const { user } = useAuthStore();
     const doctorName = user?.full_name ? `Dr(a). ${user.full_name}` : 'Dr. Especialista';
 
-    // ── Sprint 27: Activar sala cuando el doctor entra ───────────────────────
+    // ── Sprint 27: Verificar estado y activar sala cuando el doctor entra ───
     useEffect(() => {
-        api.patch(`/appointments/${id}/doctor-ready`)
-            .catch(err => console.warn('No se pudo activar sala:', err.message));
-    }, [id]);
+        api.get(`/appointments/doctor/${id}/detail`)
+            .then(res => {
+                if (res.data?.appointment?.status === 'completed') {
+                    alert('Esta consulta ya ha sido finalizada y cerrada.');
+                    navigate('/doctor/dashboard');
+                    return;
+                }
+                // Activar la sala en la DB
+                api.patch(`/appointments/${id}/doctor-ready`)
+                    .catch(err => console.warn('No se pudo activar sala:', err.message));
+            })
+            .catch(err => console.error('Error al verificar estado de la consulta:', err));
+
+        return () => {
+            // Desactivar la sala en la DB al salir
+            api.patch(`/appointments/${id}/doctor-not-ready`)
+                .catch(err => console.warn('No se pudo desactivar sala al salir:', err.message));
+        };
+    }, [id, navigate]);
+
 
     // ── Estado de la transcripción ──────────────────────────────────────────
     const [isListening, setIsListening]   = useState(false);
@@ -110,10 +127,20 @@ const VideoRoom = () => {
         });
     };
 
+    const deactivateRoom = async () => {
+        try {
+            await api.patch(`/appointments/${id}/doctor-not-ready`);
+            console.log('Room deactivated successfully');
+        } catch (err) {
+            console.warn('No se pudo desactivar la sala:', err.message);
+        }
+    };
+
     const handleEndCall = () => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
+        deactivateRoom();
         navigateToWrapUp(finalTranscriptRef.current);
     };
     // handleEndCall se mantiene para ser llamado desde onLeaveRoom de ZegoCloud
@@ -155,7 +182,12 @@ const VideoRoom = () => {
         const zp = ZegoUIKitPrebuilt.create(kitToken);
         zp.joinRoom({
             container: element,
-            scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+            scenario: { 
+                mode: ZegoUIKitPrebuilt.GroupCall,
+                config: {
+                    layout: "Grid"
+                }
+            },
             showScreenSharingButton: false,
             showPreJoinView: false,
             turnOnMicrophoneWhenJoining: true,
@@ -171,6 +203,7 @@ const VideoRoom = () => {
             },
             onLeaveRoom: () => {
                 if (recognitionRef.current) recognitionRef.current.stop();
+                deactivateRoom();
                 const duration = Date.now() - joinTimeRef.current;
                 
                 // Si la sesión duró menos de 4 segundos, se considera fallo inmediato de inicio de sesión o aborto prematuro de ZegoCloud

@@ -22,6 +22,7 @@ router.get('/doctor/:id/detail', authMiddleware, appointmentController.getAppoin
 // Sprint 27: Sala de Espera Virtual
 router.get('/:id/room-status', authMiddleware, appointmentController.getRoomStatus);
 router.patch('/:id/doctor-ready', authMiddleware, appointmentController.setDoctorReady);
+router.patch('/:id/doctor-not-ready', authMiddleware, appointmentController.setDoctorNotReady);
 
 // Endpoint para subir comprobante de pago (PDF/imagen) a una cita
 router.post('/:id/payment-proof', authMiddleware, appointmentController.uploadPaymentProof);

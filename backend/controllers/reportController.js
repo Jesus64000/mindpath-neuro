@@ -22,6 +22,7 @@ exports.getConsultationHeader = async (req, res) => {
                 a.payment_method,
                 a.payment_status,
                 a.payment_reference,
+                a.payment_proof_url,
                 a.payment_collected_at,
                 a.consultation_fee_snapshot,
                 a.legal_verification_code,
@@ -146,6 +147,7 @@ exports.wrapUpConsultation = async (req, res) => {
         await db.query(`
             UPDATE appointments
             SET status = 'completed',
+                doctor_ready = FALSE,
                 payment_status = CASE
                     WHEN ? = 1 THEN 'paid'
                     ELSE payment_status

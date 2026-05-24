@@ -472,11 +472,15 @@ exports.getRoomStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await db.query(
-            'SELECT doctor_ready, type, payment_status, payment_method FROM appointments WHERE id = ?',
+            'SELECT doctor_ready, type, payment_status, payment_method, status FROM appointments WHERE id = ?',
             [id]
         );
         if (rows.length === 0) return res.status(404).json({ message: 'Cita no encontrada.' });
         const appt = rows[0];
+
+        if (appt.status === 'completed') {
+            return res.status(400).json({ message: 'La consulta ya ha finalizado.', isCompleted: true });
+        }
 
         if (appt.type === 'virtual' && appt.payment_method !== 'in_person' && appt.payment_status !== 'paid') {
             return res.status(400).json({ message: 'No se puede consultar la sala sin verificar primero el pago de la consulta.' });
@@ -523,6 +527,32 @@ exports.setDoctorReady = async (req, res) => {
         res.status(200).json({ message: 'Sala activada.' });
     } catch (error) {
         console.error('Error en setDoctorReady:', error.message);
+        res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// PATCH /api/appointments/:id/doctor-not-ready
+// Doctor desactiva la sala al salir del VideoRoom
+exports.setDoctorNotReady = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const [doctorRows] = await db.query(
+            'SELECT id FROM doctors WHERE user_id = ?', [userId]
+        );
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'UPDATE appointments SET doctor_ready = FALSE WHERE id = ? AND doctor_id = ?',
+            [id, doctorId]
+        );
+        if (result.affectedRows === 0) return res.status(403).json({ message: 'Sin acceso.' });
+
+        res.status(200).json({ message: 'Sala desactivada.' });
+    } catch (error) {
+        console.error('Error en setDoctorNotReady:', error.message);
         res.status(500).json({ message: 'Error interno.' });
     }
 };

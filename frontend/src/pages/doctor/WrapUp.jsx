@@ -7,6 +7,7 @@ import {
     CheckCircle, XCircle
 } from 'lucide-react';
 import { PDFExportButton } from '../../components/ReportPDF';
+import { BACKEND_URL } from '../../api/constants';
 
 
 // ── Toast ──────────────────────────────────────────────────────
@@ -104,6 +105,9 @@ const WrapUp = () => {
                 }
                 if (res.data?.payment_method) {
                     setPaymentMethod(res.data.payment_method);
+                }
+                if (res.data?.payment_reference) {
+                    setPaymentReference(res.data.payment_reference);
                 }
             })
             .catch(err => console.error('Error cargando membrete:', err));
@@ -320,11 +324,11 @@ const WrapUp = () => {
                                 </p>
                                 <span className={`
                                     inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase
-                                    ${headerData.type === 'online'
+                                    ${(headerData.type === 'virtual' || headerData.type === 'online')
                                         ? 'bg-mindpath-primary/10 text-mindpath-primary'
                                         : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'}
                                 `}>
-                                    {headerData.type === 'online' ? 'Online' : 'Presencial'}
+                                    {(headerData.type === 'virtual' || headerData.type === 'online') ? 'Online' : 'Presencial'}
                                 </span>
                             </div>
                         </div>
@@ -334,67 +338,105 @@ const WrapUp = () => {
                         <h3 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
                             Pago y reembolso
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
-                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Método de pago</p>
-                                {headerData.payment_method === 'platform' ? (
-                                    <>
-                                        <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">
-                                            Pago por plataforma
-                                        </p>
-                                        <label className="flex items-center gap-2 text-sm font-bold text-gray-400 cursor-not-allowed">
-                                            <input
-                                                type="checkbox"
-                                                checked={true}
-                                                disabled
-                                                className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
-                                            />
-                                            Pago recibido (Verificado)
-                                        </label>
-                                    </>
-                                ) : (
-                                    <>
-                                        <select
-                                            value={paymentMethod}
-                                            onChange={(e) => setPaymentMethod(e.target.value)}
-                                            className="w-full p-2.5 mb-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-bold text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
+                        {headerData.payment_status === 'paid' && (headerData.type === 'virtual' || headerData.type === 'online' || headerData.payment_proof_url) ? (
+                            <div className="bg-green-50 dark:bg-green-950/20 rounded-3xl p-6 border border-green-200 dark:border-green-800/40">
+                                <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold mb-3 text-sm">
+                                    <CheckCircle size={18} className="text-green-500" />
+                                    Pago Verificado Exitosamente
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed mb-4">
+                                    Esta consulta online fue pagada y verificada antes de iniciar. Los datos de facturación se adjuntarán automáticamente al expediente médico y kit de reembolso.
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-bold text-gray-700 dark:text-slate-300">
+                                    <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <span className="text-[10px] text-gray-400 block uppercase">Monto Cotizado</span>
+                                        ${headerData.consultation_fee_snapshot ? Number(headerData.consultation_fee_snapshot).toFixed(2) : '0.00'} USD
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <span className="text-[10px] text-gray-400 block uppercase">Método de Pago</span>
+                                        {headerData.payment_method === 'platform' ? 'Pago por plataforma' : headerData.payment_method}
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <span className="text-[10px] text-gray-400 block uppercase">Referencia</span>
+                                        {headerData.payment_reference || 'Confirmado por admin'}
+                                    </div>
+                                </div>
+                                {headerData.payment_proof_url && (
+                                    <div className="mt-4">
+                                        <a
+                                            href={headerData.payment_proof_url.startsWith('http') ? headerData.payment_proof_url : `${BACKEND_URL}${headerData.payment_proof_url}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs text-mindpath-primary font-black hover:underline"
                                         >
-                                            <option value="in_person">💵 Efectivo en consultorio</option>
-                                            <option value="Pago móvil">📱 Pago móvil</option>
-                                            <option value="Transferencia">🏦 Transferencia bancaria</option>
-                                            <option value="Zelle">🇺🇸 Zelle</option>
-                                            <option value="Binance">🪙 Binance (Cripto)</option>
-                                            <option value="Otro">✏️ Otro método</option>
-                                        </select>
-                                        <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-slate-300">
-                                            <input
-                                                type="checkbox"
-                                                checked={paymentReceived}
-                                                onChange={(e) => setPaymentReceived(e.target.checked)}
-                                                className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
-                                            />
-                                            Confirmo que el pago fue recibido
-                                        </label>
-                                    </>
+                                            📄 Ver captura del comprobante adjunto
+                                        </a>
+                                    </div>
                                 )}
-                                <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
-                                    Indica cómo se recaudó el cobro de la consulta presencial.
-                                </p>
                             </div>
-                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
-                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Referencia de pago</p>
-                                <input
-                                    type="text"
-                                    value={paymentReference}
-                                    onChange={(e) => setPaymentReference(e.target.value)}
-                                    className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
-                                    placeholder="Ej: efectivo, transferencia, comprobante..."
-                                />
-                                <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
-                                    Este dato queda como trazabilidad para el expediente y el kit de reembolso.
-                                </p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                    <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Método de pago</p>
+                                    {headerData.payment_method === 'platform' ? (
+                                        <>
+                                            <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">
+                                                Pago por plataforma
+                                            </p>
+                                            <label className="flex items-center gap-2 text-sm font-bold text-gray-400 cursor-not-allowed">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={true}
+                                                    disabled
+                                                    className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
+                                                />
+                                                Pago recibido (Verificado)
+                                            </label>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <select
+                                                value={paymentMethod}
+                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                                className="w-full p-2.5 mb-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-bold text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
+                                            >
+                                                <option value="in_person">💵 Efectivo en consultorio</option>
+                                                <option value="Pago móvil">📱 Pago móvil</option>
+                                                <option value="Transferencia">🏦 Transferencia bancaria</option>
+                                                <option value="Zelle">🇺🇸 Zelle</option>
+                                                <option value="Binance">🪙 Binance (Cripto)</option>
+                                                <option value="Otro">✏️ Otro método</option>
+                                            </select>
+                                            <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-slate-300">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={paymentReceived}
+                                                    onChange={(e) => setPaymentReceived(e.target.checked)}
+                                                    className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
+                                                />
+                                                Confirmo que el pago fue recibido
+                                            </label>
+                                        </>
+                                    )}
+                                    <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
+                                        Indica cómo se recaudó el cobro de la consulta presencial.
+                                    </p>
+                                </div>
+                                <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
+                                    <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Referencia de pago</p>
+                                    <input
+                                        type="text"
+                                        value={paymentReference}
+                                        onChange={(e) => setPaymentReference(e.target.value)}
+                                        className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
+                                        placeholder="Ej: efectivo, transferencia, comprobante..."
+                                    />
+                                    <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
+                                        Este dato queda como trazabilidad para el expediente y el kit de reembolso.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* ── CUERPO DEL INFORME ────────────────────────────────── */}

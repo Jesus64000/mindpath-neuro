@@ -39,7 +39,12 @@ const PatientVideoRoom = () => {
                     setDoctorReady(true);
                     setPollError(false);
                 }
-            } catch {
+            } catch (err) {
+                if (err.response?.status === 400 && err.response?.data?.isCompleted) {
+                    alert('La consulta ya ha finalizado.');
+                    navigate('/patient/appointments');
+                    return;
+                }
                 setPollError(true);
             }
         };
@@ -73,7 +78,12 @@ const PatientVideoRoom = () => {
         const zp = ZegoUIKitPrebuilt.create(kitToken);
         zp.joinRoom({
             container: element,
-            scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+            scenario: { 
+                mode: ZegoUIKitPrebuilt.GroupCall,
+                config: {
+                    layout: "Grid"
+                }
+            },
             showScreenSharingButton: false,
             showPreJoinView: false, // Bypass the clunky, non-responsive pre-join screen on mobile
             turnOnMicrophoneWhenJoining: true,
