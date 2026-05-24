@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
-import { Mic, Pause, Play, BrainCircuit, Activity, AlertTriangle } from 'lucide-react';
+import { Mic, Pause, Play, BrainCircuit, Activity, AlertTriangle, Video } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import api from '../../api/axiosConfig';
 
@@ -125,6 +125,7 @@ const VideoRoom = () => {
     const [isJoining, setIsJoining] = useState(false);
     const [connectionError, setConnectionError] = useState(false);
     const [showTranscript, setShowTranscript] = useState(true);
+    const [hasClickedJoin, setHasClickedJoin] = useState(false);
 
     const myMeeting = async (element) => {
         if (!element || joinedRef.current) return;
@@ -178,6 +179,32 @@ const VideoRoom = () => {
     };
 
     // ── Render ─────────────────────────────────────────────────────────────
+    if (!hasClickedJoin) {
+        return (
+            <div className="w-full h-[100dvh] bg-slate-950 flex items-center justify-center p-6 text-white font-sans">
+                <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl text-center">
+                    <div className="w-20 h-20 bg-mindpath-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-mindpath-primary/30 animate-pulse">
+                        <BrainCircuit size={40} className="text-mindpath-primary" />
+                    </div>
+                    <h2 className="text-2xl font-black mb-3">Iniciar Consulta Virtual</h2>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                        Bienvenido a la sala de telemedicina Mindpath. Configura tu cámara y presiona el botón para iniciar la sesión con tu paciente.
+                    </p>
+                    
+                    <button 
+                        onClick={() => setHasClickedJoin(true)}
+                        className="w-full py-4 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-2xl transition-all shadow-lg shadow-mindpath-primary/30 flex items-center justify-center gap-2 text-base animate-bounce"
+                    >
+                        <Video size={20} /> Conectarse a la sesión
+                    </button>
+                    
+                    <p className="text-xs text-gray-500 mt-6">
+                        Tu asistente de transcripción por IA se inicializará automáticamente al conectarte.
+                    </p>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="flex flex-col lg:flex-row w-full h-[100dvh] bg-gray-900 dark:bg-black font-sans overflow-hidden">
             {/* Video de ZegoCloud (ocupa todo el espacio izquierdo/superior) */}

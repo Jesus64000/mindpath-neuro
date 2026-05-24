@@ -3,7 +3,7 @@ import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosConfig';
-import { Clock, Wifi, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Clock, Wifi, CheckCircle, RefreshCw, AlertTriangle, Video } from 'lucide-react';
 
 const POLL_INTERVAL = 4000; // ms entre polling
 
@@ -17,6 +17,7 @@ const PatientVideoRoom = () => {
     const [pollError, setPollError]     = useState(false);
     const [dots, setDots]               = useState('');
     const [connectionError, setConnectionError] = useState(false);
+    const [hasClickedJoin, setHasClickedJoin]   = useState(false);
     const intervalRef = useRef(null);
     const hasJoinedRef = useRef(false);
     const joinTimeRef = useRef(0);
@@ -185,6 +186,34 @@ const PatientVideoRoom = () => {
                         50% { transform: translateX(200%); }
                     }
                 `}</style>
+            </div>
+        );
+    }
+
+    // ── Lobby personalizado (Satisface Autoplay Policy del navegador) ───────
+    if (!hasClickedJoin) {
+        return (
+            <div className="w-full h-[100dvh] bg-slate-950 flex items-center justify-center p-6 text-white font-sans">
+                <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl text-center">
+                    <div className="w-20 h-20 bg-mindpath-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-mindpath-primary/30 animate-pulse">
+                        <Video size={40} className="text-mindpath-primary" />
+                    </div>
+                    <h2 className="text-2xl font-black mb-3">Consulta de Telemedicina</h2>
+                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                        Tu médico especialista ya está en la sala esperándote. Ingresa ahora de forma segura con tu cámara y micrófono activos.
+                    </p>
+                    
+                    <button 
+                        onClick={() => setHasClickedJoin(true)}
+                        className="w-full py-4 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-2xl transition-all shadow-lg shadow-mindpath-primary/30 flex items-center justify-center gap-2 text-base animate-bounce"
+                    >
+                        <Video size={20} /> Ingresar a la consulta
+                    </button>
+                    
+                    <p className="text-xs text-gray-500 mt-6">
+                        Al ingresar, concede el acceso a tu cámara y micrófono si tu navegador te lo solicita.
+                    </p>
+                </div>
             </div>
         );
     }
