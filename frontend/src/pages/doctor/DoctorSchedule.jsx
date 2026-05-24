@@ -504,22 +504,12 @@ const DoctorSchedule = () => {
                                                     </button>
                                                 )}
                                                 {(app.status === 'confirmed' || app.status === 'pending') && app.type === 'virtual' && (
-                                                    app.payment_status === 'paid' ? (
-                                                        <button
-                                                            onClick={() => navigate(`/doctor/video-room/${app.appointment_id}`)}
-                                                            className="px-4 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm text-sm"
-                                                        >
-                                                            <Video size={16} className="mr-1.5" />Iniciar
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            disabled
-                                                            className="px-4 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed font-bold rounded-xl flex items-center text-sm border border-gray-300 dark:border-slate-600"
-                                                            title="El paciente aún no ha pagado o el pago no ha sido verificado"
-                                                        >
-                                                            <Video size={16} className="mr-1.5" />Iniciar (Sin Pago)
-                                                        </button>
-                                                    )
+                                                    <button
+                                                        onClick={() => navigate(`/doctor/video-room/${app.appointment_id}`)}
+                                                        className="px-4 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl flex items-center transition-colors shadow-sm text-sm"
+                                                    >
+                                                        <Video size={16} className="mr-1.5" />Iniciar
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>

@@ -192,14 +192,9 @@ const AppointmentDetail = () => {
                     {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'virtual' && (
                         <button 
                             onClick={() => navigate(`/doctor/video-room/${id}`)}
-                            disabled={appt.payment_status !== 'paid'}
-                            className={`flex items-center gap-2 px-6 py-2.5 font-black rounded-2xl transition-all ${
-                                appt.payment_status !== 'paid'
-                                ? 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed border border-gray-300 dark:border-slate-600'
-                                : 'bg-mindpath-primary hover:bg-mindpath-primaryHover text-white shadow-lg shadow-mindpath-primary/20'
-                            }`}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black rounded-2xl shadow-lg shadow-mindpath-primary/20 transition-all"
                         >
-                            <Video size={20}/> {appt.payment_status !== 'paid' ? 'LLAMADA BLOQUEADA (PAGO PENDIENTE)' : 'INICIAR LLAMADA'}
+                            <Video size={20}/> INICIAR LLAMADA
                         </button>
                     )}
                     {(appt.status === 'confirmed' || appt.status === 'pending') && appt.type === 'presencial' && (
