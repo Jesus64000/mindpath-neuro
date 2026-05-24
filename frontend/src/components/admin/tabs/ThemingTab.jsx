@@ -158,6 +158,21 @@ const ThemingTab = ({
                                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
                                 />
                             </div>
+                            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                <input 
+                                    type="checkbox" 
+                                    id="hide_sidebar_text"
+                                    checked={!!theme.hide_sidebar_text}
+                                    onChange={e => setTheme(p => ({ ...p, hide_sidebar_text: e.target.checked }))}
+                                    className="h-4 w-4 rounded border-gray-300 text-mindpath-primary focus:ring-mindpath-primary"
+                                />
+                                <label htmlFor="hide_sidebar_text" className="text-xs font-semibold text-gray-600 dark:text-gray-300 cursor-pointer">
+                                    Ocultar texto del nombre de la clínica en la barra lateral
+                                </label>
+                            </div>
+                            <p className="text-[10px] text-gray-400 leading-relaxed mt-1">
+                                Recomendado si tu logo personalizado ya incluye el nombre de tu clínica (como un logo horizontal), así se verá mucho más grande y limpio.
+                            </p>
                         </div>
                     </div>
 
@@ -289,11 +304,14 @@ const ThemingTab = ({
                             <div className="w-28 bg-white dark:bg-slate-800 border-r border-gray-100 dark:border-slate-700 p-3 flex flex-col gap-2">
                                 <div className="flex items-center gap-1.5 mb-2">
                                     {(theme.logo_url || logoFile) ? (
-                                        <img src={logoFile ? URL.createObjectURL(logoFile) : (theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`)} alt="Logo" className="h-5 w-auto object-contain" />
+                                        <img src={logoFile ? URL.createObjectURL(logoFile) : (theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`)} 
+                                            alt="Logo" className={`${theme.hide_sidebar_text ? 'h-8 max-w-[75px]' : 'h-5'} w-auto object-contain mr-1 shrink-0 rounded`} />
                                     ) : (
                                         <div className="h-4 w-4 rounded-full" style={{ backgroundColor: theme.primary_color }} />
                                     )}
-                                    <span className="text-xs font-bold text-gray-700 dark:text-white truncate">{theme.clinic_name}</span>
+                                    {!theme.hide_sidebar_text && (
+                                        <span className="text-xs font-bold text-gray-700 dark:text-white truncate">{theme.clinic_name}</span>
+                                    )}
                                 </div>
                                 {['Panel', 'Pacientes', 'Agenda'].map(n => (
                                     <div key={n} className={`text-xs px-2 py-1.5 rounded-lg font-medium ${n === 'Panel' ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}

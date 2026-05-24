@@ -355,6 +355,7 @@ exports.getSettings = async (req, res) => {
       return res.status(200).json({
         clinic_name: "MindPath Neuro",
         logo_url: null,
+        hide_sidebar_text: false,
         primary_color: "#6D28D9",
         primary_hover: "#5B21B6",
         exchange_rate: 36.50,
@@ -383,6 +384,7 @@ exports.getSettings = async (req, res) => {
     res.status(200).json({
       clinic_name: "MindPath Neuro",
       logo_url: null,
+      hide_sidebar_text: false,
       primary_color: "#6D28D9",
       primary_hover: "#5B21B6",
       exchange_rate: 36.50,
@@ -395,7 +397,7 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const { 
-        clinic_name, logo_url, primary_color, primary_hover, font_family,
+        clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family,
         smtp_email, smtp_password, exchange_rate, exchange_rate_mode
     } = req.body;
 
@@ -406,11 +408,12 @@ exports.updateSettings = async (req, res) => {
 
     await db.query(
       `
-            INSERT INTO system_settings (id, clinic_name, logo_url, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 clinic_name   = VALUES(clinic_name),
                 logo_url      = VALUES(logo_url),
+                hide_sidebar_text = VALUES(hide_sidebar_text),
                 primary_color = VALUES(primary_color),
                 primary_hover = VALUES(primary_hover),
                 font_family   = VALUES(font_family),
@@ -421,7 +424,7 @@ exports.updateSettings = async (req, res) => {
                 exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
         `,
       [
-          clinic_name, logo_url, primary_color, primary_hover, font_family || 'Inter',
+          clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
           smtp_email || null, encryptedPassword || null,
           exchange_rate !== undefined ? exchange_rate : 36.50,
           exchange_rate_mode || 'auto',

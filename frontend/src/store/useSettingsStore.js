@@ -30,6 +30,7 @@ const loadGoogleFont = (fontName) => {
 const useSettingsStore = create((set) => ({
   clinicName: "MindPath Neuro",
   logoUrl: null,
+  hideSidebarText: false,
   primaryColor: "#6D28D9",
   primaryHover: "#5B21B6",
   fontFamily: "Inter",
@@ -74,6 +75,7 @@ const useSettingsStore = create((set) => ({
     set({
       clinicName: settings.clinic_name || "MindPath Neuro",
       logoUrl: settings.logo_url || null,
+      hideSidebarText: !!settings.hide_sidebar_text,
       primaryColor: settings.primary_color || "#6D28D9",
       primaryHover: settings.primary_hover || "#5B21B6",
       fontFamily: font,

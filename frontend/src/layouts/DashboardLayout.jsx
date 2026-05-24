@@ -13,7 +13,7 @@ import { BACKEND_URL } from '../api/constants';
 
 const DashboardLayout = () => {
     const { user, logout, updateUser } = useAuthStore();
-    const { clinicName, logoUrl } = useSettingsStore();
+    const { clinicName, logoUrl, hideSidebarText } = useSettingsStore();
     const location = useLocation();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -103,14 +103,16 @@ const DashboardLayout = () => {
                 <div className="flex items-center truncate">
                 {logoUrl ? (
                         <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
-                            alt="Logo" className={`h-9 w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
+                            alt="Logo" className={`${hideSidebarText ? 'h-12 max-w-[170px]' : 'h-9'} w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     ) : (
                         <img src="/logo.png" alt="MindPath Logo"
                             className={`h-9 w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     )}
-                    <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {clinicName}
-                    </span>
+                    {!hideSidebarText && (
+                        <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {clinicName}
+                        </span>
+                    )}
                 </div>
                 {/* Botón de cerrar para el sidebar móvil */}
                 <button onClick={() => setIsMobileOpen(false)} className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white">

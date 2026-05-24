@@ -77,13 +77,14 @@ const AdminDashboard = () => {
 
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
-    const { clinicName, logoUrl, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
+    const { clinicName, logoUrl, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
 
     // Theming
     const PRESET_FONTS = ['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'];
     const [theme, setTheme]         = useState({ 
         clinic_name: clinicName, 
         logo_url: logoUrl || '', 
+        hide_sidebar_text: hideSidebarText || false,
         primary_color: primaryColor, 
         primary_hover: primaryHover, 
         font_family: fontFamily || 'Inter',
@@ -196,13 +197,14 @@ const AdminDashboard = () => {
         setTheme({ 
             clinic_name: clinicName, 
             logo_url: logoUrl || '', 
+            hide_sidebar_text: hideSidebarText || false,
             primary_color: primaryColor, 
             primary_hover: primaryHover, 
             font_family: fontFamily || 'Inter',
             exchange_rate: exchangeRate,
             exchange_rate_mode: exchangeRateMode
         });
-    }, [clinicName, logoUrl, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode]);
+    }, [clinicName, logoUrl, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode]);
 
     const verifyDoctor = async (id) => {
         try { await api.put(`/admin/doctors/${id}/verify`); showToast('Doctor verificado.'); loadPending(); loadStats(); }
@@ -320,6 +322,7 @@ const AdminDashboard = () => {
             applySettings({ 
                 clinic_name: payload.clinic_name, 
                 logo_url: payload.logo_url, 
+                hide_sidebar_text: payload.hide_sidebar_text,
                 primary_color: payload.primary_color, 
                 primary_hover: payload.primary_hover, 
                 font_family: finalFont,
