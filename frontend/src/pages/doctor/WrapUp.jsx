@@ -338,14 +338,16 @@ const WrapUp = () => {
                         <h3 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
                             Pago y reembolso
                         </h3>
-                        {headerData.payment_status === 'paid' && (headerData.type === 'virtual' || headerData.type === 'online' || headerData.payment_proof_url) ? (
+                        {headerData.payment_status === 'paid' ? (
                             <div className="bg-green-50 dark:bg-green-950/20 rounded-3xl p-6 border border-green-200 dark:border-green-800/40">
                                 <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold mb-3 text-sm">
                                     <CheckCircle size={18} className="text-green-500" />
-                                    Pago Verificado Exitosamente
+                                    Pago Verificado y Confirmado
                                 </div>
                                 <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed mb-4">
-                                    Esta consulta online fue pagada y verificada antes de iniciar. Los datos de facturación se adjuntarán automáticamente al expediente médico y kit de reembolso.
+                                    {(headerData.type === 'virtual' || headerData.type === 'online')
+                                        ? 'Esta consulta en línea fue pagada y verificada antes de iniciar. Los datos de facturación se adjuntarán automáticamente al expediente y kit de reembolso.'
+                                        : 'El pago de esta consulta presencial fue confirmado. Los datos se reflejarán en el expediente y la factura.'}
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-bold text-gray-700 dark:text-slate-300">
                                     <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
@@ -354,7 +356,7 @@ const WrapUp = () => {
                                     </div>
                                     <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
                                         <span className="text-[10px] text-gray-400 block uppercase">Método de Pago</span>
-                                        {headerData.payment_method === 'platform' ? 'Pago por plataforma' : headerData.payment_method}
+                                        {headerData.payment_method === 'platform' ? 'Pago por plataforma' : headerData.payment_method === 'in_person' ? 'En consultorio' : (headerData.payment_method || 'Confirmado')}
                                     </div>
                                     <div className="bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-white/5">
                                         <span className="text-[10px] text-gray-400 block uppercase">Referencia</span>

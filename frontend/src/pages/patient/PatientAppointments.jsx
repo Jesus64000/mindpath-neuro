@@ -266,20 +266,14 @@ const PatientAppointments = () => {
                                     {/* Monto y método de pago */}
                                     <div className="text-xs mt-2 text-gray-700 dark:text-slate-300">
                                         <b>Monto:</b> {app.consultation_fee_snapshot ? `$${Number(app.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>
-                                        <b>Método de pago:</b> {app.payment_method === 'platform' ? 'Pago por plataforma' : app.payment_method === 'in_person' ? 'En consultorio' : (app.payment_method || 'No definido')}
+                                        <b>Método de pago:</b> {app.payment_method === 'platform' ? 'Pago por plataforma' : app.payment_method === 'in_person' ? 'En consultorio' : (app.payment_method || 'No definido')}<br/>
+                                        <b>Estatus de pago:</b> {{
+                                            paid: '✅ Pagado',
+                                            pending: '⏳ Pendiente',
+                                            unpaid: '❌ Sin pagar',
+                                            verified: '✅ Verificado',
+                                        }[app.payment_status] || (app.payment_status || 'No definido')}
                                     </div>
-                                    {app.invoice_pdf && (
-                                        <div className="mt-2.5">
-                                            <a
-                                                href={`${BACKEND_URL}${app.invoice_pdf}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 text-xs text-mindpath-primary dark:text-mindpath-primary font-bold hover:underline"
-                                            >
-                                                📄 Descargar Factura (Recibo)
-                                            </a>
-                                        </div>
-                                    )}
                                     <span className={`inline-flex items-center mt-2.5 px-2.5 py-1 text-xs font-bold rounded-lg border flex-shrink-0 w-fit ${sc.color}`}>
                                         {app.status === 'emergency_reschedule' && <AlertCircle size={14} className="mr-1.5" />}
                                         {sc.label}
@@ -370,6 +364,16 @@ const PatientAppointments = () => {
                                                 <span className="px-4 py-2.5 text-xs text-gray-400 dark:text-slate-500 font-medium flex items-center justify-center gap-1">
                                                     <Star size={13} className="text-amber-400 fill-amber-400" /> Valorada
                                                 </span>
+                                            )}
+                                            {app.invoice_pdf && (
+                                                <a
+                                                    href={`${BACKEND_URL}${app.invoice_pdf}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full md:w-auto px-6 py-2.5 text-sm bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-700/40 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition flex items-center justify-center gap-2"
+                                                >
+                                                    📄 Descargar Factura
+                                                </a>
                                             )}
                                         </>
                                     )}

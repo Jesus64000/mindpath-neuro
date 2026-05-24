@@ -101,11 +101,12 @@ const DashboardLayout = () => {
             {/* Logo */}
             <div className={`h-16 flex items-center justify-between px-5 border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
                 <div className="flex items-center truncate">
-                    {logoUrl ? (
+                {logoUrl ? (
                         <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
-                            alt="Logo" className="h-8 w-auto object-contain mr-2" />
+                            alt="Logo" className={`h-9 w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     ) : (
-                        <BrainCircuit className="text-mindpath-primary mr-2 shrink-0" size={26} />
+                        <img src="/logo.png" alt="MindPath Logo"
+                            className={`h-9 w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     )}
                     <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {clinicName}

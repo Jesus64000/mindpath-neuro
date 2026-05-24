@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 
 // ── Multer para logos ─────────────────────────────────────────────────────────
-const logosDir = path.join(__dirname, '..', 'uploads', 'logos');
+const logosDir = path.join(__dirname, '..', 'public', 'uploads', 'logos');
 if (!fs.existsSync(logosDir)) fs.mkdirSync(logosDir, { recursive: true });
 
 const storage = multer.diskStorage({

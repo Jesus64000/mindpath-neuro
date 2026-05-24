@@ -5,7 +5,10 @@ import {
     View,
     StyleSheet,
     PDFDownloadLink,
+    Image,
 } from '@react-pdf/renderer';
+import useSettingsStore from '../store/useSettingsStore';
+import { BACKEND_URL } from '../api/constants';
 
 // ── Estilos del PDF ────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
@@ -110,6 +113,11 @@ const styles = StyleSheet.create({
 
 // ── Documento PDF ──────────────────────────────────────────────────────────
 export const ReportPDFDocument = ({ report, header }) => {
+    const { logoUrl } = useSettingsStore.getState();
+    const resolvedLogo = logoUrl
+        ? (logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`)
+        : '/logo.png';
+
     const fecha = header?.appointment_date
         ? new Date(header.appointment_date).toLocaleDateString('es-ES', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -120,11 +128,14 @@ export const ReportPDFDocument = ({ report, header }) => {
         <Document title={`Informe Clínico — ${header?.patient_name || ''}`}>
             <Page size="A4" style={styles.page}>
 
-                {/* Membrete */}
+                {/* Membrete con logo */}
                 <View style={styles.header}>
-                    <View>
-                        <Text style={styles.brandName}>MindPath Neuro</Text>
-                        <Text style={styles.brandSub}>Centro de Salud Mental y Neurológica</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image src={resolvedLogo} style={{ width: 40, height: 40, marginRight: 10 }} />
+                        <View>
+                            <Text style={styles.brandName}>MindPath Neuro</Text>
+                            <Text style={styles.brandSub}>Centro de Salud Mental y Neurológica</Text>
+                        </View>
                     </View>
                     <View style={styles.metaBlock}>
                         {header?.doctor_name  && <Text style={styles.metaRow}>Dr(a). {header.doctor_name}</Text>}
@@ -153,7 +164,12 @@ export const ReportPDFDocument = ({ report, header }) => {
                             <Text style={styles.paymentText}>Método de pago: {header.payment_method === 'in_person' ? 'Pago en consultorio' : 'Pago por plataforma'}</Text>
                         )}
                         {header?.payment_status && (
-                            <Text style={styles.paymentText}>Estado de pago: {header.payment_status}</Text>
+                            <Text style={styles.paymentText}>Estado de pago: {{
+                                paid: 'Pagado ✅',
+                                pending: 'Pendiente ⏳',
+                                unpaid: 'Sin pagar ❌',
+                                verified: 'Verificado ✅',
+                            }[header.payment_status] || header.payment_status}</Text>
                         )}
                         {header?.payment_reference && (
                             <Text style={styles.paymentText}>Referencia: {header.payment_reference}</Text>

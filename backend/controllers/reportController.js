@@ -100,7 +100,10 @@ exports.wrapUpConsultation = async (req, res) => {
             [appointmentId]
         );
         const appt = apptRows[0];
-        const startDatetime = `${appt.appointment_date.toISOString().slice(0, 10)} ${appt.start_time}`;
+        const apptDateStr = appt.appointment_date instanceof Date
+            ? appt.appointment_date.toISOString().slice(0, 10)
+            : String(appt.appointment_date).slice(0, 10);
+        const startDatetime = `${apptDateStr} ${appt.start_time}`;
 
         const legalVerificationCode = `MPN-${appointmentId}-${Date.now().toString(36).toUpperCase()}`;
         const legalVerificationHash = crypto
@@ -200,10 +203,14 @@ exports.wrapUpConsultation = async (req, res) => {
             // Número de control correlativo simple con ID
             const invoiceNumber = `00-${String(appointmentId).padStart(5, '0')}`;
 
-            // Insertamos a nivel de base de datos
+            // Insertamos a nivel de base de datos (o actualizamos si ya existe)
             const [invoiceRes] = await db.query(`
                 INSERT INTO invoices (appointment_id, doctor_id, patient_id, invoice_number, base_amount, total_amount, legal_text)
                 VALUES (?, ?, ?, ?, ?, ?, 'Servicio Médico Exento de I.V.A. según Art. 19, Numeral 5 de la Ley del I.V.A.')
+                ON DUPLICATE KEY UPDATE
+                    base_amount   = VALUES(base_amount),
+                    total_amount  = VALUES(total_amount),
+                    id            = LAST_INSERT_ID(id)
             `, [appointmentId, data.doctor_id, data.patient_id, invoiceNumber, baseAmount, baseAmount]);
 
             const invoiceLocalPath = path.join(__dirname, '..', 'public', 'uploads', 'invoices', `invoice_${invoiceNumber}.pdf`);
@@ -230,6 +237,8 @@ exports.wrapUpConsultation = async (req, res) => {
                 baseAmount: baseAmount,
                 totalAmount: baseAmount,
                 currency: 'USD',
+                paymentMethod: paymentMethod || appointment.payment_method || null,
+                paymentReference: paymentReference || null,
                 legalText: 'Servicio Médico Exento de I.V.A. según Art. 19, Numeral 5 de la Ley del I.V.A.'
             };
 
