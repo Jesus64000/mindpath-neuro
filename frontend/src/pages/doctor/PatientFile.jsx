@@ -207,8 +207,8 @@ const PatientFile = () => {
         <div className="max-w-6xl mx-auto pb-12 space-y-6">
 
             {/* ── HEADER ──────────────────────────────────────────────────── */}
-            <div className="bg-slate-900 dark:bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden border border-white/5">
-                <div className="absolute top-0 right-0 w-56 h-56 bg-mindpath-light0 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
+            <div className="bg-mindpath-primary dark:bg-mindpath-primary rounded-[2rem] p-6 sm:p-8 text-white relative overflow-hidden border border-white/5 shadow-premium-primary">
+                <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20" />
                 <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     {avatarSrc ? (
                         <img src={avatarSrc} alt={info.full_name}

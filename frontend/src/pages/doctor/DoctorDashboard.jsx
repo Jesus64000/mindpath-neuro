@@ -233,23 +233,23 @@ const DoctorDashboard = () => {
                 {/* AGENDA SEMANAL */}
                 <div className="lg:col-span-8 space-y-8">
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <div>
                                 <h3 className="font-black text-xl text-gray-900 dark:text-white flex items-center">
                                     <Calendar className="mr-3 text-mindpath-primary"/>Vista Semanal
                                 </h3>
                                 <p className="text-sm text-gray-500 dark:text-slate-400">Selecciona un día para ver las citas.</p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto justify-start sm:justify-end">
                                 <button
                                     onClick={() => handleWeekChange(-7)}
-                                    className="px-4 py-2 bg-gray-100 dark:bg-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                                    className="flex-1 sm:flex-initial px-4 py-2 bg-gray-100 dark:bg-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                                 >
                                     Anterior
                                 </button>
                                 <button
                                     onClick={() => handleWeekChange(7)}
-                                    className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold uppercase hover:opacity-80 transition-opacity"
+                                    className="flex-1 sm:flex-initial px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold uppercase hover:opacity-80 transition-opacity"
                                 >
                                     Siguiente
                                 </button>
@@ -257,7 +257,7 @@ const DoctorDashboard = () => {
                         </div>
 
                         {/* Grid de días */}
-                        <div className="grid grid-cols-7 gap-2">
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2">
                             {weekDays.map((day) => {
                                 const iso = toLocalISO(day);
                                 const isSelected = toLocalISO(selectedDate) === iso;
@@ -266,7 +266,7 @@ const DoctorDashboard = () => {
                                     <button
                                         key={iso}
                                         onClick={() => setSelectedDate(day)}
-                                        className={`p-3 md:p-5 rounded-3xl border-2 text-center transition-all ${
+                                        className={`py-2.5 px-0.5 sm:p-4 md:p-5 rounded-2xl sm:rounded-3xl border-2 text-center transition-all min-w-0 ${
                                             isSelected 
                                                 ? 'border-mindpath-primary bg-mindpath-light dark:bg-mindpath-primary/30' 
                                                 : 'border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-slate-700/30 hover:border-mindpath-primary/50'

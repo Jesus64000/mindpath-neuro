@@ -113,15 +113,15 @@ const CompletarPerfil = () => {
         }
     };
 
-    const inputClass = 'block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white text-sm';
-    const selectClass = 'block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white appearance-none text-sm';
+    const inputClass = "block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm transition-colors placeholder-gray-400 dark:placeholder-slate-500";
+    const selectClass = "block w-full pl-10 pr-8 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white appearance-none text-sm transition-colors";
 
     if (!googleData) return null;
 
     return (
-        <div className="min-h-screen flex bg-gray-50 font-sans">
+        <div className="min-h-screen flex bg-gray-50 dark:bg-slate-950 font-sans transition-colors">
             {/* Formulario */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 overflow-y-auto">
+            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 overflow-y-auto dark:bg-slate-900 transition-colors">
                 <div className="w-full max-w-md">
 
                     {/* Logo móvil */}
@@ -131,22 +131,22 @@ const CompletarPerfil = () => {
 
                     {/* Cabecera */}
                     <div className="mb-6">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-1">¡Casi listo!</h2>
-                        <p className="text-gray-500 text-sm">Solo necesitamos un poco más de información para configurar tu cuenta.</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">¡Casi listo!</h2>
+                        <p className="text-gray-500 dark:text-slate-400 text-sm">Solo necesitamos un poco más de información para configurar tu cuenta.</p>
                     </div>
 
                     {/* Tarjeta de cuenta Google */}
-                    <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-2xl mb-6">
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-500/20 rounded-2xl mb-6">
                         {googleData.picture ? (
                             <img src={googleData.picture} alt="Foto de perfil" className="w-10 h-10 rounded-full border-2 border-blue-300" />
                         ) : (
                             <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center">
-                                <User size={20} className="text-blue-600" />
+                                <User size={20} className="text-blue-600 dark:text-blue-400" />
                             </div>
                         )}
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-blue-900 truncate">{googleData.full_name}</p>
-                            <p className="text-xs text-blue-600 truncate">{googleData.email}</p>
+                            <p className="text-sm font-bold text-blue-900 dark:text-blue-300 truncate">{googleData.full_name}</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 truncate">{googleData.email}</p>
                         </div>
                         <div className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full shrink-0">
                             <ShieldCheck size={12} />
@@ -155,12 +155,12 @@ const CompletarPerfil = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-700 rounded-xl flex items-center text-sm">
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-750 dark:text-red-400 rounded-xl flex items-center text-sm">
                             <AlertCircle size={16} className="mr-2 shrink-0" /> {error}
                         </div>
                     )}
                     {success && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-100 text-green-700 rounded-xl flex items-center text-sm">
+                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 text-green-750 dark:text-green-400 rounded-xl flex items-center text-sm">
                             <CheckCircle size={16} className="mr-2 shrink-0" /> {success}
                         </div>
                     )}
@@ -169,14 +169,14 @@ const CompletarPerfil = () => {
 
                         {/* Toggle Rol */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">¿Cómo usarás Mindpath?</label>
-                            <div className="flex p-1 bg-gray-100 rounded-xl">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">¿Cómo usarás Mindpath?</label>
+                            <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl">
                                 <button type="button" onClick={() => setRole('patient')}
-                                    className={`flex-1 py-2.5 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'patient' ? 'bg-white shadow-sm text-mindpath-primary' : 'text-gray-500 hover:text-gray-700'}`}>
+                                    className={`flex-1 py-2.5 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'patient' ? 'bg-white dark:bg-slate-750 shadow-sm text-mindpath-primary font-bold' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}>
                                     <User size={16} className="mr-2" /> Soy Paciente
                                 </button>
                                 <button type="button" onClick={() => setRole('doctor')}
-                                    className={`flex-1 py-2.5 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'doctor' ? 'bg-white shadow-sm text-mindpath-primary' : 'text-gray-500 hover:text-gray-700'}`}>
+                                    className={`flex-1 py-2.5 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'doctor' ? 'bg-white dark:bg-slate-750 shadow-sm text-mindpath-primary font-bold' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}>
                                     <Stethoscope size={16} className="mr-2" /> Soy Doctor
                                 </button>
                             </div>
@@ -184,9 +184,9 @@ const CompletarPerfil = () => {
 
                         {/* Cédula / DNI (común para todos) */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cédula de Identidad / DNI</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Cédula de Identidad / DNI</label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400" /></div>
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                 <input type="text" value={dni} onChange={e => setDni(e.target.value)}
                                     className={inputClass} placeholder="V-12345678" required />
                             </div>
@@ -197,13 +197,13 @@ const CompletarPerfil = () => {
                             <>
                                 {/* Especialidad */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Especialidad</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Stethoscope size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Stethoscope size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <select value={specialty} onChange={e => setSpecialty(e.target.value)} className={selectClass} required>
-                                            <option value="">Selecciona tu especialidad...</option>
-                                            {specialties.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                                            <option value="Otra">Otra (escríbela en tu perfil)</option>
+                                            <option value="" className="dark:bg-slate-800">Selecciona tu especialidad...</option>
+                                            {specialties.map(s => <option key={s.id} value={s.name} className="dark:bg-slate-800">{s.name}</option>)}
+                                            <option value="Otra" className="dark:bg-slate-800">Otra (escríbela en tu perfil)</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
                                     </div>
@@ -211,9 +211,9 @@ const CompletarPerfil = () => {
 
                                 {/* Licencia / CMVP */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Licencia / CMVP</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Licencia / CMVP</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><BadgeCheck size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><BadgeCheck size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="text" value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)}
                                             className={inputClass} placeholder="Nro. de registro" required />
                                     </div>
@@ -221,12 +221,12 @@ const CompletarPerfil = () => {
 
                                 {/* Centro de Salud */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Centro de Salud / Clínica</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Centro de Salud / Clínica</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Building2 size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Building2 size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <select value={clinicName} onChange={e => setClinicName(e.target.value)} className={selectClass} required>
-                                            <option value="">Seleccione un centro...</option>
-                                            {clinics.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                            <option value="" className="dark:bg-slate-800">Seleccione un centro...</option>
+                                            {clinics.map(c => <option key={c.id} value={c.name} className="dark:bg-slate-800">{c.name}</option>)}
                                         </select>
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
                                     </div>
@@ -234,9 +234,9 @@ const CompletarPerfil = () => {
 
                                 {/* Teléfono */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Teléfono</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="tel" value={doctorPhone} onChange={e => setDoctorPhone(e.target.value)}
                                             className={inputClass} placeholder="+58 412 000 0000" required />
                                     </div>
@@ -244,13 +244,13 @@ const CompletarPerfil = () => {
 
                                 {/* Modalidad */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad de Atención</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Modalidad de Atención</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Globe size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Globe size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <select value={modality} onChange={e => setModality(e.target.value)} className={selectClass} required>
-                                            <option value="ambas">Ambas (Online y Presencial)</option>
-                                            <option value="online">Solo Online</option>
-                                            <option value="presencial">Solo Presencial</option>
+                                            <option value="ambas" className="dark:bg-slate-800">Ambas (Online y Presencial)</option>
+                                            <option value="online" className="dark:bg-slate-800">Solo Online</option>
+                                            <option value="presencial" className="dark:bg-slate-800">Solo Presencial</option>
                                         </select>
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
                                     </div>
@@ -258,37 +258,37 @@ const CompletarPerfil = () => {
 
                                 {/* RIF */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">RIF (Opcional)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">RIF (Opcional)</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FileText size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FileText size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="text" value={rif} onChange={e => setRif(e.target.value)}
                                             className={inputClass} placeholder="J-12345678-9" />
                                     </div>
                                 </div>
 
                                 {/* Configuración de Cobro */}
-                                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
-                                    <h4 className="text-sm font-bold text-amber-800 flex items-center">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-500/20 space-y-4">
+                                    <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center">
                                         <CreditCard size={16} className="mr-2" /> Configuración de Cobro
                                     </h4>
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Monto por Consulta ($)</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Monto por Consulta ($)</label>
                                         <input type="number" value={consultationFee} onChange={e => setConsultationFee(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-750 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
                                             placeholder="Ej. 40" required />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Primer Método de Pago</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Primer Método de Pago</label>
                                         <select value={catalogMethodId} onChange={e => setCatalogMethodId(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm" required>
-                                            <option value="">Selecciona un método...</option>
-                                            {paymentCatalogs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-750 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm" required>
+                                            <option value="" className="dark:bg-slate-800">Selecciona un método...</option>
+                                            {paymentCatalogs.map(p => <option key={p.id} value={p.id} className="dark:bg-slate-800">{p.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Datos de Cuenta / Instrucciones</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Datos de Cuenta / Instrucciones</label>
                                         <textarea value={accountDetails} onChange={e => setAccountDetails(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm resize-none"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-750 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm resize-none"
                                             placeholder="Ej. Zelle: correo@ejemplo.com (Titular: Juan Pérez)"
                                             rows={2} required />
                                     </div>
@@ -299,29 +299,29 @@ const CompletarPerfil = () => {
                         {/* ── CAMPOS PACIENTE ── */}
                         {role === 'patient' && (
                             <>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+                                <div className="flex gap-4 flex-wrap sm:flex-nowrap">
+                                    <div className="flex-1 min-w-[150px]">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Fecha de Nacimiento</label>
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Calendar size={18} className="text-gray-400" /></div>
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Calendar size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                             <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)}
                                                 className={inputClass} required />
                                         </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                    <div className="flex-1 min-w-[120px]">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Género</label>
                                         <select value={gender} onChange={e => setGender(e.target.value)}
-                                            className="block w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white text-sm" required>
-                                            <option value="F">Femenino</option>
-                                            <option value="M">Masculino</option>
-                                            <option value="O">Otro</option>
+                                            className="block w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm" required>
+                                            <option value="F" className="dark:bg-slate-800">Femenino</option>
+                                            <option value="M" className="dark:bg-slate-800">Masculino</option>
+                                            <option value="O" className="dark:bg-slate-800">Otro</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Teléfono (opcional)</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                                             className={inputClass} placeholder="+58 412 000 0000" />
                                     </div>
@@ -331,13 +331,13 @@ const CompletarPerfil = () => {
 
                         {/* Botón de envío */}
                         <button type="submit" disabled={loading}
-                            className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-mindpath-primary hover:bg-mindpath-primaryHover transition-all disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-mindpath-primary hover:bg-mindpath-primaryHover transition-all disabled:bg-gray-400 dark:disabled:bg-slate-800 disabled:cursor-not-allowed">
                             {loading ? 'Creando tu cuenta...' : 'Completar Registro'}
                         </button>
 
                     </form>
 
-                    <p className="mt-5 text-center text-xs text-gray-400">
+                    <p className="mt-5 text-center text-xs text-gray-400 dark:text-slate-500">
                         Al registrarte aceptas nuestros términos de uso y política de privacidad.
                     </p>
                 </div>

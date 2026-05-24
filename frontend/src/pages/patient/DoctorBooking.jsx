@@ -275,7 +275,7 @@ const DoctorBooking = () => {
             </div>
 
             {/* Selector de Fecha */}
-            <div className="bg-slate-900 dark:bg-slate-950 p-6 rounded-3xl shadow-sm text-white">
+            <div className="bg-mindpath-primary dark:bg-mindpath-primary p-6 rounded-3xl shadow-premium-primary text-white">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Selecciona tu fecha</h3>
                     <div className="flex gap-2">

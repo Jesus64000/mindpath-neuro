@@ -47,11 +47,11 @@ const DoctorsDirectory = () => {
         <div className="max-w-7xl mx-auto space-y-8 pb-12">
             
         {/* Header del Directorio */}
-            <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-mindpath-light0 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+            <div className="bg-mindpath-primary rounded-3xl p-6 sm:p-8 text-white shadow-premium-primary relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="relative z-10">
                     <h1 className="text-3xl md:text-4xl font-bold mb-3">Directorio Médico</h1>
-                    <p className="text-gray-300 max-w-2xl text-lg">
+                    <p className="text-white/80 max-w-2xl text-base sm:text-lg">
                         Encuentra a los mejores especialistas en salud mental. Filtra por especialidad y agenda tu consulta online o presencial.
                     </p>
                 </div>

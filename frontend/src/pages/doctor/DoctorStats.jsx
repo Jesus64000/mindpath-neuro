@@ -225,17 +225,17 @@ const DoctorStats = () => {
                     <Activity className="text-mindpath-primary mr-2" size={20} />
                     <h3 className="font-black text-gray-900 dark:text-white">Modalidad de Consultas Completadas</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                         { label: 'Telemedicina', value: virtualCount,    pct: Math.round((virtualCount    / typeTotal) * 100), icon: Video,   color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/30' },
                         { label: 'Presencial',   value: presencialCount, pct: Math.round((presencialCount / typeTotal) * 100), icon: MapPin,  color: 'text-green-500 bg-green-50 dark:bg-green-900/30' },
                     ].map(({ label, value, pct, icon: Icon, color }) => (
-                        <div key={label} className={`p-5 rounded-2xl flex items-center gap-4 border border-transparent ${color.split(' ')[1]} ${color.split(' ')[2] || ''}`}>
+                        <div key={label} className={`p-4 sm:p-5 rounded-2xl flex items-center gap-4 border border-transparent ${color.split(' ')[1]} ${color.split(' ')[2] || ''}`}>
                             <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-white/60 dark:bg-white/10">
                                 <Icon size={24} className={color.split(' ')[0]} />
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-gray-700 dark:text-slate-200">{label}</p>
+                                <p className="text-sm font-bold text-gray-750 dark:text-slate-200">{label}</p>
                                 <p className="text-2xl font-black text-gray-900 dark:text-white">{value}</p>
                                 <p className="text-xs text-gray-400 dark:text-slate-400">{pct}% del total</p>
                             </div>

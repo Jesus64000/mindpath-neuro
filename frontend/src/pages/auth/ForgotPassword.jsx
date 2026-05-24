@@ -35,7 +35,7 @@ const ForgotPassword = () => {
                     <p className="text-gray-500 dark:text-slate-500 mt-2 font-medium">Recuperación de Acceso</p>
                 </div>
 
-                <div className="bg-white dark:bg-[#111827] rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl p-8 md:p-10 relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl p-8 md:p-10 relative overflow-hidden">
                     {/* Decoración */}
                     <div className="absolute -top-24 -right-24 w-48 h-48 bg-mindpath-primary/10 rounded-full blur-3xl"></div>
                     

@@ -5,7 +5,9 @@
 /* ── Variables de tema (modo claro) ─────────────────────────────────────── */
 :root {
   --color-primary: #6d28d9;
+  --color-primary-rgb: 109 40 217;
   --color-primary-hover: #5b21b6;
+  --color-primary-hover-rgb: 91 33 182;
   --color-dark: #1e1b4b;
   --color-light: #f5f3ff;
 
@@ -57,16 +59,23 @@
 }
 
 /* ── React Datepicker – MindPath Theme ──────────────────────────────────── */
+.react-datepicker-wrapper {
+  display: block !important;
+  width: 100% !important;
+}
+
 .mindpath-calendar.react-datepicker {
-  background: transparent;
-  border: none;
-  font-family: inherit;
-  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  font-family: inherit !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .mindpath-calendar .react-datepicker__month-container {
-  width: 100%;
-  float: none;
+  width: 100% !important;
+  float: none !important;
 }
 
 /* Header */
@@ -98,7 +107,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  width: auto;
+  width: auto !important;
   text-align: center;
   margin: 0;
   padding: 4px 0;
@@ -118,7 +127,7 @@
 
 /* Individual day cells */
 .mindpath-calendar .react-datepicker__day {
-  width: auto;
+  width: auto !important;
   height: 36px;
   line-height: 36px;
   margin: 0;
@@ -265,15 +274,15 @@ svg.lucide {
 
 /* Efecto de cristal esmerilado premium (Glassmorphism de Apple) */
 .glass-premium {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(8px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
 .dark .glass-premium {
-  background: rgba(30, 41, 59, 0.7) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  background: rgba(30, 41, 59, 0.75) !important;
+  backdrop-filter: blur(8px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 

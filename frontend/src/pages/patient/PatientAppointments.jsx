@@ -137,7 +137,7 @@ const PatientAppointments = () => {
 
     const statusConfig = {
         pending: { label: 'Esperando Confirmación', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-        confirmed: { label: 'Cita Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+        confirmed: { label: 'Cita Confirmada', color: 'bg-mindpath-light dark:bg-mindpath-primary/20 text-mindpath-primary dark:text-mindpath-primary border-mindpath-primary/30' },
         completed: { label: 'Completada', color: 'bg-green-100 text-green-700 border-green-200' },
         cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700 border-red-200' },
         emergency_reschedule: { label: 'Emergencia (Reagendar)', color: 'bg-red-600 text-white border-red-700 shadow-md shadow-red-500/20 animate-pulse' }
@@ -401,8 +401,8 @@ const PatientAppointments = () => {
                                 <p className="text-[10px] font-black text-gray-4000 uppercase tracking-widest mb-1">Diagnóstico</p>
                                 <p className="font-bold text-gray-900 dark:text-white">{selectedReport.diagnostico || 'No especificado'}</p>
                             </div>
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/30 p-4 rounded-2xl">
-                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Tratamiento Indicado</p>
+                            <div className="bg-mindpath-light dark:bg-mindpath-primary/20 border border-mindpath-light dark:border-mindpath-primary/30 p-4 rounded-2xl">
+                                <p className="text-[10px] font-black text-mindpath-primary dark:text-mindpath-primary uppercase tracking-widest mb-1">Tratamiento Indicado</p>
                                 <p className="text-gray-800 dark:text-slate-200">{selectedReport.tratamiento || 'No especificado'}</p>
                             </div>
                             <div className="bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-white/10 p-4 rounded-2xl">

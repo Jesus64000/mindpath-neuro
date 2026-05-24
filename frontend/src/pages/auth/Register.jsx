@@ -86,40 +86,40 @@ const Register = () => {
         }
     };
 
-    const inputClass = "block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white text-sm";
-    const selectClass = "block w-full pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white appearance-none text-sm";
+    const inputClass = "block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm transition-colors placeholder-gray-400 dark:placeholder-slate-500";
+    const selectClass = "block w-full pl-10 pr-8 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white appearance-none text-sm transition-colors";
 
     return (
-        <div className="min-h-screen flex bg-gray-50 font-sans">
+        <div className="min-h-screen flex bg-gray-50 dark:bg-slate-950 font-sans transition-colors">
             {/* Formulario */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 overflow-y-auto">
+            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 overflow-y-auto dark:bg-slate-900 transition-colors">
                 <div className="w-full max-w-md">
                     <div className="lg:hidden text-center mb-6">
                         <BrainCircuit size={40} className="mx-auto text-mindpath-primary mb-2" />
                     </div>
 
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Crea tu cuenta</h2>
-                    <p className="text-gray-500 mb-6">Únete a Mindpath y transforma la experiencia clínica.</p>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Crea tu cuenta</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6">Únete a Mindpath y transforma la experiencia clínica.</p>
 
                     {/* Toggle Rol */}
-                    <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
+                    <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl mb-6">
                         <button type="button" onClick={() => setRole('patient')}
-                            className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'patient' ? 'bg-white shadow-sm text-mindpath-primary' : 'text-gray-500 hover:text-gray-700'}`}>
+                            className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'patient' ? 'bg-white dark:bg-slate-750 shadow-sm text-mindpath-primary font-bold' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}>
                             <User size={16} className="mr-2" /> Soy Paciente
                         </button>
                         <button type="button" onClick={() => setRole('doctor')}
-                            className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'doctor' ? 'bg-white shadow-sm text-mindpath-primary' : 'text-gray-500 hover:text-gray-700'}`}>
+                            className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${role === 'doctor' ? 'bg-white dark:bg-slate-750 shadow-sm text-mindpath-primary font-bold' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}>
                             <Stethoscope size={16} className="mr-2" /> Soy Doctor
                         </button>
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-700 rounded-xl flex items-center text-sm">
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-750 dark:text-red-400 rounded-xl flex items-center text-sm">
                             <AlertCircle size={16} className="mr-2 shrink-0" /> {error}
                         </div>
                     )}
                     {success && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-100 text-green-700 rounded-xl flex items-center text-sm">
+                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 text-green-750 dark:text-green-400 rounded-xl flex items-center text-sm">
                             <CheckCircle size={16} className="mr-2 shrink-0" /> {success}
                         </div>
                     )}
@@ -127,9 +127,9 @@ const Register = () => {
                     <form onSubmit={handleRegister} className="space-y-4">
                         {/* Nombre */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Nombre Completo</label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><User size={18} className="text-gray-400" /></div>
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><User size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                 <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
                                     className={inputClass}
                                     placeholder="Ej. Juan Pérez" required />
@@ -138,9 +138,9 @@ const Register = () => {
 
                         {/* Cédula / DNI (campo común) */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cédula de Identidad / DNI</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Cédula de Identidad / DNI</label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400" /></div>
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                 <input type="text" value={dni} onChange={e => setDni(e.target.value)}
                                     className={inputClass}
                                     placeholder="V-12345678" required />
@@ -149,9 +149,9 @@ const Register = () => {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Correo Electrónico</label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Mail size={18} className="text-gray-400" /></div>
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Mail size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                                     className={inputClass}
                                     placeholder="correo@ejemplo.com" required />
@@ -246,22 +246,22 @@ const Register = () => {
                                 </div>
 
                                 {/* ── CONFIGURACIÓN DE COBRO (OBLIGATORIA) ── */}
-                                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
-                                    <h4 className="text-sm font-bold text-amber-800 flex items-center">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-500/20 space-y-4">
+                                    <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center">
                                         <CreditCard size={16} className="mr-2" /> Configuración de Cobro
                                     </h4>
                                     
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Monto por Consulta ($)</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Monto por Consulta ($)</label>
                                         <input type="number" value={consultationFee} onChange={e => setConsultationFee(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
                                             placeholder="Ej. 40" required={role === 'doctor'} />
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Primer Método de Pago</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Primer Método de Pago</label>
                                         <select value={catalogMethodId} onChange={e => setCatalogMethodId(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
                                             required={role === 'doctor'}>
                                             <option value="">Selecciona un método...</option>
                                             {paymentCatalogs.map(p => (
@@ -271,9 +271,9 @@ const Register = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold text-amber-700 mb-1">Datos de Cuenta / Instrucciones</label>
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Datos de Cuenta / Instrucciones</label>
                                         <textarea value={accountDetails} onChange={e => setAccountDetails(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white text-sm resize-none"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm resize-none"
                                             placeholder="Ej. Zelle: correo@ejemplo.com (Titular: Juan Pérez)" 
                                             rows={2} required={role === 'doctor'} />
                                     </div>
@@ -284,31 +284,31 @@ const Register = () => {
                         {/* ── CAMPOS PACIENTE ── */}
                         {role === 'patient' && (
                             <>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+                                <div className="flex gap-4 flex-wrap sm:flex-nowrap">
+                                    <div className="flex-1 min-w-[150px]">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Fecha de Nacimiento</label>
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Calendar size={18} className="text-gray-400" /></div>
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Calendar size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                             <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)}
                                                 className={inputClass}
                                                 required={role === 'patient'} />
                                         </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                    <div className="flex-1 min-w-[120px]">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Género</label>
                                         <select value={gender} onChange={e => setGender(e.target.value)}
-                                            className="block w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 focus:bg-white text-sm"
+                                            className="block w-full px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm transition-colors"
                                             required={role === 'patient'}>
-                                            <option value="F">Femenino</option>
-                                            <option value="M">Masculino</option>
-                                            <option value="O">Otro</option>
+                                            <option value="F" className="dark:bg-slate-800">Femenino</option>
+                                            <option value="M" className="dark:bg-slate-800">Masculino</option>
+                                            <option value="O" className="dark:bg-slate-800">Otro</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Teléfono (opcional)</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400" /></div>
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                                             className={inputClass}
                                             placeholder="+58 412 000 0000" />
@@ -319,9 +319,9 @@ const Register = () => {
 
                         {/* Contraseña */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Contraseña</label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Lock size={18} className="text-gray-400" /></div>
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Lock size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                 <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                                     className={inputClass}
                                     placeholder="Mínimo 6 caracteres" minLength={6} required />
@@ -329,12 +329,12 @@ const Register = () => {
                         </div>
 
                         <button type="submit" disabled={loading}
-                            className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-mindpath-primary hover:bg-mindpath-primaryHover transition-all disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-mindpath-primary hover:bg-mindpath-primaryHover transition-all disabled:bg-gray-400 dark:disabled:bg-slate-800 disabled:cursor-not-allowed">
                             {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
                         </button>
                     </form>
 
-                    <p className="mt-6 text-center text-sm text-gray-600">
+                    <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
                         ¿Ya tienes una cuenta?{' '}
                         <Link to="/login" className="font-bold text-mindpath-primary hover:text-mindpath-primaryHover transition-colors">
                             Inicia Sesión

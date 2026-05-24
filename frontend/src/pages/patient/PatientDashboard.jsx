@@ -7,7 +7,7 @@ import DoctorCard from '../../components/DoctorCard';
 import Avatar from '../../components/ui/Avatar';
 
 const statusConfig = {
-    confirmed: { label: 'Confirmada', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+    confirmed: { label: 'Confirmada', cls: 'bg-mindpath-light text-mindpath-primary dark:bg-mindpath-primary/20 dark:text-mindpath-primary' },
     pending:   { label: 'Pendiente',  cls: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
 };
 

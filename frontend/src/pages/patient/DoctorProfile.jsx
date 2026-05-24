@@ -222,7 +222,7 @@ const DoctorProfile = () => {
 
                     {/* Consultorio */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex items-start">
-                        <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center shrink-0 mr-4">
+                        <div className="h-12 w-12 bg-mindpath-light dark:bg-mindpath-primary/20 text-mindpath-primary dark:text-mindpath-primary rounded-xl flex items-center justify-center shrink-0 mr-4">
                             <MapPin size={24} />
                         </div>
                         <div>

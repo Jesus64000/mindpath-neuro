@@ -45,7 +45,7 @@ const Login = () => {
     });
 
     return (
-        <div className="flex min-h-screen bg-white">
+        <div className="flex min-h-screen bg-white dark:bg-slate-950 transition-colors">
 
             {/* PANEL IZQUIERDO: Branding */}
             <div className="hidden lg:flex lg:w-[45%] bg-mindpath-primary flex-col justify-center px-16 relative overflow-hidden">
@@ -63,16 +63,16 @@ const Login = () => {
             </div>
 
             {/* PANEL DERECHO: Formulario */}
-            <div className="w-full lg:w-[55%] flex flex-col justify-center px-8 sm:px-16 lg:px-24">
+            <div className="w-full lg:w-[55%] flex flex-col justify-center px-6 sm:px-16 lg:px-24 dark:bg-slate-900 transition-colors">
                 <div className="w-full max-w-md mx-auto">
 
                     <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">Bienvenido de nuevo</h2>
-                        <p className="text-gray-500 text-sm">Por favor, introduce tus datos para acceder al panel.</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Bienvenido de nuevo</h2>
+                        <p className="text-gray-500 dark:text-slate-400 text-sm">Por favor, introduce tus datos para acceder al panel.</p>
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-center rounded-md">
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 flex items-center rounded-md">
                             <AlertCircle size={20} className="mr-2 shrink-0" />
                             <span className="text-sm">{error}</span>
                         </div>
@@ -81,16 +81,16 @@ const Login = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Input Correo */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Correo Electrónico</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail size={18} className="text-gray-400" />
+                                    <Mail size={18} className="text-gray-400 dark:text-slate-500" />
                                 </div>
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
                                     placeholder="ejemplo@correo.com"
                                     required
                                 />
@@ -99,34 +99,34 @@ const Login = () => {
 
                         {/* Input Contraseña */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Contraseña</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">Contraseña</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock size={18} className="text-gray-400" />
+                                    <Lock size={18} className="text-gray-400 dark:text-slate-500" />
                                 </div>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
                                     placeholder="Ingresa tu contraseña"
                                     required
                                 />
                             </div>
-                            <p className="text-xs text-gray-400 mt-2">Mínimo 6 caracteres.</p>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">Mínimo 6 caracteres.</p>
                         </div>
 
                         {/* Recordarme y ¿Olvidaste? */}
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
                             <div className="flex items-center">
                                 <input
                                     id="remember-me"
                                     type="checkbox"
                                     checked={rememberMe}
                                     onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="h-4 w-4 text-mindpath-primary focus:ring-mindpath-primary border-gray-300 rounded"
+                                    className="h-4 w-4 text-mindpath-primary focus:ring-mindpath-primary border-gray-300 dark:border-slate-600 dark:bg-slate-800 rounded"
                                 />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-slate-300">
                                     Recordarme
                                 </label>
                             </div>
@@ -139,7 +139,7 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-70 mt-4 text-sm"
+                            className="w-full bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-70 mt-4 text-sm shadow-md"
                         >
                             {isLoading ? 'Verificando...' : 'Iniciar sesión'}
                         </button>
@@ -147,9 +147,9 @@ const Login = () => {
 
                     {/* Divisor */}
                     <div className="mt-6 flex items-center">
-                        <div className="border-t border-gray-200 flex-grow"></div>
-                        <span className="px-3 text-xs text-gray-400 bg-white font-medium">O continúa con</span>
-                        <div className="border-t border-gray-200 flex-grow"></div>
+                        <div className="border-t border-gray-250 dark:border-slate-700 flex-grow"></div>
+                        <span className="px-3 text-xs text-gray-400 dark:text-slate-500 bg-white dark:bg-slate-900 font-medium">O continúa con</span>
+                        <div className="border-t border-gray-250 dark:border-slate-700 flex-grow"></div>
                     </div>
 
                     {/* Botón de Google */}
@@ -159,7 +159,7 @@ const Login = () => {
                     />
 
                     {/* Registro */}
-                    <p className="mt-6 text-center text-sm text-gray-600">
+                    <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
                         ¿No tienes una cuenta?{' '}
                         <a href="/register" className="text-mindpath-primary font-medium hover:underline">Regístrate</a>
                     </p>

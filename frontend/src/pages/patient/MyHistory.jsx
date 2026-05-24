@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { FileText, Calendar, Download, ChevronDown, ChevronUp, Stethoscope, Star, Activity } from 'lucide-react';
+import { FileText, Calendar, Download, ChevronDown, ChevronUp, Stethoscope, Star, Activity, BrainCircuit } from 'lucide-react';
 import Avatar from '../../components/ui/Avatar';
 
 const StarDisplay = ({ rating }) => (
