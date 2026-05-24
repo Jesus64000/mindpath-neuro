@@ -68,7 +68,8 @@ exports.wrapUpConsultation = async (req, res) => {
             privateNotes,
             isShared,
             paymentReceived,
-            paymentReference
+            paymentReference,
+            paymentMethod
         } = req.body;
 
         const userId = req.user.id;
@@ -149,6 +150,7 @@ exports.wrapUpConsultation = async (req, res) => {
                     WHEN ? = 1 THEN 'paid'
                     ELSE payment_status
                 END,
+                payment_method = COALESCE(?, payment_method),
                 payment_reference = COALESCE(?, payment_reference),
                 payment_collected_at = CASE
                     WHEN ? = 1 THEN NOW()
@@ -157,7 +159,7 @@ exports.wrapUpConsultation = async (req, res) => {
                 legal_verification_code = ?,
                 legal_verification_hash = ?
             WHERE id = ?
-        `, [paymentReceived ? 1 : 0, paymentReference || null, paymentReceived ? 1 : 0, legalVerificationCode, legalVerificationHash, appointmentId]);
+        `, [paymentReceived ? 1 : 0, paymentMethod || null, paymentReference || null, paymentReceived ? 1 : 0, legalVerificationCode, legalVerificationHash, appointmentId]);
 
         // === INICIO DE GENERACION DE FACTURA ===
         // Importamos invoiceService justo aquí o al inicio del archivo

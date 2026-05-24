@@ -69,6 +69,9 @@ const WrapUp = () => {
     const [isShared,     setIsShared]     = useState(true);
     const [paymentReceived, setPaymentReceived] = useState(false);
     const [paymentReference, setPaymentReference] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState(() => {
+        return localStorage.getItem(`payment_method_${appointmentId}`) || '';
+    });
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving,     setIsSaving]     = useState(false);
     const [sidebarOpen,  setSidebarOpen]  = useState(true);
@@ -87,6 +90,10 @@ const WrapUp = () => {
         localStorage.setItem(`private_notes_${appointmentId}`, privateNotes);
     }, [privateNotes, appointmentId]);
 
+    useEffect(() => {
+        localStorage.setItem(`payment_method_${appointmentId}`, paymentMethod);
+    }, [paymentMethod, appointmentId]);
+
     // Cargar membrete + prevención de cierre accidental
     useEffect(() => {
         api.get(`/reports/header/${appointmentId}`)
@@ -94,6 +101,9 @@ const WrapUp = () => {
                 setHeaderData(res.data);
                 if (res.data?.payment_status === 'paid') {
                     setPaymentReceived(true);
+                }
+                if (res.data?.payment_method) {
+                    setPaymentMethod(res.data.payment_method);
                 }
             })
             .catch(err => console.error('Error cargando membrete:', err));
@@ -148,12 +158,14 @@ const WrapUp = () => {
                 isShared,
                 paymentReceived,
                 paymentReference,
+                paymentMethod,
             });
             
             // Limpiar todo rastro local tras firma exitosa
             localStorage.removeItem(`transcription_${appointmentId}`);
             localStorage.removeItem(`report_draft_${appointmentId}`);
             localStorage.removeItem(`private_notes_${appointmentId}`);
+            localStorage.removeItem(`payment_method_${appointmentId}`);
 
             setToast({ message: '✅ Historia Clínica guardada y firmada exitosamente.', type: 'success' });
             setTimeout(() => navigate('/doctor/dashboard'), 2000);
@@ -324,23 +336,49 @@ const WrapUp = () => {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
-                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estado de pago</p>
-                                <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">
-                                    {headerData.payment_method === 'in_person'
-                                        ? 'Pago en consultorio'
-                                        : 'Pago por plataforma'}
-                                </p>
-                                <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-slate-300">
-                                    <input
-                                        type="checkbox"
-                                        checked={paymentReceived}
-                                        onChange={(e) => setPaymentReceived(e.target.checked)}
-                                        className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
-                                    />
-                                    Confirmo que el pago fue recibido
-                                </label>
+                                <p className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Método de pago</p>
+                                {headerData.payment_method === 'platform' ? (
+                                    <>
+                                        <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">
+                                            Pago por plataforma
+                                        </p>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-gray-400 cursor-not-allowed">
+                                            <input
+                                                type="checkbox"
+                                                checked={true}
+                                                disabled
+                                                className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
+                                            />
+                                            Pago recibido (Verificado)
+                                        </label>
+                                    </>
+                                ) : (
+                                    <>
+                                        <select
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                            className="w-full p-2.5 mb-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-bold text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-mindpath-primary"
+                                        >
+                                            <option value="in_person">💵 Efectivo en consultorio</option>
+                                            <option value="Pago móvil">📱 Pago móvil</option>
+                                            <option value="Transferencia">🏦 Transferencia bancaria</option>
+                                            <option value="Zelle">🇺🇸 Zelle</option>
+                                            <option value="Binance">🪙 Binance (Cripto)</option>
+                                            <option value="Otro">✏️ Otro método</option>
+                                        </select>
+                                        <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 dark:text-slate-300">
+                                            <input
+                                                type="checkbox"
+                                                checked={paymentReceived}
+                                                onChange={(e) => setPaymentReceived(e.target.checked)}
+                                                className="w-4 h-4 text-mindpath-primary rounded border-gray-300"
+                                            />
+                                            Confirmo que el pago fue recibido
+                                        </label>
+                                    </>
+                                )}
                                 <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-2 leading-relaxed">
-                                    Úsalo para casos presenciales en consultorio o cuando el cobro externo ya esté verificado.
+                                    Indica cómo se recaudó el cobro de la consulta presencial.
                                 </p>
                             </div>
                             <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-white/10">
