@@ -78,7 +78,7 @@ const PatientVideoRoom = () => {
     // ── Sala de espera ──────────────────────────────────────────────────────
     if (!doctorReady) {
         return (
-            <div className="w-screen h-screen bg-slate-950 flex items-center justify-center">
+            <div className="w-full h-[100dvh] bg-slate-950 flex items-center justify-center">
                 <div className="text-center max-w-sm px-6">
                     {/* Icono animado */}
                     <div className="relative mx-auto mb-8 w-28 h-28">
@@ -130,7 +130,7 @@ const PatientVideoRoom = () => {
 
     // ── Sala activa ─────────────────────────────────────────────────────────
     return (
-        <div className="w-screen h-screen bg-gray-900 relative overflow-hidden">
+        <div className="w-full h-[100dvh] bg-gray-900 relative overflow-hidden">
             {/* Notificación de entrada */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-green-900/80 text-green-300 px-5 py-2.5 rounded-full border border-green-500/30 text-sm font-bold backdrop-blur-sm animate-fade-in">
                 <CheckCircle size={16} />

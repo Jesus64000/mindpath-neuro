@@ -120,6 +120,7 @@ const VideoRoom = () => {
 
     // ── ZegoCloud ──────────────────────────────────────────────────────────
     const joinedRef = useRef(false);
+    const hasJoinedRef = useRef(false);
     const [isJoining, setIsJoining] = useState(false);
 
     const myMeeting = async (element) => {
@@ -149,18 +150,23 @@ const VideoRoom = () => {
             onJoinRoom: () => {
                 clearTimeout(reloadTimeout);
                 setIsJoining(false);
+                hasJoinedRef.current = true; // La llamada realmente comenzó
             },
             onLeaveRoom: () => {
-                // Al colgar desde el botón de ZegoCloud también vamos a WrapUp
                 if (recognitionRef.current) recognitionRef.current.stop();
-                navigateToWrapUp(finalTranscriptRef.current);
+                if (hasJoinedRef.current) {
+                    navigateToWrapUp(finalTranscriptRef.current);
+                } else {
+                    alert("No se pudo iniciar la videollamada. Por favor verifica los secretos de ZegoCloud y reintenta.");
+                    navigate(-1);
+                }
             },
         });
     };
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="flex h-screen bg-gray-900 dark:bg-black font-sans overflow-hidden">
+        <div className="flex w-full h-[100dvh] bg-gray-900 dark:bg-black font-sans overflow-hidden">
             {/* Video de ZegoCloud (ocupa todo el espacio izquierdo) */}
             <div className="flex-1 relative bg-gray-900 dark:bg-black flex items-center justify-center">
                 {isJoining && (
