@@ -268,6 +268,18 @@ const PatientAppointments = () => {
                                         <b>Monto:</b> {app.consultation_fee_snapshot ? `$${Number(app.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>
                                         <b>Método de pago:</b> {app.payment_method === 'platform' ? 'Pago por plataforma' : app.payment_method === 'in_person' ? 'En consultorio' : (app.payment_method || 'No definido')}
                                     </div>
+                                    {app.invoice_pdf && (
+                                        <div className="mt-2.5">
+                                            <a
+                                                href={`${BACKEND_URL}${app.invoice_pdf}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-xs text-mindpath-primary dark:text-mindpath-primary font-bold hover:underline"
+                                            >
+                                                📄 Descargar Factura (Recibo)
+                                            </a>
+                                        </div>
+                                    )}
                                     <span className={`inline-flex items-center mt-2.5 px-2.5 py-1 text-xs font-bold rounded-lg border flex-shrink-0 w-fit ${sc.color}`}>
                                         {app.status === 'emergency_reschedule' && <AlertCircle size={14} className="mr-1.5" />}
                                         {sc.label}

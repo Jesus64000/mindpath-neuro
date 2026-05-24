@@ -176,9 +176,11 @@ exports.getDoctorAppointments = async (req, res) => {
             SELECT 
                 a.id AS appointment_id, a.appointment_date, a.start_time, a.status, a.type,
                 a.payment_method, a.payment_status, a.payment_reference, a.payment_proof_url, a.consultation_fee_snapshot,
+                i.pdf_path AS invoice_pdf,
                 u.full_name AS patient_name, u.email AS patient_email,
                 p.date_of_birth, p.gender, p.phone
             FROM appointments a
+            LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN patients p ON a.patient_id = p.id
             JOIN users u ON p.user_id = u.id
             WHERE a.doctor_id = ? ${filterDate ? 'AND a.appointment_date = ?' : ''}
@@ -310,12 +312,14 @@ exports.getPatientAppointments = async (req, res) => {
             SELECT 
                 a.*,
                 a.id AS appointment_id,
+                i.pdf_path AS invoice_pdf,
                 u.full_name AS doctor_name,
                 d.id AS doctor_id,
                 d.specialty,
                 d.profile_picture,
                 d.emergency_block_until
             FROM appointments a
+            LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN doctors d ON a.doctor_id = d.id
             JOIN users u ON d.user_id = u.id
             WHERE a.patient_id = ?
@@ -372,6 +376,7 @@ exports.getAppointmentDetail = async (req, res) => {
                 a.payment_reference,
                 a.payment_proof_url,
                 a.consultation_fee_snapshot,
+                i.pdf_path AS invoice_pdf,
                 p.id AS patient_id,
                 p.date_of_birth,
                 p.gender,
@@ -379,6 +384,7 @@ exports.getAppointmentDetail = async (req, res) => {
                 u.full_name AS patient_name,
                 u.email AS patient_email
             FROM appointments a
+            LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN patients p ON a.patient_id = p.id
             JOIN users u ON p.user_id = u.id
             WHERE a.id = ? AND a.doctor_id = ?

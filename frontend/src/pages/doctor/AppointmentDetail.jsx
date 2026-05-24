@@ -293,6 +293,18 @@ const AppointmentDetail = () => {
                             <b>Monto:</b> {appt.consultation_fee_snapshot ? `$${Number(appt.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>
                             <b>Método de pago:</b> {appt.payment_method === 'platform' ? 'Pago por plataforma' : appt.payment_method === 'in_person' ? 'En consultorio' : (appt.payment_method || 'No definido')}
                         </div>
+                        {appt.invoice_pdf && (
+                            <div className="mt-3">
+                                <a
+                                    href={`${BACKEND_URL}${appt.invoice_pdf}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-mindpath-primary text-white text-xs font-bold rounded-xl hover:bg-mindpath-primaryHover transition-all shadow-md shadow-mindpath-primary/10"
+                                >
+                                    📄 Descargar Factura (Recibo)
+                                </a>
+                            </div>
+                        )}
                         {appt.notes && (
                             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50 p-4 rounded-2xl">
                                 <p className="text-xs font-bold text-yellow-700 dark:text-yellow-500 uppercase mb-1">Notas del paciente</p>
