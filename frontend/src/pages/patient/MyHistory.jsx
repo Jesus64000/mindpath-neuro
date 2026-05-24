@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { FileText, Calendar, Download, ChevronDown, ChevronUp, Stethoscope, Star, Activity, BrainCircuit } from 'lucide-react';
 import Avatar from '../../components/ui/Avatar';
+import { useAuthStore } from '../../store/useAuthStore';
+import { PDFExportButton } from '../../components/ReportPDF';
 
 const StarDisplay = ({ rating }) => (
     <div className="flex items-center gap-0.5">
@@ -16,6 +18,7 @@ const StarDisplay = ({ rating }) => (
 
 const MyHistory = () => {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -151,6 +154,33 @@ const MyHistory = () => {
                                                 </button>
                                             )}
                                         </div>
+                                        
+                                        {/* Botón de Descargar PDF / Evidencia de Reembolso */}
+                                        <PDFExportButton 
+                                            report={{
+                                                motivo_sintomas: rec.motivo_sintomas,
+                                                antecedentes: rec.antecedentes,
+                                                hallazgos: rec.hallazgos,
+                                                diagnostico: rec.diagnostico,
+                                                tratamiento: rec.tratamiento,
+                                                estudios_observaciones: rec.estudios_observaciones,
+                                            }}
+                                            header={{
+                                                patient_name: user?.full_name || 'Paciente',
+                                                doctor_name: rec.doctor_name,
+                                                specialty: rec.specialty,
+                                                appointment_date: rec.appointment_date,
+                                                type: rec.type,
+                                                payment_method: rec.payment_method,
+                                                payment_status: rec.payment_status,
+                                                payment_reference: rec.payment_reference,
+                                                consultation_fee_snapshot: rec.consultation_fee_snapshot,
+                                                legal_verification_code: rec.legal_verification_code,
+                                                rif: rec.rif || 'J-12345678-9', // Fallback si no está
+                                                clinic_name: 'Mindpath Neuro'
+                                            }}
+                                            className="!bg-mindpath-primary hover:!bg-mindpath-primaryHover text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-md shadow-mindpath-primary/10 transition-all shrink-0"
+                                        />
                                     </div>
                                 </div>
                             )}

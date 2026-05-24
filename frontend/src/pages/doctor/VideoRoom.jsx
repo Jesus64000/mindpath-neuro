@@ -158,6 +158,11 @@ const VideoRoom = () => {
             scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
             showScreenSharingButton: false,
             showPreJoinView: false,
+            turnOnMicrophoneWhenJoining: true,
+            turnOnCameraWhenJoining: true,
+            showUserList: false,
+            showLayoutButton: false,
+            showPinButton: false,
             onJoinRoom: () => {
                 clearTimeout(reloadTimeout);
                 setIsJoining(false);
