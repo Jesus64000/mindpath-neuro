@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import api from '../api/axiosConfig';
+import { BACKEND_URL } from '../api/constants';
 
 const DashboardLayout = () => {
     const { user, logout, updateUser } = useAuthStore();
@@ -97,7 +98,7 @@ const DashboardLayout = () => {
                 {/* Logo */}
                 <div className={`h-16 flex items-center px-5 border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
                     {logoUrl ? (
-                        <img src={logoUrl.startsWith('http') ? logoUrl : `http://localhost:3000${logoUrl}`}
+                        <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
                             alt="Logo" className="h-8 w-auto object-contain mr-2" />
                     ) : (
                         <BrainCircuit className="text-mindpath-primary mr-2 shrink-0" size={26} />

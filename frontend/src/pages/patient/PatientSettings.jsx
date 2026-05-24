@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosConfig';
 import { User, Phone, MapPin, Save, Camera, CheckCircle, AlertCircle, Mail, Calendar } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
-
-const BACKEND_URL = 'http://localhost:3000';
+import { BACKEND_URL } from '../../api/constants';
 
 const PatientSettings = () => {
     const { user, updateUser } = useAuthStore();

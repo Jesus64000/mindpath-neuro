@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import DoctorPaymentMethods from './DoctorPaymentMethods';
-
-const BACKEND_URL = 'http://localhost:3000';
+import { BACKEND_URL } from '../../api/constants';
 
 // Idiomas predefinidos
 const LANGUAGE_OPTIONS = [
