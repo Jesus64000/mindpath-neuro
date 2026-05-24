@@ -145,7 +145,7 @@ const ThemingTab = ({
                                 <p className="text-xs text-gray-400 mb-1">Subir desde disco</p>
                                 <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-xl p-3 hover:border-mindpath-primary transition-colors">
                                     <Upload size={16} className="text-gray-400"/>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{logoFile ? logoFile.name : 'Seleccionar imagen (PNG, JPG, SVG, WEBP · máx 2MB)'}</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{logoFile ? logoFile.name : 'Subir PNG transparente (Sin fondo · recomendado)'}</span>
                                     <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" className="hidden" onChange={e => {
                                         if (e.target.files[0]) setLogoFile(e.target.files[0]);
                                     }}/>
@@ -173,6 +173,9 @@ const ThemingTab = ({
                             <p className="text-[10px] text-gray-400 leading-relaxed mt-1">
                                 Recomendado si tu logo personalizado ya incluye el nombre de tu clínica (como un logo horizontal), así se verá mucho más grande y limpio.
                             </p>
+                            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl mt-3 text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed font-semibold">
+                                💡 <strong>Recomendación de Diseño:</strong> Sube tu logo en formato <strong>PNG con fondo transparente</strong> y recortado al ras (sin márgenes o espacios vacíos grandes en los bordes). Esto permitirá que se adapte perfectamente al fondo del sistema y se visualice con el tamaño ideal tanto en la app como en tus <strong>facturas PDF e informes clínicos descargables</strong>.
+                            </div>
                         </div>
                     </div>
 
