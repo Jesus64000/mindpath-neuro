@@ -28,6 +28,7 @@ import MyHistory from './pages/patient/MyHistory';
 import DoctorStats from './pages/doctor/DoctorStats';
 import ResetPassword from './pages/auth/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import CompletarPerfil from './pages/auth/CompletarPerfil';
 import useSettingsStore from './store/useSettingsStore';
 
 import api from './api/axiosConfig';
@@ -59,6 +60,7 @@ function App() {
         <Route path="/superadmin" element={<SuperAdminSetup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/completar-perfil" element={<CompletarPerfil />} />
 
         {/* Rutas Privadas envueltas en el Layout */}
         <Route element={<ProtectedRoute />}>

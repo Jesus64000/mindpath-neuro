@@ -3,8 +3,41 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../config/db');
 const { sendResetPasswordEmail } = require('../utils/emailService');
+const { OAuth2Client } = require('google-auth-library');
 
-// REGISTRO DE USUARIO
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// ─────────────────────────────────────────────────────────────
+// Función auxiliar: genera el JWT y construye el objeto usuario
+// ─────────────────────────────────────────────────────────────
+const buildTokenAndUser = async (user) => {
+    // Obtener foto de perfil según rol
+    let profilePicture = null;
+    if (user.role === 'patient') {
+        const [rows] = await db.query('SELECT profile_picture FROM patients WHERE user_id = ?', [user.id]);
+        if (rows.length > 0) profilePicture = rows[0].profile_picture;
+    } else if (user.role === 'doctor') {
+        const [rows] = await db.query('SELECT profile_picture FROM doctors WHERE user_id = ?', [user.id]);
+        if (rows.length > 0) profilePicture = rows[0].profile_picture;
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+    return {
+        token,
+        user: {
+            id: user.id,
+            full_name: user.full_name,
+            role: user.role,
+            email: user.email,
+            profile_picture: profilePicture
+        }
+    };
+};
+
+// ─────────────────────────────────────────────────────────────
+// REGISTRO DE USUARIO (tradicional)
+// ─────────────────────────────────────────────────────────────
 exports.register = async (req, res) => {
     const { email, password, full_name, role } = req.body;
 
@@ -26,15 +59,15 @@ exports.register = async (req, res) => {
         try {
             // 4. Insertar en la tabla users
             const [userResult] = await connection.query(
-                'INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)',
-                [email, password_hash, full_name, role]
+                'INSERT INTO users (email, password_hash, full_name, role, auth_provider) VALUES (?, ?, ?, ?, ?)',
+                [email, password_hash, full_name, role, 'local']
             );
             const userId = userResult.insertId;
 
             // 5. Insertar en la tabla correspondiente según el rol
             if (role === 'doctor') {
-                const { 
-                    specialty, phone, license_number, experience_years, 
+                const {
+                    specialty, phone, license_number, experience_years,
                     clinic_name, clinic_address, education, languages,
                     dni, modality, rif, title_picture, specialty_certificate,
                     consultation_fee, catalog_method_id, account_details
@@ -48,11 +81,11 @@ exports.register = async (req, res) => {
                 }
 
                 const [docResult] = await connection.query(
-                    `INSERT INTO doctors 
-                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee) 
+                    `INSERT INTO doctors
+                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        userId, specialty, phone || null, license_number, experience_years || null, 
+                        userId, specialty, phone || null, license_number, experience_years || null,
                         clinic_name || null, clinic_address || null, education || null, languages || null,
                         dni || null, modality || 'ambas', rif || null, title_picture || null, specialty_certificate || null,
                         consultation_fee
@@ -88,10 +121,9 @@ exports.register = async (req, res) => {
 
             res.status(201).json({ message: 'Usuario registrado exitosamente', userId });
         } catch (error) {
-            // Revertir transacción en caso de error
             await connection.rollback();
             connection.release();
-            console.error("Error en la transacción de registro:", error);
+            console.error('Error en la transacción de registro:', error);
             return res.status(400).json({ message: error.message || 'Error al registrar los detalles del usuario.' });
         }
 
@@ -101,7 +133,9 @@ exports.register = async (req, res) => {
     }
 };
 
-// LOGIN DE USUARIO
+// ─────────────────────────────────────────────────────────────
+// LOGIN TRADICIONAL (Email + Contraseña)
+// ─────────────────────────────────────────────────────────────
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -114,103 +148,261 @@ exports.login = async (req, res) => {
 
         const user = users[0];
 
-        // 2. Verificar contraseña
+        // 2. Verificar si la cuenta es de Google (no tiene contraseña)
+        if (user.auth_provider === 'google' || !user.password_hash) {
+            return res.status(401).json({
+                message: 'Esta cuenta está vinculada a Google. Usa el botón "Continuar con Google" para acceder.',
+                isGoogleAccount: true
+            });
+        }
+
+        // 3. Verificar contraseña
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Credenciales inválidas.' });
         }
 
-        // 3. Obtener la foto de perfil dependiendo del rol
-        let profilePicture = null;
-        if (user.role === 'patient') {
-            const [patientRows] = await db.query('SELECT profile_picture FROM patients WHERE user_id = ?', [user.id]);
-            if (patientRows.length > 0) profilePicture = patientRows[0].profile_picture;
-        } else if (user.role === 'doctor') {
-            const [doctorRows] = await db.query('SELECT profile_picture FROM doctors WHERE user_id = ?', [user.id]);
-            if (doctorRows.length > 0) profilePicture = doctorRows[0].profile_picture;
-        }
-
-        // 4. Generar el Token JWT
-        const payload = {
-            id: user.id,
-            role: user.role
-        };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '8h' });
+        // 4. Generar Token y responder
+        const { token, user: userData } = await buildTokenAndUser(user);
 
         res.status(200).json({
-            message: 'Login exitoso',
+            message: 'Inicio de sesión exitoso',
             token,
-            user: { 
-                id: user.id, 
-                full_name: user.full_name, 
-                role: user.role, 
-                email: user.email,
-                profile_picture: profilePicture
-            }
+            user: userData
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error en el servidor durante el login.' });
+        res.status(500).json({ message: 'Error en el servidor durante el inicio de sesión.' });
     }
 };
 
-// SOLICITAR RECUPERACIÓN (Self-Service)
+// ─────────────────────────────────────────────────────────────
+// GOOGLE AUTH — Paso 1: Verificar si el usuario ya existe
+// ─────────────────────────────────────────────────────────────
+exports.googleCheck = async (req, res) => {
+    const { credential } = req.body;
+
+    if (!credential) {
+        return res.status(400).json({ message: 'Token de Google no proporcionado.' });
+    }
+
+    try {
+        // 1. Verificar el token con Google
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+
+        const payload = ticket.getPayload();
+        const { sub: google_id, email, name, picture } = payload;
+
+        // 2. Buscar usuario existente por google_id o email
+        const [users] = await db.query(
+            'SELECT * FROM users WHERE google_id = ? OR email = ?',
+            [google_id, email]
+        );
+
+        if (users.length > 0) {
+            // Usuario ya existe → login directo
+            const user = users[0];
+
+            // Si el usuario existe por email pero no tiene google_id, vincularlo
+            if (!user.google_id) {
+                await db.query(
+                    'UPDATE users SET google_id = ?, auth_provider = ? WHERE id = ?',
+                    [google_id, 'google', user.id]
+                );
+            }
+
+            const { token, user: userData } = await buildTokenAndUser(user);
+
+            return res.status(200).json({
+                exists: true,
+                token,
+                user: userData
+            });
+        }
+
+        // 3. Usuario nuevo → devolver datos pre-llenados para el formulario
+        res.status(200).json({
+            exists: false,
+            googleData: {
+                google_id,
+                email,
+                full_name: name,
+                picture
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en googleCheck:', error);
+        res.status(401).json({ message: 'Token de Google inválido. Por favor, intenta de nuevo.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// GOOGLE AUTH — Paso 2: Completar el perfil del nuevo usuario
+// ─────────────────────────────────────────────────────────────
+exports.googleComplete = async (req, res) => {
+    const { google_id, email, full_name, role } = req.body;
+
+    if (!google_id || !email || !full_name || !role) {
+        return res.status(400).json({ message: 'Faltan datos obligatorios para completar el registro.' });
+    }
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        // 1. Verificar que no exista ya (doble seguridad)
+        const [existing] = await connection.query(
+            'SELECT id FROM users WHERE google_id = ? OR email = ?',
+            [google_id, email]
+        );
+        if (existing.length > 0) {
+            await connection.rollback();
+            connection.release();
+            return res.status(400).json({ message: 'Este correo ya está registrado.' });
+        }
+
+        // 2. Insertar en users (sin contraseña)
+        const [userResult] = await connection.query(
+            'INSERT INTO users (email, full_name, role, google_id, auth_provider) VALUES (?, ?, ?, ?, ?)',
+            [email, full_name, role, google_id, 'google']
+        );
+        const userId = userResult.insertId;
+
+        // 3. Insertar datos del rol
+        if (role === 'doctor') {
+            const {
+                specialty, phone, license_number, experience_years,
+                clinic_name, modality, rif, dni,
+                consultation_fee, catalog_method_id, account_details
+            } = req.body;
+
+            if (!specialty || !license_number) {
+                throw new Error('Especialidad y número de licencia son requeridos para doctores.');
+            }
+            if (!consultation_fee || !catalog_method_id || !account_details) {
+                throw new Error('La tarifa de consulta y método de pago son requeridos.');
+            }
+
+            const [docResult] = await connection.query(
+                `INSERT INTO doctors
+                (user_id, specialty, phone, license_number, experience_years, clinic_name, modality, rif, dni, consultation_fee)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [userId, specialty, phone || null, license_number, experience_years || null,
+                 clinic_name || null, modality || 'ambas', rif || null, dni || null, consultation_fee]
+            );
+            const doctorId = docResult.insertId;
+
+            const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
+            const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+
+            await connection.query(
+                `INSERT INTO doctor_payment_methods (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                 VALUES (?, ?, ?, ?, 1, 1)`,
+                [doctorId, catalog_method_id, methodName, account_details]
+            );
+
+        } else if (role === 'patient') {
+            const { date_of_birth, gender, phone, dni } = req.body;
+
+            if (!date_of_birth || !gender) {
+                throw new Error('Fecha de nacimiento y género son requeridos para pacientes.');
+            }
+            await connection.query(
+                'INSERT INTO patients (user_id, date_of_birth, gender, phone, dni) VALUES (?, ?, ?, ?, ?)',
+                [userId, date_of_birth, gender, phone || null, dni || null]
+            );
+        }
+
+        await connection.commit();
+        connection.release();
+
+        // 4. Generar JWT y responder
+        const newUser = { id: userId, email, full_name, role };
+        const { token, user: userData } = await buildTokenAndUser(newUser);
+
+        res.status(201).json({
+            message: 'Cuenta creada exitosamente',
+            token,
+            user: userData
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        connection.release();
+        console.error('Error en googleComplete:', error);
+        res.status(400).json({ message: error.message || 'Error al completar el registro.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// RECUPERACIÓN DE CONTRASEÑA — Solicitar enlace
+// ─────────────────────────────────────────────────────────────
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     try {
-        // 1. Verificar si el usuario existe
-        const [users] = await db.query('SELECT id, full_name, email FROM users WHERE email = ?', [email]);
+        const [users] = await db.query('SELECT id, full_name, email, auth_provider FROM users WHERE email = ?', [email]);
+
         if (users.length === 0) {
-            // Por seguridad, no revelamos si el email existe o no, pero detenemos aquí.
             return res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
         }
 
         const user = users[0];
 
-        // 2. Generar Token Seguro
+        // Verificar si la cuenta es de Google
+        if (user.auth_provider === 'google') {
+            return res.status(400).json({
+                message: 'Tu cuenta está vinculada a Google. Usa el botón "Continuar con Google" para acceder.',
+                isGoogleAccount: true
+            });
+        }
+
+        // Generar Token Seguro
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expires = new Date(Date.now() + 3600000); // 1 hora
 
-        // 3. Guardar en DB (Limpiando tokens previos)
+        // Guardar en DB
         await db.query(
             'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
             [resetToken, expires, user.id]
         );
 
-        // 4. Enviar Email
+        // Enviar correo
         await sendResetPasswordEmail(user.email, user.full_name, resetToken);
 
         res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
 
     } catch (error) {
-        console.error("Error en forgotPassword:", error);
+        console.error('Error en forgotPassword:', error);
         res.status(500).json({ message: 'Error al procesar la solicitud de recuperación.' });
     }
 };
 
-// RESTABLECER CONTRASEÑA (Fase 3)
+// ─────────────────────────────────────────────────────────────
+// RECUPERACIÓN DE CONTRASEÑA — Establecer nueva contraseña
+// ─────────────────────────────────────────────────────────────
 exports.resetPassword = async (req, res) => {
     const { token, newPassword } = req.body;
 
     try {
-        // 1. Buscar usuario con un token válido y no expirado
         const [users] = await db.query(
             'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
             [token]
         );
 
         if (users.length === 0) {
-            return res.status(400).json({ message: 'El token de recuperación es inválido o ha expirado.' });
+            return res.status(400).json({ message: 'El enlace de recuperación es inválido o ha expirado.' });
         }
 
         const userId = users[0].id;
 
-        // 2. Encriptar la nueva contraseña
         const salt = await bcrypt.genSalt(10);
         const password_hash = await bcrypt.hash(newPassword, salt);
 
-        // 3. Actualizar contraseña y limpiar token (One-time use)
         await db.query(
             'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
             [password_hash, userId]
@@ -219,7 +411,7 @@ exports.resetPassword = async (req, res) => {
         res.status(200).json({ message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.' });
 
     } catch (error) {
-        console.error("Error en resetPassword:", error);
+        console.error('Error en resetPassword:', error);
         res.status(500).json({ message: 'Error al restablecer la contraseña.' });
     }
 };

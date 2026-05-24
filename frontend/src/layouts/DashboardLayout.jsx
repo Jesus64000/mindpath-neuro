@@ -69,10 +69,10 @@ const DashboardLayout = () => {
             { name: 'Mi Perfil', path: '/patient/settings',     icon: Settings },
         ],
         admin: [
-            { name: 'Admin Panel', path: '/admin/dashboard', icon: ShieldCheck },
+            { name: 'Administración', path: '/admin/dashboard', icon: ShieldCheck },
         ],
         supervisor: [
-            { name: 'Panel Admin', path: '/admin/dashboard', icon: ShieldCheck },
+            { name: 'Administración', path: '/admin/dashboard', icon: ShieldCheck },
         ],
     };
 
@@ -163,7 +163,7 @@ const DashboardLayout = () => {
                 {/* Topbar */}
                 <header className={`h-16 border-b flex items-center justify-between px-8 z-10 ${isDark ? 'bg-[var(--bg-sidebar)] border-[var(--border-color)]' : 'bg-white border-gray-200'}`}>
                     <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                        {menuItems.find(i => location.pathname.startsWith(i.path))?.name || 'Dashboard'}
+                        {menuItems.find(i => location.pathname.startsWith(i.path))?.name || 'Panel'}
                     </h2>
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col items-end">
