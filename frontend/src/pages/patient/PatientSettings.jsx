@@ -61,7 +61,10 @@ const PatientSettings = () => {
             });
             updateUser({ full_name: formData.full_name });
             setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
+            setTimeout(() => {
+                setSaved(false);
+                window.location.reload();
+            }, 1000);
         } catch {
             alert('Error al guardar los cambios.');
         }
