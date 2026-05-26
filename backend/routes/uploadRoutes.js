@@ -42,13 +42,18 @@ const upload = multer({
 router.post('/profile-picture', authMiddleware, uploadController.uploadProfilePicture);
 
 // ── Sprint 29: Endpoint genérico para subir un archivo (título, certificado, etc.) ──
-router.post('/', authMiddleware, upload.single('file'), (req, res) => {
+router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No se subió ningún archivo.' });
         }
         // Devolvemos la ruta relativa para guardarla en la BD
         const fileUrl = `/uploads/${req.file.filename}`;
+        
+        // Persistimos en la base de datos de manera asíncrona (self-healing)
+        const { persistFile } = require('../utils/persistentStorage');
+        await persistFile(fileUrl, req.file.path, req.file.mimetype);
+
         res.status(200).json({ url: fileUrl });
     } catch (error) {
         console.error('Error al subir archivo:', error);

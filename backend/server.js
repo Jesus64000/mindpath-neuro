@@ -120,8 +120,9 @@ app.get('/uploads/invoices/:filename', async (req, res, next) => {
     }
 });
 
-// Servir archivos estáticos de la carpeta public/uploads
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Servir archivos estáticos de la carpeta public/uploads con auto-saneamiento/restauración de BD
+const { restoreFileMiddleware } = require('./utils/persistentStorage');
+app.use('/uploads', restoreFileMiddleware, express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Endpoint de prueba (Health Check)
 app.get('/api/health', async (req, res) => {

@@ -445,6 +445,10 @@ exports.uploadLogo = async (req, res) => {
 
     const logoUrl = `/uploads/logos/${req.file.filename}`;
 
+    // Persistimos en la base de datos de manera asíncrona (self-healing)
+    const { persistFile } = require('../utils/persistentStorage');
+    await persistFile(logoUrl, req.file.path, req.file.mimetype);
+
     await db.query(
       `
             INSERT INTO system_settings (id, logo_url) VALUES (1, ?)

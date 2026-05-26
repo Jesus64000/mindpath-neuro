@@ -51,6 +51,10 @@ exports.uploadProfilePicture = async (req, res) => {
         const fileUrl = `/uploads/${req.file.filename}`;
 
         try {
+            // Persistimos en la base de datos de manera asíncrona (self-healing)
+            const { persistFile } = require('../utils/persistentStorage');
+            await persistFile(fileUrl, req.file.path, req.file.mimetype);
+
             if (userRole === 'doctor') {
                 await db.query('UPDATE doctors SET profile_picture = ? WHERE user_id = ?', [fileUrl, userId]);
             } else if (userRole === 'patient') {

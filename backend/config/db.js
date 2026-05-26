@@ -93,6 +93,19 @@ pool.getConnection()
     })
     .then(() => {
         console.log('✅ Saneamiento de acentos completado al inicio.');
+        // Crear tabla stored_files si no existe para persistencia de archivos
+        return pool.query(`
+            CREATE TABLE IF NOT EXISTS stored_files (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                file_path VARCHAR(255) NOT NULL UNIQUE,
+                file_data LONGTEXT NOT NULL,
+                mimetype VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+    })
+    .then(() => {
+        console.log('✅ Tabla stored_files para persistencia de archivos verificada.');
     })
     .catch(err => {
         console.error('❌ Error fatal en inicialización/parche de BD:', err.message);

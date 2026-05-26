@@ -237,9 +237,10 @@ const ThemingTab = ({
                                     <button 
                                         type="button"
                                         onClick={() => setTheme(p => ({ ...p, exchange_rate_mode: 'auto' }))}
+                                        style={theme.exchange_rate_mode === 'auto' ? { backgroundColor: theme.primary_color, borderColor: theme.primary_color } : {}}
                                         className={`p-2.5 rounded-xl text-xs font-bold transition-all border ${
                                             theme.exchange_rate_mode === 'auto' 
-                                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm font-extrabold' 
+                                                ? 'text-white shadow-sm font-extrabold' 
                                                 : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
                                         }`}
                                     >
@@ -248,9 +249,10 @@ const ThemingTab = ({
                                     <button 
                                         type="button"
                                         onClick={() => setTheme(p => ({ ...p, exchange_rate_mode: 'manual' }))}
+                                        style={theme.exchange_rate_mode === 'manual' ? { backgroundColor: theme.primary_color, borderColor: theme.primary_color } : {}}
                                         className={`p-2.5 rounded-xl text-xs font-bold transition-all border ${
                                             theme.exchange_rate_mode === 'manual' 
-                                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm font-extrabold' 
+                                                ? 'text-white shadow-sm font-extrabold' 
                                                 : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
                                         }`}
                                     >
@@ -266,13 +268,14 @@ const ThemingTab = ({
                                     <div className="mt-3 p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
                                         <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
                                             <span>Tasa Actual:</span>
-                                            <span className="text-emerald-600 dark:text-emerald-450 font-black text-sm">{Number(theme.exchange_rate || 36.50).toFixed(2)} Bs/$</span>
+                                            <span style={{ color: theme.primary_color }} className="font-black text-sm">{Number(theme.exchange_rate || 36.50).toFixed(2)} Bs/$</span>
                                         </div>
                                         <button 
                                             type="button"
                                             onClick={onSyncBcv}
                                             disabled={syncingBcv}
-                                            className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-lg border-0 text-[10px] uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
+                                            style={{ backgroundColor: theme.primary_color }}
+                                            className="w-full flex items-center justify-center gap-1.5 hover:brightness-110 active:scale-[0.98] text-white font-bold py-2 px-3 rounded-lg border-0 text-[10px] uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
                                         >
                                             <RefreshCw size={11} className={syncingBcv ? 'animate-spin' : ''} />
                                             {syncingBcv ? 'Sincronizando...' : 'Sincronizar ahora con la API 🇻🇪'}
