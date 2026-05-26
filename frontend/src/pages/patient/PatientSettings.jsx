@@ -59,6 +59,7 @@ const PatientSettings = () => {
                 phone:     formData.phone,
                 address:   formData.address,
             });
+            updateUser({ full_name: formData.full_name });
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch {

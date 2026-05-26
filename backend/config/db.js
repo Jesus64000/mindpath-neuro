@@ -39,7 +39,7 @@ const cleanCorruptAccents = async () => {
         const targets = [
             { table: 'clinics', columns: ['name'] },
             { table: 'specialties', columns: ['name'] },
-            { table: 'doctors', columns: ['specialty', 'bio', 'education', 'clinic_name', 'clinic_address'] },
+            { table: 'doctors', columns: ['specialty', 'bio', 'education', 'clinic_name', 'clinic_address', 'languages'] },
             { table: 'patients', columns: ['medical_conditions', 'current_medications', 'address'] },
             { table: 'users', columns: ['full_name'] },
             { table: 'system_settings', columns: ['clinic_name'] },
@@ -91,9 +91,11 @@ pool.getConnection()
     })
     .then(() => {
         console.log('✅ Base de datos verificada y saneada con hide_sidebar_text.');
-        // Forzar charset utf8mb4 en clinics y specialties antes de sanear para garantizar codificación correcta en Windows
+        // Forzar charset utf8mb4 en clinics, specialties, doctors y users antes de sanear para garantizar codificación correcta en Windows
         return pool.query(`ALTER TABLE clinics CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
             .then(() => pool.query(`ALTER TABLE specialties CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
+            .then(() => pool.query(`ALTER TABLE doctors CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
+            .then(() => pool.query(`ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
             .catch(() => {})
             .then(() => cleanCorruptAccents());
     })
