@@ -313,8 +313,14 @@ const DoctorDashboard = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white dark:bg-slate-600 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-300">
-                                                {app.status}
+                                            <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-white dark:bg-slate-650 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-300 uppercase tracking-wider">
+                                                {({
+                                                    completed: 'Completada',
+                                                    cancelled: 'Cancelada',
+                                                    scheduled: 'Programada',
+                                                    confirmed: 'Confirmada',
+                                                    pending: 'Pendiente'
+                                                }[app.status] || app.status)}
                                             </span>
                                         </div>
                                     ))}

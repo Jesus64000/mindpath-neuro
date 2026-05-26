@@ -52,8 +52,16 @@ const UserDetailModal = ({ user, onClose }) => {
             confirmed: 'bg-mindpath-primary/10 text-mindpath-primary border border-mindpath-primary/20',
             pending: 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
         };
+        const statusMap = {
+            completed: 'Completada',
+            cancelled: 'Cancelada',
+            scheduled: 'Programada',
+            confirmed: 'Confirmada',
+            pending: 'Pendiente'
+        };
+        const label = statusMap[status] || status;
         const style = badges[status] || 'bg-gray-500/10 text-gray-500 border border-gray-500/20';
-        return <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${style}`}>{status}</span>;
+        return <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${style}`}>{label}</span>;
     };
 
     const InfoCard = ({ icon: Icon, label, value, fullWidth = false }) => (

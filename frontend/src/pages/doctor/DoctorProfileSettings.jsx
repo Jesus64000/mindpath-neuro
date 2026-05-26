@@ -116,7 +116,7 @@ const DoctorProfileSettings = () => {
         <div className="max-w-5xl mx-auto p-6 space-y-8 pb-20">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white italic">Mi Perfil Profesional</h1>
+                    <h1 className="text-3xl font-black text-gray-900 dark:text-white">Mi Perfil Profesional</h1>
                     <p className="text-gray-500 dark:text-slate-400">Configura cómo te ven tus pacientes en el directorio.</p>
                 </div>
                 {saved && activeTab === 'profile' && (

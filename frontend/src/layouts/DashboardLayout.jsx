@@ -208,7 +208,7 @@ const DashboardLayout = () => {
                             <Menu size={22} />
                         </button>
                         
-                        <h2 className={`text-base md:text-lg font-black italic tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        <h2 className={`text-base md:text-lg font-black tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>
                             {menuItems.find(i => location.pathname.startsWith(i.path))?.name || 'Panel'}
                         </h2>
                     </div>

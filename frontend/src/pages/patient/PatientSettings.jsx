@@ -81,7 +81,7 @@ const PatientSettings = () => {
             {/* Header */}
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white italic">Mi Perfil</h1>
+                    <h1 className="text-3xl font-black text-gray-900 dark:text-white">Mi Perfil</h1>
                     <p className="text-gray-500 dark:text-slate-400">Mantén tu información actualizada.</p>
                 </div>
                 {saved && (
