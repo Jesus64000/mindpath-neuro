@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Stethoscope, BadgeCheck, BrainCircuit, Phone, Calendar, AlertCircle, CheckCircle, Building2, ChevronDown, CreditCard, Globe, FileText } from 'lucide-react';
 import api from '../../api/axiosConfig';
+import useSettingsStore from '../../store/useSettingsStore';
+import { BACKEND_URL } from '../../api/constants';
 
 const Register = () => {
     const [role, setRole] = useState('patient');
@@ -12,6 +14,7 @@ const Register = () => {
     const [clinics, setClinics]   = useState([]);
     const [paymentCatalogs, setPaymentCatalogs] = useState([]);
     const navigate = useNavigate();
+    const { clinicName: systemClinicName, logoUrl } = useSettingsStore();
 
     // Campos comunes
     const [fullName,  setFullName]  = useState('');
@@ -95,11 +98,21 @@ const Register = () => {
             <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 overflow-y-auto dark:bg-slate-900 transition-colors">
                 <div className="w-full max-w-md">
                     <div className="lg:hidden text-center mb-6">
-                        <BrainCircuit size={40} className="mx-auto text-mindpath-primary mb-2" />
+                        {logoUrl ? (
+                            <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md inline-block border border-white/20 shadow-md">
+                                <img 
+                                    src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`} 
+                                    alt={systemClinicName} 
+                                    className="h-10 w-auto object-contain mx-auto" 
+                                />
+                            </div>
+                        ) : (
+                            <BrainCircuit size={40} className="mx-auto text-mindpath-primary mb-2" />
+                        )}
                     </div>
 
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Crea tu cuenta</h2>
-                    <p className="text-gray-500 dark:text-slate-400 mb-6">Únete a Mindpath y transforma la experiencia clínica.</p>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6">Únete a {systemClinicName} y transforma la experiencia clínica.</p>
 
                     {/* Toggle Rol */}
                     <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl mb-6">
@@ -346,8 +359,18 @@ const Register = () => {
             {/* Branding */}
             <div className="hidden lg:flex w-1/2 bg-mindpath-primary flex-col justify-center items-center p-12 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/15 z-0"></div>
-                <div className="z-10 text-center text-white">
-                    <Stethoscope size={80} className="mx-auto mb-6 opacity-80" />
+                <div className="z-10 text-center text-white flex flex-col items-center">
+                    {logoUrl ? (
+                        <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md mb-6 border border-white/20 shadow-lg">
+                            <img 
+                                src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`} 
+                                alt={systemClinicName} 
+                                className="h-16 w-auto object-contain max-w-[280px]" 
+                            />
+                        </div>
+                    ) : (
+                        <h2 className="text-white text-3xl font-black mb-6 tracking-wide">{systemClinicName}</h2>
+                    )}
                     <h2 className="text-4xl font-bold mb-4">El futuro de la clínica</h2>
                     <p className="text-lg text-gray-200 max-w-md mx-auto">
                         Únete a la red de profesionales y pacientes que están transformando las consultas gracias al poder de la Inteligencia Artificial.

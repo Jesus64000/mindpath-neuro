@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useGoogleLogin } from '@react-oauth/google';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+import useSettingsStore from '../store/useSettingsStore';
+import { BACKEND_URL } from '../api/constants';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const { login, loginWithGoogle, isLoading, error } = useAuthStore();
     const navigate = useNavigate();
+    const { clinicName, logoUrl } = useSettingsStore();
 
     // ── Login tradicional ──────────────────────────────────────────
     const handleSubmit = async (e) => {
@@ -51,8 +54,18 @@ const Login = () => {
             <div className="hidden lg:flex lg:w-[45%] bg-mindpath-primary flex-col justify-center px-16 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/15 z-0"></div>
 
-                <div className="relative z-10">
-                    <h2 className="text-white text-2xl font-bold mb-8 tracking-wide">Mindpath</h2>
+                <div className="relative z-10 flex flex-col items-start">
+                    {logoUrl ? (
+                        <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md mb-8 border border-white/20 shadow-lg">
+                            <img 
+                                src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`} 
+                                alt={clinicName} 
+                                className="h-16 w-auto object-contain max-w-[280px]" 
+                            />
+                        </div>
+                    ) : (
+                        <h2 className="text-white text-2xl font-bold mb-8 tracking-wide">{clinicName}</h2>
+                    )}
                     <h1 className="text-white text-5xl font-bold leading-tight mb-6">
                         IA Integrativa para<br/>la Excelencia Clínica
                     </h1>
@@ -68,7 +81,7 @@ const Login = () => {
 
                     <div className="mb-8">
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Bienvenido de nuevo</h2>
-                        <p className="text-gray-500 dark:text-slate-400 text-sm">Por favor, introduce tus datos para acceder al panel.</p>
+                        <p className="text-gray-500 dark:text-slate-400 text-sm">Por favor, introduce tus datos para acceder al panel de {clinicName}.</p>
                     </div>
 
                     {error && (

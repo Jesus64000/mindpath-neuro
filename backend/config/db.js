@@ -22,6 +22,7 @@ const cleanCorruptAccents = async () => {
         const replacements = [
             { old: '├¡', new: 'í' },
             { old: '├©', new: 'é' },
+            { old: '├®', new: 'é' },
             { old: '├-®', new: 'é' },
             { old: '├í', new: 'á' },
             { old: '├│', new: 'ó' },
@@ -36,6 +37,7 @@ const cleanCorruptAccents = async () => {
         ];
 
         const targets = [
+            { table: 'clinics', columns: ['name'] },
             { table: 'specialties', columns: ['name'] },
             { table: 'doctors', columns: ['specialty', 'bio', 'education', 'clinic_name', 'clinic_address'] },
             { table: 'patients', columns: ['medical_conditions', 'current_medications', 'address'] },
@@ -89,7 +91,11 @@ pool.getConnection()
     })
     .then(() => {
         console.log('✅ Base de datos verificada y saneada con hide_sidebar_text.');
-        return cleanCorruptAccents();
+        // Forzar charset utf8mb4 en clinics y specialties antes de sanear para garantizar codificación correcta en Windows
+        return pool.query(`ALTER TABLE clinics CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
+            .then(() => pool.query(`ALTER TABLE specialties CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
+            .catch(() => {})
+            .then(() => cleanCorruptAccents());
     })
     .then(() => {
         console.log('✅ Saneamiento de acentos completado al inicio.');

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { BACKEND_URL } from "../api/constants";
 
 const hexToRgb = (hex) => {
   let r = parseInt(hex.substring(1, 3), 16),
@@ -38,6 +39,30 @@ const useSettingsStore = create((set) => ({
   exchangeRateMode: "auto",
 
   applySettings: (settings) => {
+    // Aplicar logo como Favicon dinámicamente
+    if (settings.logo_url) {
+      const fullLogoUrl = settings.logo_url.startsWith('http') 
+        ? settings.logo_url 
+        : `${BACKEND_URL}${settings.logo_url}`;
+      
+      const favicons = document.querySelectorAll("link[rel*='icon']");
+      if (favicons.length > 0) {
+        favicons.forEach(fav => {
+          fav.href = fullLogoUrl;
+        });
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = fullLogoUrl;
+        document.head.appendChild(link);
+      }
+    }
+
+    // Aplicar nombre de la clínica al título de la pestaña
+    if (settings.clinic_name) {
+      document.title = settings.clinic_name;
+    }
+
     // Inyectar CSS variables en el documento para el theming dinámico
     if (settings.primary_color) {
       document.documentElement.style.setProperty(

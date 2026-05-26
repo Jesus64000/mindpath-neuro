@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Shield, Lock, Eye, EyeOff, CheckCircle2, ArrowLeft, RefreshCw } from 'lucide-react';
 import api from '../../api/axiosConfig';
+import useSettingsStore from '../../store/useSettingsStore';
+import { BACKEND_URL } from '../../api/constants';
 
 const ResetPassword = () => {
     const [searchParams] = useSearchParams();
@@ -12,6 +14,7 @@ const ResetPassword = () => {
     const [showPass, setShowPass] = useState(false);
     const [status, setStatus] = useState(token ? 'idle' : 'error'); 
     const [message, setMessage] = useState(token ? '' : 'El token de recuperación es requerido. Por favor, solicita un nuevo enlace.');
+    const { clinicName, logoUrl } = useSettingsStore();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,11 +52,23 @@ const ResetPassword = () => {
             <div className="max-w-md w-full animate-fadeIn">
                 
                 {/* LOGO / HEADER */}
-                <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center h-16 w-16 bg-gradient-to-br from-mindpath-primary to-indigo-600 rounded-2xl shadow-xl shadow-mindpath-primary/20 mb-6">
-                        <Shield className="text-white" size={32} />
-                    </div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Mindpath <span className="text-mindpath-primary">Neuro</span></h1>
+                <div className="text-center mb-10 flex flex-col items-center">
+                    {logoUrl ? (
+                        <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md mb-6 border border-gray-200/20 dark:border-slate-800/30 shadow-lg inline-block">
+                            <img 
+                                src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`} 
+                                alt={clinicName} 
+                                className="h-16 w-auto object-contain max-w-[280px]" 
+                            />
+                        </div>
+                    ) : (
+                        <div className="inline-flex items-center justify-center h-16 w-16 bg-gradient-to-br from-mindpath-primary to-indigo-600 rounded-2xl shadow-xl shadow-mindpath-primary/20 mb-6">
+                            <Shield className="text-white" size={32} />
+                        </div>
+                    )}
+                    <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        {logoUrl ? clinicName : <>Mindpath <span className="text-mindpath-primary">Neuro</span></>}
+                    </h1>
                     <p className="text-gray-500 dark:text-slate-500 mt-2 font-medium">Seguridad y Recuperación de Acceso</p>
                 </div>
 
