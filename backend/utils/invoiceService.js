@@ -6,14 +6,28 @@ const db = require('../config/db');
 // Logo path — se usa desde la carpeta raíz del backend
 const LOGO_PATH = path.join(__dirname, '..', 'public', 'logo.png');
 
-// Limpiador de texto de residuos de URL-encode (ej: Neurolog% ia -> Neurología)
+// Limpiador de texto de residuos de URL-encode y acentos corruptos de doble-encoding
 const sanitizeText = (str) => {
     if (!str) return '';
     return String(str)
         .replace(/%20/g, ' ')
         .replace(/% ia/g, 'ía')
         .replace(/%i/g, 'í')
-        .replace(/%/g, '');
+        .replace(/%/g, '')
+        // Saneamiento de acentos corruptos de doble-encoding
+        .replace(/├¡/g, 'í')
+        .replace(/├©/g, 'é')
+        .replace(/├-®/g, 'é')
+        .replace(/├í/g, 'á')
+        .replace(/├│/g, 'ó')
+        .replace(/├║/g, 'ú')
+        .replace(/├▒/g, 'ñ')
+        .replace(/├ﾍ/g, 'Í')
+        .replace(/├ﾉ/g, 'É')
+        .replace(/├ﾁ/g, 'Á')
+        .replace(/├ﾓ/g, 'Ó')
+        .replace(/├ﾚ/g, 'Ú')
+        .replace(/├ﾑ/g, 'Ñ');
 };
 
 exports.generateInvoicePDF = async (invoiceData, filePath) => {

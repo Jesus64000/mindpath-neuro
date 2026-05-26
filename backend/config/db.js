@@ -9,10 +9,65 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
+    charset: 'utf8mb4',
     waitForConnections: true,
     connectionLimit: 10, // Máximo de conexiones concurrentes
     queueLimit: 0
 });
+
+// Función de auto-saneamiento para codificación de acentos corruptos
+const cleanCorruptAccents = async () => {
+    try {
+        console.log('🔄 Ejecutando auto-saneamiento de codificación en base de datos...');
+        const replacements = [
+            { old: '├¡', new: 'í' },
+            { old: '├©', new: 'é' },
+            { old: '├-®', new: 'é' },
+            { old: '├í', new: 'á' },
+            { old: '├│', new: 'ó' },
+            { old: '├║', new: 'ú' },
+            { old: '├▒', new: 'ñ' },
+            { old: '├ﾍ', new: 'Í' },
+            { old: '├ﾉ', new: 'É' },
+            { old: '├ﾁ', new: 'Á' },
+            { old: '├ﾓ', new: 'Ó' },
+            { old: '├ﾚ', new: 'Ú' },
+            { old: '├ﾑ', new: 'Ñ' }
+        ];
+
+        const targets = [
+            { table: 'specialties', columns: ['name'] },
+            { table: 'doctors', columns: ['specialty', 'bio', 'education', 'clinic_name', 'clinic_address'] },
+            { table: 'patients', columns: ['medical_conditions', 'current_medications', 'address'] },
+            { table: 'users', columns: ['full_name'] },
+            { table: 'system_settings', columns: ['clinic_name'] },
+            { table: 'payment_method_catalog', columns: ['name', 'description', 'default_details_template'] },
+            { table: 'doctor_payment_methods', columns: ['method_name', 'account_details'] },
+            { table: 'clinical_reports', columns: ['diagnostico', 'tratamiento', 'motivo_sintomas', 'antecedentes', 'hallazgos', 'estudios_observaciones'] }
+        ];
+
+        for (const target of targets) {
+            const [tableExists] = await pool.query(`
+                SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+            `, [target.table]);
+
+            if (tableExists.length > 0) {
+                for (const col of target.columns) {
+                    let updateExpr = `\`${col}\``;
+                    for (const r of replacements) {
+                        updateExpr = `REPLACE(${updateExpr}, '${r.old}', '${r.new}')`;
+                    }
+                    const queryStr = `UPDATE \`${target.table}\` SET \`${col}\` = ${updateExpr} WHERE \`${col}\` IS NOT NULL`;
+                    await pool.query(queryStr).catch(() => {});
+                }
+            }
+        }
+        console.log('✅ Base de datos saneada de caracteres corruptos de doble-encoding.');
+    } catch (err) {
+        console.error('❌ Error al sanear base de datos de acentos corruptos:', err.message);
+    }
+};
 
 // Test de conexión inmediato al arrancar
 pool.getConnection()
@@ -34,6 +89,10 @@ pool.getConnection()
     })
     .then(() => {
         console.log('✅ Base de datos verificada y saneada con hide_sidebar_text.');
+        return cleanCorruptAccents();
+    })
+    .then(() => {
+        console.log('✅ Saneamiento de acentos completado al inicio.');
     })
     .catch(err => {
         console.error('❌ Error fatal en inicialización/parche de BD:', err.message);
