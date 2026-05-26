@@ -176,7 +176,7 @@ import { GoogleLogin } from '@react-oauth/google';
 const GoogleLoginButton = ({ onSuccess, isLoading }) => {
     return (
         <div className="mt-4 flex justify-center">
-            <div className={`w-full transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`w-full flex justify-center transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                 <GoogleLogin
                     onSuccess={(credentialResponse) => {
                         onSuccess(credentialResponse);
