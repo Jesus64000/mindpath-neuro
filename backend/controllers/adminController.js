@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const path = require("path");
 const crypto = require("crypto");
 const { encrypt } = require("../utils/encryption");
-const { sendResetPasswordEmail } = require("../utils/emailService");
+const { sendResetPasswordEmail, sendDoctorApprovalEmail, sendDoctorRejectionEmail } = require("../utils/emailService");
 const axios = require("axios");
 
 // ── Bootstrap: crear primer admin ─────────────────────────────────────────────
@@ -173,6 +173,22 @@ exports.verifyDoctor = async (req, res) => {
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Doctor no encontrado." });
+
+    // Enviar correo de aprobación de manera asíncrona
+    try {
+      const [doctorRows] = await db.query(
+        "SELECT u.email, u.full_name FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.id = ?",
+        [id]
+      );
+      if (doctorRows.length > 0) {
+        sendDoctorApprovalEmail(doctorRows[0].email, doctorRows[0].full_name).catch(err => {
+          console.error("Error al enviar correo de aprobación de doctor:", err);
+        });
+      }
+    } catch (dbErr) {
+      console.error("Error al buscar datos del doctor para enviar correo de aprobación:", dbErr);
+    }
+
     res.status(200).json({ message: "Doctor verificado exitosamente." });
   } catch (error) {
     console.error("Error en verifyDoctor:", error);
@@ -184,12 +200,29 @@ exports.rejectDoctor = async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
+    const rejectionReason = notes || "Observaciones en la documentación o datos cargados.";
     const [result] = await db.query(
       "UPDATE doctors SET is_verified = FALSE, verification_notes = ? WHERE id = ?",
-      [notes || "Rechazado por el administrador.", id],
+      [rejectionReason, id],
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Doctor no encontrado." });
+
+    // Enviar correo de rechazo/observación de manera asíncrona
+    try {
+      const [doctorRows] = await db.query(
+        "SELECT u.email, u.full_name FROM doctors d JOIN users u ON d.user_id = u.id WHERE d.id = ?",
+        [id]
+      );
+      if (doctorRows.length > 0) {
+        sendDoctorRejectionEmail(doctorRows[0].email, doctorRows[0].full_name, rejectionReason).catch(err => {
+          console.error("Error al enviar correo de rechazo de doctor:", err);
+        });
+      }
+    } catch (dbErr) {
+      console.error("Error al buscar datos del doctor para enviar correo de rechazo:", dbErr);
+    }
+
     res.status(200).json({ message: "Doctor rechazado." });
   } catch (error) {
     console.error("Error en rejectDoctor:", error);

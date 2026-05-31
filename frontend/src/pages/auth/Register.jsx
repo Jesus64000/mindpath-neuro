@@ -154,9 +154,9 @@ const Register = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Cédula de Identidad / DNI</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400 dark:text-slate-500" /></div>
-                                <input type="text" value={dni} onChange={e => setDni(e.target.value)}
+                                <input type="text" value={dni} onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
                                     className={inputClass}
-                                    placeholder="V-12345678" required />
+                                    placeholder="Ej. 12345678" required />
                             </div>
                         </div>
 

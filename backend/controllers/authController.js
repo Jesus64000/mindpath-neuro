@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../config/db');
-const { sendResetPasswordEmail } = require('../utils/emailService');
+const { sendResetPasswordEmail, sendWelcomeEmail } = require('../utils/emailService');
 const { OAuth2Client } = require('google-auth-library');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -118,6 +118,11 @@ exports.register = async (req, res) => {
             // 6. Confirmar transacción
             await connection.commit();
             connection.release();
+
+            // Enviar correo de bienvenida de forma asíncrona sin bloquear la respuesta
+            sendWelcomeEmail(email, full_name, role).catch(err => {
+                console.error('Error al enviar correo de bienvenida:', err);
+            });
 
             res.status(201).json({ message: 'Usuario registrado exitosamente', userId });
         } catch (error) {
@@ -319,6 +324,11 @@ exports.googleComplete = async (req, res) => {
 
         await connection.commit();
         connection.release();
+
+        // Enviar correo de bienvenida de forma asíncrona sin bloquear la respuesta
+        sendWelcomeEmail(email, full_name, role).catch(err => {
+            console.error('Error al enviar correo de bienvenida por Google:', err);
+        });
 
         // 4. Generar JWT y responder
         const newUser = { id: userId, email, full_name, role };
