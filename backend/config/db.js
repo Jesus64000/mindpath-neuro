@@ -91,12 +91,30 @@ pool.getConnection()
     })
     .then(() => {
         console.log('✅ Base de datos verificada y saneada con hide_sidebar_text.');
-        // Forzar charset utf8mb4 en clinics, specialties, doctors y users antes de sanear para garantizar codificación correcta en Windows
-        return pool.query(`ALTER TABLE clinics CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
-            .then(() => pool.query(`ALTER TABLE specialties CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
-            .then(() => pool.query(`ALTER TABLE doctors CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
-            .then(() => pool.query(`ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`))
-            .catch(() => {})
+        
+        // Convertir tablas clave a utf8mb4_general_ci desactivando temporalmente FK checks para evitar errores de restricción en Windows
+        const convertTable = (table) => {
+            return pool.query(`ALTER TABLE \`${table}\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci`)
+                .then(() => console.log(`✓ Tabla ${table} convertida a utf8mb4_general_ci.`))
+                .catch(err => console.warn(`⚠️ No se pudo convertir tabla ${table}:`, err.message));
+        };
+
+        return pool.query('SET foreign_key_checks = 0')
+            .then(() => convertTable('users'))
+            .then(() => convertTable('patients'))
+            .then(() => convertTable('doctors'))
+            .then(() => convertTable('clinics'))
+            .then(() => convertTable('specialties'))
+            .then(() => convertTable('payment_method_catalog'))
+            .then(() => convertTable('doctor_payment_methods'))
+            .then(() => convertTable('clinical_reports'))
+            .then(() => convertTable('appointments'))
+            .then(() => convertTable('consultations'))
+            .then(() => pool.query('SET foreign_key_checks = 1'))
+            .catch((err) => {
+                console.error('⚠️ Error al convertir tablas a utf8mb4:', err.message);
+                return pool.query('SET foreign_key_checks = 1').catch(() => {});
+            })
             .then(() => cleanCorruptAccents());
     })
     .then(() => {

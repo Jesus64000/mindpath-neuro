@@ -42,14 +42,21 @@ const DoctorCard = ({ doctor }) => {
                 </div>
             </div>
 
-            {/* Modalidades que atiende */}
-            <div className="flex gap-2 mt-auto pt-4 border-t border-gray-50 dark:border-white/10">
-                <span className="flex items-center text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
-                    <Video size={12} className="mr-1" /> Online
-                </span>
-                <span className="flex items-center text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md">
-                    <MapPin size={12} className="mr-1" /> Presencial
-                </span>
+            {/* Modalidades que atiende y Costo */}
+            <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-50 dark:border-white/10">
+                <div className="flex gap-2">
+                    <span className="flex items-center text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md">
+                        <Video size={12} className="mr-1" /> Online
+                    </span>
+                    <span className="flex items-center text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md">
+                        <MapPin size={12} className="mr-1" /> Presencial
+                    </span>
+                </div>
+                {doctor.consultation_fee !== undefined && doctor.consultation_fee !== null && (
+                    <span className="text-sm font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-lg">
+                        ${parseFloat(doctor.consultation_fee).toFixed(0)}
+                    </span>
+                )}
             </div>
 
             {/* Botón de acción */}

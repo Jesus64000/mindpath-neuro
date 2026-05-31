@@ -275,7 +275,17 @@ const DoctorProfile = () => {
                 {/* ➡️ Booking sticky */}
                 <div className="w-full lg:w-2/5">
                     <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-white/10 shadow-xl sticky top-8">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Agendar Consulta</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Agendar Consulta</h2>
+
+                        {/* Costo de Consulta Premium */}
+                        {doctor.consultation_fee !== undefined && doctor.consultation_fee !== null && (
+                            <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-700/40 p-4 rounded-2xl mb-6 border border-gray-100 dark:border-white/5">
+                                <span className="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Costo Consulta</span>
+                                <span className="text-xl font-black text-mindpath-primary dark:text-white">
+                                    ${parseFloat(doctor.consultation_fee).toFixed(2)} USD
+                                </span>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-3 mb-6">
                             <button 
