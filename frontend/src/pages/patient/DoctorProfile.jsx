@@ -103,9 +103,21 @@ const DoctorProfile = () => {
             setSelectedSlot(null);
             try {
                 const res = await api.get(`/bookings/availability?doctorId=${id}&date=${selectedDate}`);
-                setAvailableSlots(res.data);
+                let slots = res.data;
+                const todayStr = formatDateLocal(new Date());
+                if (selectedDate === todayStr) {
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    slots = slots.filter(timeStr => {
+                        const [h, m] = timeStr.split(':').map(Number);
+                        const slotMinutes = h * 60 + m;
+                        return (slotMinutes - currentMinutes) >= 10;
+                    });
+                }
+                setAvailableSlots(slots);
             } catch (error) {
                 console.error('Error obteniendo horarios', error);
+                setAvailableSlots([]);
             } finally {
                 setLoadingSlots(false);
             }
@@ -353,7 +365,9 @@ const DoctorProfile = () => {
                                 <div className="py-4 flex justify-center"><Activity size={24} className="animate-spin text-mindpath-primary"/></div>
                             ) : availableSlots.length === 0 ? (
                                  <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-500/30 rounded-xl font-medium text-sm">
-                                     Sin horarios disponibles para este día.
+                                     {selectedDate === formatDateLocal(new Date()) 
+                                         ? 'No hay horarios disponibles para hoy. Las citas deben agendarse con al menos 10 minutos de anticipación. Te sugerimos agendar para el día de mañana.'
+                                         : 'Sin horarios disponibles para este día.'}
                                  </div>
                             ) : (
                                 <div className="space-y-6">

@@ -122,9 +122,26 @@ const PatientFile = () => {
             setSelectedSlot(null);
             try {
                 const res = await api.get(`/bookings/availability?doctorId=${user.id}&date=${selectedDate}`);
-                setAvailableSlots(res.data);
+                let slots = res.data;
+                const d = new Date();
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const d2 = String(d.getDate()).padStart(2, '0');
+                const todayStr = `${y}-${m}-${d2}`;
+
+                if (selectedDate === todayStr) {
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    slots = slots.filter(timeStr => {
+                        const [h, mVal] = timeStr.split(':').map(Number);
+                        const slotMinutes = h * 60 + mVal;
+                        return (slotMinutes - currentMinutes) >= 10;
+                    });
+                }
+                setAvailableSlots(slots);
             } catch (error) {
                 console.error('Error obteniendo horarios:', error);
+                setAvailableSlots([]);
             } finally {
                 setLoadingSlots(false);
             }
@@ -668,7 +685,16 @@ const PatientFile = () => {
                                     ) : (
                                         <div className="py-10 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-500/30 flex-1">
                                             <p className="text-sm text-red-500 dark:text-red-400 font-bold text-center px-4">
-                                                No tienes horarios creados para este día en "Mi Disponibilidad".
+                                                {(() => {
+                                                    const d = new Date();
+                                                    const y = d.getFullYear();
+                                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                                    const d2 = String(d.getDate()).padStart(2, '0');
+                                                    const todayStr = `${y}-${m}-${d2}`;
+                                                    return selectedDate === todayStr
+                                                        ? 'No hay horarios disponibles para hoy. Las citas deben agendarse con al menos 10 minutos de anticipación. Te sugerimos agendar para el día de mañana.'
+                                                        : 'No tienes horarios creados para este día en "Mi Disponibilidad".';
+                                                })()}
                                             </p>
                                         </div>
                                     )}

@@ -92,7 +92,18 @@ const DoctorBooking = () => {
             setSelectedSlot(null);
             try {
                 const res = await api.get(`/bookings/availability?doctorId=${doctorId}&date=${selectedDate}`);
-                setAvailableSlots(res.data);
+                let slots = res.data;
+                const todayStr = formatDateLocal(new Date());
+                if (selectedDate === todayStr) {
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    slots = slots.filter(timeStr => {
+                        const [h, m] = timeStr.split(':').map(Number);
+                        const slotMinutes = h * 60 + m;
+                        return (slotMinutes - currentMinutes) >= 10;
+                    });
+                }
+                setAvailableSlots(slots);
             } catch (error) {
                 console.error('Error obteniendo horarios', error);
                 setAvailableSlots([]);
@@ -342,7 +353,9 @@ const DoctorBooking = () => {
                     </div>
                 ) : (
                     <p className="text-center text-red-400 dark:text-red-400 py-6 font-medium bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-500/30">
-                        El especialista no tiene horarios disponibles para este día.
+                        {selectedDate === formatDateLocal(new Date()) 
+                            ? 'No hay horarios disponibles para hoy. Las citas deben agendarse con al menos 10 minutos de anticipación. Te sugerimos agendar para el día de mañana.'
+                            : 'El especialista no tiene horarios disponibles para este día.'}
                     </p>
                 )}
             </div>

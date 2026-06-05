@@ -2,6 +2,26 @@ const db = require('../config/db');
 
 const DAYS_BY_INDEX = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// Obtener la hora actual en Caracas (UTC-4)
+const getCaracasTime = () => {
+    const now = new Date();
+    try {
+        const caracasString = now.toLocaleString('en-US', { timeZone: 'America/Caracas' });
+        return new Date(caracasString);
+    } catch (e) {
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        return new Date(utc - (3600000 * 4));
+    }
+};
+
+const getCaracasTodayStr = () => {
+    const caracasNow = getCaracasTime();
+    const year = caracasNow.getFullYear();
+    const month = String(caracasNow.getMonth() + 1).padStart(2, '0');
+    const day = String(caracasNow.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // Función auxiliar para obtener el patient_id del usuario logueado
 const getPatientId = async (userId) => {
     const [rows] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
@@ -162,7 +182,20 @@ exports.getAvailability = async (req, res) => {
         // Ordenar los slots en caso de que los bloques tuvieran desorden (aunque SQL ya ordenó)
         slots.sort();
 
-        res.status(200).json(slots);
+        // Si es el día de hoy, filtrar slots pasados y aquellos con menos de 10 minutos de anticipación
+        const todayStr = getCaracasTodayStr();
+        let filteredSlots = slots;
+        if (date === todayStr) {
+            const caracasNow = getCaracasTime();
+            const currentMinutes = caracasNow.getHours() * 60 + caracasNow.getMinutes();
+            filteredSlots = slots.filter(timeString => {
+                const [slotHour, slotMinute] = timeString.split(':').map(Number);
+                const slotMinutes = slotHour * 60 + slotMinute;
+                return (slotMinutes - currentMinutes) >= 10;
+            });
+        }
+
+        res.status(200).json(filteredSlots);
 
     } catch (error) {
         console.error('Error al calcular disponibilidad:', error);
@@ -175,6 +208,21 @@ exports.bookAppointment = async (req, res) => {
     const { doctor_id, appointment_date, start_time, type, patient_id, payment_method } = req.body;
 
     try {
+        const todayStr = getCaracasTodayStr();
+        if (appointment_date < todayStr) {
+            return res.status(400).json({ message: 'No puedes agendar una cita en una fecha pasada.' });
+        }
+
+        if (appointment_date === todayStr) {
+            const caracasNow = getCaracasTime();
+            const [slotHour, slotMinute] = start_time.substring(0, 5).split(':').map(Number);
+            const slotMinutes = slotHour * 60 + slotMinute;
+            const currentMinutes = caracasNow.getHours() * 60 + caracasNow.getMinutes();
+            if ((slotMinutes - currentMinutes) < 10) {
+                return res.status(400).json({ message: 'Las citas para el día de hoy deben agendarse con al menos 10 minutos de anticipación.' });
+            }
+        }
+
         let finalPatientId = null;
         const normalizedType = type === 'presencial' ? 'presencial' : 'virtual';
         const normalizedPaymentMethod = payment_method || (normalizedType === 'presencial' ? 'in_person' : 'platform');
