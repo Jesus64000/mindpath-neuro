@@ -20,4 +20,9 @@ router.put('/appointments/:id/cancel', authMiddleware, appointmentController.can
 // Historial clínico completo
 router.get('/my-history', authMiddleware, patientController.getMyHistory);
 
+// Adjuntos clínicos (Estudios / Anexos)
+router.get('/:patientId/attachments', authMiddleware, patientController.getPatientAttachments);
+router.post('/:patientId/attachments', authMiddleware, patientController.addPatientAttachment);
+router.delete('/:patientId/attachments/:attachmentId', authMiddleware, patientController.deletePatientAttachment);
+
 module.exports = router;

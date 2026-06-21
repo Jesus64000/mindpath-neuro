@@ -5,7 +5,7 @@ import {
     ClipboardList, Calendar, ChevronDown, Lock,
     Phone, Mail, MapPin, User, Activity,
     Video, MapPinned, Clock, ChevronRight, ChevronLeft,
-    FileText, AlertCircle, CalendarPlus, StickyNote, Check, X
+    FileText, AlertCircle, CalendarPlus, StickyNote, Check, X, Trash2
 } from 'lucide-react';
 
 import { BACKEND_URL } from '../../api/constants';
@@ -14,6 +14,12 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 
 const genderLabel = { M: 'Masculino', F: 'Femenino', O: 'Otro', Other: 'Otro' };
+
+const parseSafeDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.includes(' ') ? dateStr.split(' ')[0] : dateStr;
+    return new Date(`${datePart}T12:00:00`);
+};
 
 const statusConfig = {
     pending:   { label: 'Pendiente',  color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-500/30' },
@@ -29,6 +35,16 @@ const PatientFile = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('history');
     const { user } = useAuthStore(); // Necesario para el doctor_id
+
+    // ── Adjuntos Clínicos (Tomografías / EEGs) ──────────────────────────────────
+    const [attachments, setAttachments] = useState([]);
+    const [uploadingAttachment, setUploadingAttachment] = useState(false);
+    const [newAttachment, setNewAttachment] = useState({
+        type: 'Tomografía',
+        description: '',
+        file: null
+    });
+    const attachmentFileInputRef = useRef(null);
 
     // ── Notas rápidas (Sprint 27) ────────────────────────────────────────────
     const [notes,        setNotes]       = useState('');
@@ -171,6 +187,52 @@ const PatientFile = () => {
     };
 
 
+    const handleUploadAttachment = async (e) => {
+        e.preventDefault();
+        if (!newAttachment.file) {
+            alert('Debes seleccionar un archivo.');
+            return;
+        }
+        setUploadingAttachment(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', newAttachment.file);
+            const uploadRes = await api.post('/upload', formDataUpload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const fileUrl = uploadRes.data.url;
+
+            const examName = `${newAttachment.type}${newAttachment.description ? `: ${newAttachment.description}` : ''}`;
+            const res = await api.post(`/patients/${id}/attachments`, {
+                exam_name: examName,
+                file_path: fileUrl
+            });
+
+            // Agregar a la lista local
+            setAttachments(prev => [res.data.attachment, ...prev]);
+            setNewAttachment({ type: 'Tomografía', description: '', file: null });
+            if (attachmentFileInputRef.current) attachmentFileInputRef.current.value = '';
+            alert('Estudio clínico subido correctamente.');
+        } catch (err) {
+            console.error(err);
+            alert('Error al subir el estudio clínico.');
+        } finally {
+            setUploadingAttachment(false);
+        }
+    };
+
+    const handleDeleteAttachment = async (attachmentId) => {
+        if (!window.confirm('¿Seguro que deseas eliminar este estudio/anexo?')) return;
+        try {
+            await api.delete(`/patients/${id}/attachments/${attachmentId}`);
+            setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+            alert('Estudio eliminado.');
+        } catch (err) {
+            console.error(err);
+            alert('Error al eliminar el estudio.');
+        }
+    };
+
     useEffect(() => {
         api.get(`/doctors/patient/${id}`)
             .then(res => setData(res.data))
@@ -184,6 +246,11 @@ const PatientFile = () => {
                 setNotesLoaded(true);
             })
             .catch(() => setNotesLoaded(true));
+
+        // Cargar adjuntos
+        api.get(`/patients/${id}/attachments`)
+            .then(res => setAttachments(res.data || []))
+            .catch(console.error);
     }, [id]);
 
 
@@ -207,15 +274,15 @@ const PatientFile = () => {
     const { info, history, upcoming = [] } = data;
 
     const age = info.date_of_birth
-        ? Math.floor((Date.now() - new Date(info.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
+        ? Math.floor((Date.now() - parseSafeDate(info.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
         : null;
 
     const firstAppt = history.length > 0
-        ? new Date(history[history.length - 1].appointment_date).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })
+        ? parseSafeDate(history[history.length - 1].appointment_date).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })
         : null;
 
     const lastAppt = history.length > 0
-        ? new Date(history[0].appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+        ? parseSafeDate(history[0].appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
         : null;
 
     const avatarSrc = info.profile_picture ? `${BACKEND_URL}${info.profile_picture}` : null;
@@ -301,7 +368,7 @@ const PatientFile = () => {
                                         <Calendar size={14} className="text-gray-500 dark:text-slate-400" />
                                     </div>
                                     <span className="font-medium text-gray-700 dark:text-slate-300">
-                                        {new Date(info.date_of_birth).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        {parseSafeDate(info.date_of_birth).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                                     </span>
                                 </div>
                             )}
@@ -398,6 +465,17 @@ const PatientFile = () => {
                             <Calendar size={15} className="inline mr-2" />
                             Próximas ({upcoming.length})
                         </button>
+                        <button
+                            onClick={() => setActiveTab('attachments')}
+                            className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${
+                                activeTab === 'attachments'
+                                    ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                            }`}
+                        >
+                            <StickyNote size={15} className="inline mr-2" />
+                            Estudios / Anexos ({attachments.length})
+                        </button>
                     </div>
 
                     {/* TAB: HISTORIAL */}
@@ -422,7 +500,7 @@ const PatientFile = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-gray-900 dark:text-white capitalize">
-                                                        {new Date(h.appointment_date).toLocaleDateString('es-ES', {
+                                                        {parseSafeDate(h.appointment_date).toLocaleDateString('es-ES', {
                                                             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                                                         })}
                                                     </h4>
@@ -539,15 +617,15 @@ const PatientFile = () => {
                                         <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 bg-mindpath-light dark:bg-mindpath-primary/30 rounded-2xl flex flex-col items-center justify-center shrink-0">
                                                 <span className="text-xs font-black text-mindpath-primary uppercase">
-                                                    {new Date(appt.appointment_date).toLocaleDateString('es-ES', { month: 'short' })}
+                                                    {parseSafeDate(appt.appointment_date).toLocaleDateString('es-ES', { month: 'short' })}
                                                 </span>
                                                 <span className="text-xl font-black text-mindpath-primary leading-tight">
-                                                    {new Date(appt.appointment_date).getDate()}
+                                                    {parseSafeDate(appt.appointment_date).getDate()}
                                                 </span>
                                             </div>
                                             <div>
                                                 <p className="font-black text-gray-900 dark:text-white group-hover:text-mindpath-primary transition-colors capitalize">
-                                                    {new Date(appt.appointment_date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                    {parseSafeDate(appt.appointment_date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                                                 </p>
                                                 <div className="flex items-center gap-3 mt-1">
                                                     <span className="flex items-center text-xs text-gray-500 dark:text-slate-400 font-bold">
@@ -570,6 +648,107 @@ const PatientFile = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* TAB: ESTUDIOS / ANEXOS */}
+                    {activeTab === 'attachments' && (
+                        <div className="space-y-6">
+                            {/* Formulario de carga */}
+                            <form onSubmit={handleUploadAttachment} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
+                                <h3 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-white/10 pb-3">
+                                    <StickyNote size={18} className="text-mindpath-primary" /> Agregar Nuevo Estudio / Anexo
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Tipo de Examen</label>
+                                        <select 
+                                            value={newAttachment.type}
+                                            onChange={e => setNewAttachment({...newAttachment, type: e.target.value})}
+                                            className="w-full p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600 outline-none text-gray-850 dark:text-white shadow-sm font-medium"
+                                        >
+                                            <option value="Tomografía">Tomografía</option>
+                                            <option value="EEG">EEG</option>
+                                            <option value="Resonancia">Resonancia</option>
+                                            <option value="Laboratorio">Laboratorio</option>
+                                            <option value="Otro">Otro</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Descripción / Detalles</label>
+                                        <input 
+                                            type="text"
+                                            value={newAttachment.description}
+                                            onChange={e => setNewAttachment({...newAttachment, description: e.target.value})}
+                                            placeholder="Ej. Con contraste, EEG vigilia..."
+                                            className="w-full p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600 outline-none text-gray-800 dark:text-white shadow-sm font-medium"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Archivo (PDF o Imagen)</label>
+                                    <input 
+                                        ref={attachmentFileInputRef}
+                                        type="file" 
+                                        accept="application/pdf, image/*"
+                                        onChange={e => setNewAttachment({...newAttachment, file: e.target.files[0]})}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-mindpath-light file:text-mindpath-primary hover:file:bg-mindpath-primary/20 cursor-pointer"
+                                        required
+                                    />
+                                </div>
+                                <button 
+                                    type="submit"
+                                    disabled={uploadingAttachment}
+                                    className="w-full py-3 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 text-sm flex justify-center items-center gap-2"
+                                >
+                                    {uploadingAttachment ? (
+                                        <>Subiendo...</>
+                                    ) : (
+                                        <>Subir Estudio Clínico</>
+                                    )}
+                                </button>
+                            </form>
+
+                            {/* Listado de adjuntos */}
+                            <div className="space-y-3">
+                                {attachments.length === 0 ? (
+                                    <div className="bg-gray-50 dark:bg-slate-800 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl p-14 text-center">
+                                        <FileText size={40} className="mx-auto text-gray-200 dark:text-slate-600 mb-3" />
+                                        <p className="font-bold text-gray-400 dark:text-slate-500">No hay estudios o anexos registrados.</p>
+                                    </div>
+                                ) : attachments.map((att) => (
+                                    <div key={att.id} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary p-3 rounded-2xl">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 dark:text-white">{att.exam_name}</h4>
+                                                <p className="text-xs text-gray-400 dark:text-slate-500">
+                                                    Subido el {parseSafeDate(att.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} por {att.doctor_name || 'Dr. ' + user?.full_name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <a 
+                                                href={`${BACKEND_URL}${att.file_path}`} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-bold rounded-xl text-xs transition-colors"
+                                            >
+                                                Ver / Descargar
+                                            </a>
+                                            <button 
+                                                onClick={() => handleDeleteAttachment(att.id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

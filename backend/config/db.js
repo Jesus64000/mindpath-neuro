@@ -12,7 +12,8 @@ const pool = mysql.createPool({
     charset: 'utf8mb4',
     waitForConnections: true,
     connectionLimit: 10, // Máximo de conexiones concurrentes
-    queueLimit: 0
+    queueLimit: 0,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
 
 // Función de auto-saneamiento para codificación de acentos corruptos

@@ -11,6 +11,12 @@ import { BACKEND_URL } from '../../api/constants';
 
 const genderLabel = { M: 'Masculino', F: 'Femenino', O: 'Otro' };
 
+const parseSafeDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.includes(' ') ? dateStr.split(' ')[0] : dateStr;
+    return new Date(`${datePart}T12:00:00`);
+};
+
 const statusConfig = {
     pending:   { label: 'Pendiente',  color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
     confirmed: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -274,7 +280,7 @@ const AppointmentDetail = () => {
                                 <Calendar size={15} className="text-blue-500 dark:text-blue-400"/>
                             </div>
                             <span className="font-bold text-gray-700 dark:text-slate-300">
-                                {new Date(appt.appointment_date).toLocaleDateString('es-ES', {
+                                {parseSafeDate(appt.appointment_date).toLocaleDateString('es-ES', {
                                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                                 })}
                             </span>
@@ -341,11 +347,11 @@ const AppointmentDetail = () => {
                                                 className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-mindpath-light dark:bg-slate-700/50 rounded-xl flex items-center justify-center text-xs font-black text-mindpath-primary shrink-0">
-                                                        {new Date(h.appointment_date).getDate()}
+                                                        {parseSafeDate(h.appointment_date).getDate()}
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-800 dark:text-slate-200 text-sm">
-                                                            {new Date(h.appointment_date).toLocaleDateString('es-ES', {
+                                                            {parseSafeDate(h.appointment_date).toLocaleDateString('es-ES', {
                                                                 weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
                                                             })}
                                                         </p>

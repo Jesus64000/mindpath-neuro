@@ -32,7 +32,7 @@ const PatientDashboard = () => {
                 const today = new Date().toDateString();
 
                 const todayApp = appointments.find(app => {
-                    const isToday = new Date(app.appointment_date).toDateString() === today;
+                    const isToday = new Date(app.appointment_date.split('T')[0] + 'T12:00:00').toDateString() === today;
                     const isDoctorReady = app.doctor_ready === 1 || app.doctor_ready === true;
                     return app.status === 'confirmed' && app.type === 'virtual' && (isToday || isDoctorReady);
                 });
@@ -40,7 +40,7 @@ const PatientDashboard = () => {
 
                 const futureApps = appointments
                     .filter(app =>
-                        new Date(app.appointment_date) >= new Date() &&
+                        new Date(app.appointment_date.split('T')[0] + 'T12:00:00') >= new Date() &&
                         app.appointment_id !== todayApp?.appointment_id &&
                         (app.status === 'pending' || app.status === 'confirmed')
                     )
@@ -131,7 +131,7 @@ const PatientDashboard = () => {
                         <div>
                             <h3 className="text-xl font-black text-orange-800 dark:text-orange-300">Cita no completada</h3>
                             <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">
-                                Parece que no pudiste asistir a tu cita del {new Date(missedAppointments[0].appointment_date).toLocaleDateString()} con el Dr(a). {missedAppointments[0].doctor_name}. ¿Deseas reagendarla?
+                                Parece que no pudiste asistir a tu cita del {new Date(missedAppointments[0].appointment_date.split('T')[0] + 'T12:00:00').toLocaleDateString()} con el Dr(a). {missedAppointments[0].doctor_name}. ¿Deseas reagendarla?
                             </p>
                         </div>
                     </div>
@@ -259,7 +259,7 @@ const PatientDashboard = () => {
                                             <div>
                                                 <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">Dr(a). {app.doctor_name}</p>
                                                 <p className="text-xs text-gray-500 dark:text-slate-400">
-                                                    {new Date(app.appointment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
+                                                    {new Date(app.appointment_date.split('T')[0] + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
                                                 </p>
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${sc.cls}`}>
                                                     {sc.label}

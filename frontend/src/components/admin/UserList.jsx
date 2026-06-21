@@ -3,7 +3,7 @@ import { ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react';
 const ROLE_LABEL = {
     admin: { label: 'Admin', color: 'text-mindpath-primary bg-mindpath-light' },
     supervisor: { label: 'Supervisor', color: 'text-blue-700 bg-blue-100' },
-    doctor: { label: 'Doctor', color: 'text-green-700 bg-green-100' },
+    doctor: { label: 'Especialista / Doctor', color: 'text-green-700 bg-green-100' },
     patient: { label: 'Paciente', color: 'text-gray-700 bg-gray-100' },
 };
 

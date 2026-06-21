@@ -34,6 +34,13 @@ const ConsultationRoom = () => {
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const accumulatedTextRef = useRef("");
+
+  // Sincronizar acumulado inicial cuando cambie la cita
+  useEffect(() => {
+    accumulatedTextRef.current = localStorage.getItem(`transcription_${appointmentId}`) || "";
+  }, [appointmentId]);
+
 
   // ── Cargar datos de la cita ────────────────────────────────────────────────
   useEffect(() => {
@@ -56,19 +63,22 @@ const ConsultationRoom = () => {
 
     rec.onresult = (e) => {
       let interim = "";
-      let final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      let finalSession = "";
+      for (let i = 0; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += transcript + " ";
-        else interim += transcript;
+        if (e.results[i].isFinal) {
+          finalSession += transcript + " ";
+        } else {
+          interim += transcript;
+        }
       }
-      if (final) {
-        setFinalText((prev) => {
-          const newText = prev + final;
-          localStorage.setItem(`transcription_${appointmentId}`, newText);
-          return newText;
-        });
-      }
+      
+      const newText = (accumulatedTextRef.current + " " + finalSession)
+        .replace(/\s+/g, " ")
+        .trim();
+
+      setFinalText(newText);
+      localStorage.setItem(`transcription_${appointmentId}`, newText);
       setInterimText(interim);
     };
 
@@ -77,7 +87,14 @@ const ConsultationRoom = () => {
     };
 
     rec.onend = () => {
-      if (rec._shouldRestart) rec.start();
+      accumulatedTextRef.current = localStorage.getItem(`transcription_${appointmentId}`) || "";
+      if (rec._shouldRestart) {
+        try {
+          rec.start();
+        } catch (err) {
+          console.warn("Fallo al reiniciar SpeechRecognition automáticamente:", err.message);
+        }
+      }
     };
 
     recognitionRef.current = rec;
@@ -85,7 +102,7 @@ const ConsultationRoom = () => {
       rec._shouldRestart = false;
       rec.stop();
     };
-  }, []);
+  }, [appointmentId]);
 
   // ── Timer ─────────────────────────────────────────────────────────────────
   const stopTimer = () => clearInterval(timerRef.current);
@@ -108,8 +125,13 @@ const ConsultationRoom = () => {
   // ── Controles ─────────────────────────────────────────────────────────────
   const startListening = () => {
     if (!recognitionRef.current) return;
+    accumulatedTextRef.current = localStorage.getItem(`transcription_${appointmentId}`) || "";
     recognitionRef.current._shouldRestart = true;
-    recognitionRef.current.start();
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      console.warn("SpeechRecognition ya estaba iniciado:", err.message);
+    }
     setIsListening(true);
     setError("");
     startTimer();

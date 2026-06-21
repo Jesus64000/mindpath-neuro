@@ -35,6 +35,7 @@ exports.getConsultationHeader = async (req, res) => {
                 d.specialty,
                 d.clinic_name,
                 d.rif,
+                d.signature_picture,
                 d.consultation_fee AS doctor_base_fee
             FROM appointments a
             JOIN patients  p  ON a.patient_id = p.id

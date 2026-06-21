@@ -88,7 +88,8 @@ exports.getDoctorById = async (req, res) => {
                 d.education,
                 d.clinic_name,
                 d.clinic_address,
-                d.consultation_fee
+                d.consultation_fee,
+                d.signature_picture
             FROM doctors d
             JOIN users u ON d.user_id = u.id
             WHERE d.id = ? AND u.role = 'doctor' AND d.is_verified = TRUE
@@ -96,6 +97,20 @@ exports.getDoctorById = async (req, res) => {
 
         if (doctor.length === 0) {
             return res.status(404).json({ message: 'Especialista no encontrado.' });
+        }
+
+        // Obtener clínicas
+        let clinics = [];
+        try {
+            const [clinicsRows] = await db.query(`
+                SELECT dc.clinic_id, dc.custom_address, c.name, c.default_address
+                FROM doctor_clinics dc
+                JOIN clinics c ON dc.clinic_id = c.id
+                WHERE dc.doctor_id = ?
+            `, [id]);
+            clinics = clinicsRows;
+        } catch (clinicError) {
+            console.error('Error al obtener clínicas del doctor:', clinicError.message);
         }
 
         let paymentMethods = [];
@@ -119,7 +134,7 @@ exports.getDoctorById = async (req, res) => {
             console.warn('payment_methods no disponible en perfil público:', paymentError.message);
         }
 
-        res.status(200).json({ ...doctor[0], payment_methods: paymentMethods });
+        res.status(200).json({ ...doctor[0], clinics, payment_methods: paymentMethods });
     } catch (error) {
         console.error('Error al obtener perfil del doctor:', error);
         res.status(500).json({ message: 'Error interno del servidor.' });
@@ -259,24 +274,35 @@ exports.updateSchedule = async (req, res) => {
 };
 
 // Obtener datos del perfil para edición
+// Obtener datos del perfil para edición
 exports.getProfileSettings = async (req, res) => {
     try {
         const userId = req.user.id;
-        const [doctor] = await db.query(`
-            SELECT u.full_name, u.email, d.specialty, d.bio, d.clinic_name,
+        const [doctorRows] = await db.query(`
+            SELECT u.full_name, u.email, d.id AS doctor_id, d.specialty, d.bio, d.clinic_name,
                    d.clinic_address, d.license_number, d.experience_years,
                    d.consultation_fee, d.languages, d.education, d.profile_picture,
-                   d.is_blocked, d.emergency_block_until
+                   d.is_blocked, d.emergency_block_until, d.signature_picture
             FROM doctors d 
             JOIN users u ON d.user_id = u.id 
             WHERE u.id = ?
         `, [userId]);
 
-        if (!doctor || doctor.length === 0) {
+        if (!doctorRows || doctorRows.length === 0) {
             return res.status(404).json({ message: 'Perfil de doctor no encontrado' });
         }
 
-        res.status(200).json(doctor[0]);
+        const doctor = doctorRows[0];
+        const [clinicsRows] = await db.query(`
+            SELECT dc.clinic_id, dc.custom_address, c.name, c.default_address
+            FROM doctor_clinics dc
+            JOIN clinics c ON dc.clinic_id = c.id
+            WHERE dc.doctor_id = ?
+        `, [doctor.doctor_id]);
+
+        doctor.clinics = clinicsRows;
+
+        res.status(200).json(doctor);
     } catch (error) {
         console.error('Error al cargar perfil del doctor', error);
         res.status(500).json({ message: 'Error al cargar perfil' });
@@ -290,29 +316,66 @@ exports.updateProfileSettings = async (req, res) => {
         const {
             specialty, bio, clinic_name, clinic_address,
             license_number, experience_years, consultation_fee,
-            languages, education, full_name
+            languages, education, full_name, signature_picture, clinics
         } = req.body;
 
         const finalConsultationFee = consultation_fee === '' ? null : consultation_fee;
 
-        await db.query(`
-            UPDATE doctors SET 
-                specialty = ?, bio = ?, clinic_name = ?, clinic_address = ?,
-                license_number = ?, experience_years = ?, consultation_fee = ?,
-                languages = ?, education = ?
-            WHERE user_id = ?
-        `, [specialty, bio, clinic_name, clinic_address, license_number,
-            experience_years, finalConsultationFee, languages, education, userId]);
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
 
-        // Actualizar nombre en tabla users si vino
-        if (full_name) {
-            await db.query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
+        try {
+            const [docRow] = await connection.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+            if (docRow.length === 0) {
+                throw new Error('Especialista no encontrado.');
+            }
+            const doctorId = docRow[0].id;
+
+            await connection.query(`
+                UPDATE doctors SET 
+                    specialty = ?, bio = ?, clinic_name = ?, clinic_address = ?,
+                    license_number = ?, experience_years = ?, consultation_fee = ?,
+                    languages = ?, education = ?, signature_picture = ?
+                WHERE id = ?
+            `, [specialty, bio, clinic_name || null, clinic_address || null, license_number,
+                experience_years || null, finalConsultationFee, languages || null, education || null, signature_picture || null, doctorId]);
+
+            if (full_name) {
+                await connection.query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
+            }
+
+            if (clinics && Array.isArray(clinics)) {
+                await connection.query('DELETE FROM doctor_clinics WHERE doctor_id = ?', [doctorId]);
+                for (const c of clinics) {
+                    await connection.query(
+                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                         VALUES (?, ?, ?)`,
+                        [doctorId, c.clinic_id, c.custom_address || null]
+                    );
+                }
+            } else if (clinic_name) {
+                const [cRow] = await connection.query('SELECT id FROM clinics WHERE name = ?', [clinic_name]);
+                if (cRow.length > 0) {
+                    await connection.query('DELETE FROM doctor_clinics WHERE doctor_id = ?', [doctorId]);
+                    await connection.query(
+                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                         VALUES (?, ?, ?)`,
+                        [doctorId, cRow[0].id, clinic_address || null]
+                    );
+                }
+            }
+
+            await connection.commit();
+            connection.release();
+            res.status(200).json({ message: 'Perfil actualizado con éxito' });
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            throw err;
         }
-
-        res.status(200).json({ message: 'Perfil actualizado con éxito' });
     } catch (error) {
         console.error('Error al actualizar perfil del doctor', error);
-        res.status(500).json({ message: 'Error al actualizar perfil' });
+        res.status(500).json({ message: error.message || 'Error al actualizar perfil' });
     }
 };
 

@@ -119,7 +119,7 @@ export const ReportPDFDocument = ({ report, header }) => {
         : '/logo.png';
 
     const fecha = header?.appointment_date
-        ? new Date(header.appointment_date).toLocaleDateString('es-ES', {
+        ? new Date(header.appointment_date.split('T')[0] + 'T12:00:00').toLocaleDateString('es-ES', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
           })
         : '';
@@ -154,29 +154,10 @@ export const ReportPDFDocument = ({ report, header }) => {
                     Modalidad: {header?.type === 'virtual' ? 'Telemedicina' : 'Presencial'}
                 </Text>
 
-                {(header?.payment_method || header?.payment_status || header?.consultation_fee_snapshot || header?.legal_verification_code) && (
+                {header?.legal_verification_code && (
                     <View style={styles.paymentBox}>
-                        <Text style={styles.paymentTitle}>Evidencia de reembolso</Text>
-                        {header?.consultation_fee_snapshot != null && (
-                            <Text style={styles.paymentText}>Monto registrado: {Number(header.consultation_fee_snapshot).toFixed(2)} USD</Text>
-                        )}
-                        {header?.payment_method && (
-                            <Text style={styles.paymentText}>Método de pago: {header.payment_method === 'in_person' ? 'Pago en consultorio' : 'Pago por plataforma'}</Text>
-                        )}
-                        {header?.payment_status && (
-                            <Text style={styles.paymentText}>Estado de pago: {{
-                                paid: 'Pagado ✅',
-                                pending: 'Pendiente ⏳',
-                                unpaid: 'Sin pagar ❌',
-                                verified: 'Verificado ✅',
-                            }[header.payment_status] || header.payment_status}</Text>
-                        )}
-                        {header?.payment_reference && (
-                            <Text style={styles.paymentText}>Referencia: {header.payment_reference}</Text>
-                        )}
-                        {header?.legal_verification_code && (
-                            <Text style={styles.paymentText}>Código legal: {header.legal_verification_code}</Text>
-                        )}
+                        <Text style={styles.paymentTitle}>Código de verificación legal</Text>
+                        <Text style={styles.paymentText}>Código legal: {header.legal_verification_code}</Text>
                     </View>
                 )}
 
@@ -233,6 +214,20 @@ export const ReportPDFDocument = ({ report, header }) => {
                     <View style={styles.privateBox}>
                         <Text style={styles.privateTitle}>🔒 Notas Privadas</Text>
                         <Text style={styles.privateText}>{report.private_notes}</Text>
+                    </View>
+                )}
+
+                {/* Firma Digital del Doctor */}
+                {header?.signature_picture && (
+                    <View style={{ marginTop: 25, alignItems: 'center', justifyContent: 'center' }}>
+                        <Image 
+                            src={header.signature_picture.startsWith('http') ? header.signature_picture : `${BACKEND_URL}${header.signature_picture}`} 
+                            style={{ width: 120, height: 50, objectFit: 'contain' }} 
+                        />
+                        <View style={{ borderTopWidth: 1, borderTopColor: '#e5e7eb', width: 180, marginTop: 4, paddingTop: 4, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#111827' }}>Dr(a). {header.doctor_name}</Text>
+                            <Text style={{ fontSize: 7, color: '#6b7280', marginTop: 1 }}>Firma Digitalizada</Text>
+                        </View>
                     </View>
                 )}
 

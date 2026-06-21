@@ -134,6 +134,7 @@ exports.getMyHistory = async (req, res) => {
                 d.specialty,
                 d.clinic_name,
                 d.profile_picture,
+                d.signature_picture,
                 d.rif,
                 r.id          AS report_id,
                 r.motivo_sintomas,
@@ -161,5 +162,115 @@ exports.getMyHistory = async (req, res) => {
     } catch (error) {
         console.error('Error en getMyHistory:', error);
         res.status(500).json({ message: 'Error al cargar historial clínico.' });
+    }
+};
+
+// Obtener adjuntos de un paciente
+exports.getPatientAttachments = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        // Si es paciente, verificar que sea su propio ID de paciente
+        if (userRole === 'patient') {
+            const [patientRows] = await db.query('SELECT id FROM patients WHERE user_id = ?', [userId]);
+            if (patientRows.length === 0 || patientRows[0].id !== parseInt(patientId, 10)) {
+                return res.status(403).json({ message: 'Acceso denegado.' });
+            }
+        }
+
+        const [rows] = await db.query(`
+            SELECT pa.*, du.full_name AS doctor_name
+            FROM patient_attachments pa
+            JOIN doctors d ON pa.doctor_id = d.id
+            JOIN users du ON d.user_id = du.id
+            WHERE pa.patient_id = ?
+            ORDER BY pa.created_at DESC
+        `, [patientId]);
+
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error al obtener adjuntos:', error);
+        res.status(500).json({ message: 'Error al obtener adjuntos.' });
+    }
+};
+
+// Agregar un nuevo adjunto a un paciente
+exports.addPatientAttachment = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const { exam_name, file_path } = req.body;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        if (userRole !== 'doctor') {
+            return res.status(403).json({ message: 'Solo los médicos pueden subir adjuntos.' });
+        }
+
+        // Obtener doctor_id
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) {
+            return res.status(404).json({ message: 'Especialista no encontrado.' });
+        }
+        const doctorId = doctorRows[0].id;
+
+        if (!exam_name || !file_path) {
+            return res.status(400).json({ message: 'El nombre del examen y el archivo son obligatorios.' });
+        }
+
+        const [result] = await db.query(
+            'INSERT INTO patient_attachments (patient_id, doctor_id, exam_name, file_path) VALUES (?, ?, ?, ?)',
+            [patientId, doctorId, exam_name, file_path]
+        );
+
+        res.status(201).json({
+            message: 'Adjunto registrado correctamente.',
+            attachment: {
+                id: result.insertId,
+                patient_id: parseInt(patientId, 10),
+                doctor_id: doctorId,
+                exam_name,
+                file_path,
+                created_at: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error al guardar adjunto:', error);
+        res.status(500).json({ message: 'Error al registrar el adjunto.' });
+    }
+};
+
+// Eliminar un adjunto
+exports.deletePatientAttachment = async (req, res) => {
+    try {
+        const { patientId, attachmentId } = req.params;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        if (userRole !== 'doctor') {
+            return res.status(403).json({ message: 'Acceso denegado.' });
+        }
+
+        // Obtener doctor_id
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) {
+            return res.status(404).json({ message: 'Especialista no encontrado.' });
+        }
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'DELETE FROM patient_attachments WHERE id = ? AND patient_id = ? AND doctor_id = ?',
+            [attachmentId, patientId, doctorId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Adjunto no encontrado o no tienes permisos para eliminarlo.' });
+        }
+
+        res.status(200).json({ message: 'Adjunto eliminado correctamente.' });
+    } catch (error) {
+        console.error('Error al eliminar adjunto:', error);
+        res.status(500).json({ message: 'Error al eliminar el adjunto.' });
     }
 };

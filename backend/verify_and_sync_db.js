@@ -7,10 +7,18 @@ const expectedTables = {
     doctor_rate_rules: "CREATE TABLE IF NOT EXISTS doctor_rate_rules (id INT AUTO_INCREMENT PRIMARY KEY, doctor_id INT NOT NULL, modality ENUM('virtual', 'presencial', 'ambas') NOT NULL DEFAULT 'ambas', day_of_week ENUM('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday') DEFAULT NULL, start_time TIME DEFAULT NULL, end_time TIME DEFAULT NULL, price DECIMAL(10,2) NOT NULL, currency VARCHAR(3) NOT NULL DEFAULT 'USD', priority INT NOT NULL DEFAULT 100, is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE)",
     payment_method_catalog: "CREATE TABLE IF NOT EXISTS payment_method_catalog (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE, description TEXT DEFAULT NULL, template_key VARCHAR(50) DEFAULT NULL, default_details_template TEXT DEFAULT NULL, is_active BOOLEAN NOT NULL DEFAULT TRUE, sort_order INT NOT NULL DEFAULT 100, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP)",
     doctor_payment_methods: "CREATE TABLE IF NOT EXISTS doctor_payment_methods (id INT AUTO_INCREMENT PRIMARY KEY, doctor_id INT NOT NULL, catalog_method_id INT DEFAULT NULL, method_name VARCHAR(100) NOT NULL, account_details TEXT NOT NULL, is_active BOOLEAN NOT NULL DEFAULT TRUE, sort_order INT NOT NULL DEFAULT 100, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (catalog_method_id) REFERENCES payment_method_catalog(id) ON DELETE SET NULL)",
-    invoices: "CREATE TABLE IF NOT EXISTS invoices (id INT AUTO_INCREMENT PRIMARY KEY, appointment_id INT NOT NULL, doctor_id INT NOT NULL, patient_id INT NOT NULL, invoice_number VARCHAR(50) NOT NULL UNIQUE, base_amount DECIMAL(10,2) NOT NULL, tax_amount DECIMAL(10,2) DEFAULT '0.00', total_amount DECIMAL(10,2) NOT NULL, currency VARCHAR(3) DEFAULT 'USD', legal_text TEXT NOT NULL, pdf_path VARCHAR(255) DEFAULT NULL, issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE)"
+    invoices: "CREATE TABLE IF NOT EXISTS invoices (id INT AUTO_INCREMENT PRIMARY KEY, appointment_id INT NOT NULL, doctor_id INT NOT NULL, patient_id INT NOT NULL, invoice_number VARCHAR(50) NOT NULL UNIQUE, base_amount DECIMAL(10,2) NOT NULL, tax_amount DECIMAL(10,2) DEFAULT '0.00', total_amount DECIMAL(10,2) NOT NULL, currency VARCHAR(3) DEFAULT 'USD', legal_text TEXT NOT NULL, pdf_path VARCHAR(255) DEFAULT NULL, issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE)",
+    doctor_clinics: "CREATE TABLE IF NOT EXISTS doctor_clinics (id INT AUTO_INCREMENT PRIMARY KEY, doctor_id INT NOT NULL, clinic_id INT NOT NULL, custom_address VARCHAR(255) DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE, UNIQUE KEY unique_doctor_clinic (doctor_id, clinic_id))",
+    patient_attachments: "CREATE TABLE IF NOT EXISTS patient_attachments (id INT AUTO_INCREMENT PRIMARY KEY, patient_id INT NOT NULL, doctor_id INT NOT NULL, exam_name VARCHAR(100) NOT NULL, file_path VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE)"
 };
 
 const expectedColumns = {
+    users: [
+        { name: 'reset_token', definition: 'VARCHAR(255) DEFAULT NULL' },
+        { name: 'reset_token_expires', definition: 'DATETIME DEFAULT NULL' },
+        { name: 'google_id', definition: 'VARCHAR(255) DEFAULT NULL' },
+        { name: 'auth_provider', definition: "VARCHAR(50) DEFAULT 'local'" }
+    ],
     patients: [
         { name: 'dni', definition: 'VARCHAR(50) AFTER user_id' },
         { name: 'medical_conditions', definition: 'TEXT AFTER date_of_birth' },
@@ -24,7 +32,11 @@ const expectedColumns = {
         { name: 'title_picture', definition: 'VARCHAR(255) AFTER profile_picture' },
         { name: 'specialty_certificate', definition: 'VARCHAR(255) AFTER title_picture' },
         { name: 'rif', definition: 'VARCHAR(100) AFTER specialty_certificate' },
-        { name: 'phone', definition: 'VARCHAR(20) DEFAULT NULL' }
+        { name: 'phone', definition: 'VARCHAR(20) DEFAULT NULL' },
+        { name: 'signature_picture', definition: 'VARCHAR(255) DEFAULT NULL' }
+    ],
+    clinics: [
+        { name: 'default_address', definition: 'VARCHAR(255) DEFAULT NULL' }
     ],
     system_settings: [
         { name: 'font_family', definition: "VARCHAR(50) DEFAULT 'Inter' AFTER primary_color" },
@@ -34,6 +46,9 @@ const expectedColumns = {
         { name: 'exchange_rate_mode', definition: "ENUM('auto', 'manual') DEFAULT 'auto' AFTER exchange_rate" },
         { name: 'exchange_rate_updated_at', definition: "TIMESTAMP NULL DEFAULT NULL AFTER exchange_rate_mode" }
     ],
+    doctor_schedules: [
+        { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER slot_duration' }
+    ],
     appointments: [
         { name: 'consultation_fee_snapshot', definition: 'DECIMAL(10,2) DEFAULT NULL AFTER type' },
         { name: 'payment_method', definition: "VARCHAR(100) DEFAULT NULL AFTER consultation_fee_snapshot" },
@@ -42,7 +57,8 @@ const expectedColumns = {
         { name: 'payment_proof_url', definition: 'VARCHAR(255) DEFAULT NULL AFTER payment_reference' },
         { name: 'payment_collected_at', definition: 'DATETIME DEFAULT NULL AFTER payment_proof_url' },
         { name: 'legal_verification_code', definition: 'VARCHAR(100) DEFAULT NULL AFTER payment_collected_at' },
-        { name: 'legal_verification_hash', definition: 'VARCHAR(128) DEFAULT NULL AFTER legal_verification_code' }
+        { name: 'legal_verification_hash', definition: 'VARCHAR(128) DEFAULT NULL AFTER legal_verification_code' },
+        { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER doctor_ready' }
     ],
     payment_method_catalog: [
         { name: 'template_key', definition: 'VARCHAR(50) DEFAULT NULL AFTER description' },
@@ -118,8 +134,49 @@ async function verifyAndSyncDB() {
              console.log("Nota: no se pudo verificar/agregar la FK:", e.message);
         }
 
+        try {
+            const [fks] = await db.query(
+                "SELECT CONSTRAINT_NAME " +
+                "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                "WHERE TABLE_SCHEMA = DATABASE() " +
+                "  AND TABLE_NAME = 'doctor_schedules' " +
+                "  AND COLUMN_NAME = 'clinic_id'"
+            );
+            if (fks.length === 0) {
+                console.log("[FK FALTANTE] Agregando FK para clinic_id en doctor_schedules...");
+                await db.query("ALTER TABLE doctor_schedules ADD CONSTRAINT fk_doctor_schedules_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL");
+                console.log("✅ Llave foránea fk_doctor_schedules_clinic agregada.");
+            }
+        } catch (e) {
+             console.log("Nota: no se pudo verificar/agregar la FK de clinic en schedules:", e.message);
+        }
+
+        try {
+            const [fks] = await db.query(
+                "SELECT CONSTRAINT_NAME " +
+                "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                "WHERE TABLE_SCHEMA = DATABASE() " +
+                "  AND TABLE_NAME = 'appointments' " +
+                "  AND COLUMN_NAME = 'clinic_id'"
+            );
+            if (fks.length === 0) {
+                console.log("[FK FALTANTE] Agregando FK para clinic_id en appointments...");
+                await db.query("ALTER TABLE appointments ADD CONSTRAINT fk_appointments_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL");
+                console.log("✅ Llave foránea fk_appointments_clinic agregada.");
+            }
+        } catch (e) {
+             console.log("Nota: no se pudo verificar/agregar la FK de clinic en appointments:", e.message);
+        }
+
         console.log('✅ Verificando datos base...');
         await db.query("INSERT IGNORE INTO clinics (name) VALUES ('Mindpath Online'), ('Centro Médico Zulia'), ('Hospital San José'), ('Clínica Amado')");
+
+        // Sembrar direcciones de consultorios por defecto
+        await db.query("UPDATE clinics SET default_address = 'Consulta Virtual (Online)' WHERE name = 'Mindpath Online' AND default_address IS NULL");
+        await db.query("UPDATE clinics SET default_address = 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo' WHERE name = 'Centro Médico Zulia' AND default_address IS NULL");
+        await db.query("UPDATE clinics SET default_address = 'Calle 72 con Av. 15, Hospital San José, Maracaibo' WHERE name = 'Hospital San José' AND default_address IS NULL");
+        await db.query("UPDATE clinics SET default_address = 'Av. 5 de Julio, Clínica Amado, Maracaibo' WHERE name = 'Clínica Amado' AND default_address IS NULL");
+
         
         const catalogVals = [
             ['Efectivo', 'Cobro presencial al finalizar la consulta', 'cash_in_person', 'Cobro en efectivo al finalizar la consulta.\\nFavor traer monto exacto o cambio.', 1, 1],

@@ -53,7 +53,7 @@ const UsersTab = ({
                             ...(userRoleFilter === 'staff' ? [] : [
                                 { value: 'admin', label: 'Admin' },
                                 { value: 'supervisor', label: 'Supervisor' },
-                                { value: 'doctor', label: 'Doctor' },
+                                { value: 'doctor', label: 'Especialista / Doctor' },
                                 { value: 'patient', label: 'Paciente' }
                             ])
                         ].filter(opt => {

@@ -124,14 +124,21 @@ exports.getAvailability = async (req, res) => {
             schedulesToUse = [{
                 start_time: exception.start_time,
                 end_time: exception.end_time,
-                slot_duration: 30 // Fallback si no hay slot configurable a nivel de excepción
+                slot_duration: 30, // Fallback si no hay slot configurable a nivel de excepción
+                clinic_id: null,
+                clinic_name: null,
+                clinic_address: null
             }];
         } else {
             const [schedules] = await db.query(
-                `SELECT start_time, end_time, slot_duration 
-                 FROM doctor_schedules 
-                 WHERE doctor_id = ? AND day_of_week = ?
-                 ORDER BY start_time`,
+                `SELECT ds.start_time, ds.end_time, ds.slot_duration, ds.clinic_id,
+                        c.name AS clinic_name,
+                        COALESCE(dc.custom_address, c.default_address) AS clinic_address
+                 FROM doctor_schedules ds
+                 LEFT JOIN clinics c ON c.id = ds.clinic_id
+                 LEFT JOIN doctor_clinics dc ON dc.clinic_id = ds.clinic_id AND dc.doctor_id = ds.doctor_id
+                 WHERE ds.doctor_id = ? AND ds.day_of_week = ?
+                 ORDER BY ds.start_time`,
                 [doctorId, dayOfWeekEnum]
             );
 
@@ -171,8 +178,20 @@ exports.getAvailability = async (req, res) => {
                 }
 
                 // Evitar solapamientos (ej. si dos reglas se tocan o si ya estaba ocupado o bloqueado)
-                if (!bookedTimes.includes(timeString) && !slots.includes(timeString) && !isSlotBlocked) {
-                    slots.push(timeString);
+                if (!bookedTimes.includes(timeString) && !isSlotBlocked) {
+                    const exists = slots.some(s => typeof s === 'string' ? s === timeString : s.time === timeString);
+                    if (!exists) {
+                        if (req.query.format === 'object') {
+                            slots.push({
+                                time: timeString,
+                                clinic_id: rule.clinic_id || null,
+                                clinic_name: rule.clinic_name || null,
+                                clinic_address: rule.clinic_address || null
+                            });
+                        } else {
+                            slots.push(timeString);
+                        }
+                    }
                 }
 
                 currentSlot.setUTCMinutes(currentSlot.getUTCMinutes() + slotDuration);
@@ -180,7 +199,11 @@ exports.getAvailability = async (req, res) => {
         });
 
         // Ordenar los slots en caso de que los bloques tuvieran desorden (aunque SQL ya ordenó)
-        slots.sort();
+        slots.sort((a, b) => {
+            const tA = typeof a === 'string' ? a : a.time;
+            const tB = typeof b === 'string' ? b : b.time;
+            return tA.localeCompare(tB);
+        });
 
         // Si es el día de hoy, filtrar slots pasados y aquellos con menos de 10 minutos de anticipación
         const todayStr = getCaracasTodayStr();
@@ -188,7 +211,8 @@ exports.getAvailability = async (req, res) => {
         if (date === todayStr) {
             const caracasNow = getCaracasTime();
             const currentMinutes = caracasNow.getHours() * 60 + caracasNow.getMinutes();
-            filteredSlots = slots.filter(timeString => {
+            filteredSlots = slots.filter(slot => {
+                const timeString = typeof slot === 'string' ? slot : slot.time;
                 const [slotHour, slotMinute] = timeString.split(':').map(Number);
                 const slotMinutes = slotHour * 60 + slotMinute;
                 return (slotMinutes - currentMinutes) >= 10;
@@ -251,13 +275,11 @@ exports.bookAppointment = async (req, res) => {
         }
 
         if (req.user.role === 'doctor') {
-            // El doctor está agendando para un paciente específico
             if (!patient_id) {
                 return res.status(400).json({ message: 'Se requiere el ID del paciente para agendar.' });
             }
             finalPatientId = patient_id;
         } else if (req.user.role === 'patient') {
-            // Es un paciente agendando para sí mismo
             finalPatientId = await getPatientId(req.user.id);
             if (!finalPatientId) {
                 return res.status(403).json({ message: 'No se encontró tu perfil de paciente.' });
@@ -266,11 +288,31 @@ exports.bookAppointment = async (req, res) => {
             return res.status(403).json({ message: 'Rol no autorizado para agendar citas.' });
         }
 
-        // Inserción directa en la BD explícitamente fijando el status a 'pending'
+        // Resolver clinic_id a partir del bloque de horario del médico
+        let finalClinicId = null;
+        try {
+            const requestDate = new Date(appointment_date);
+            const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeekEnum = daysMap[requestDate.getUTCDay()];
+
+            const [scheduleRows] = await db.query(
+                `SELECT clinic_id FROM doctor_schedules
+                 WHERE doctor_id = ? AND day_of_week = ? AND start_time <= ? AND end_time > ?
+                 LIMIT 1`,
+                [doctor_id, dayOfWeekEnum, start_time, start_time]
+            );
+            if (scheduleRows.length > 0) {
+                finalClinicId = scheduleRows[0].clinic_id;
+            }
+        } catch (scheduleError) {
+            console.error('Error resolving clinic_id for appointment:', scheduleError.message);
+        }
+
+        // Inserción directa en la BD
         const [result] = await db.query(
             `INSERT INTO appointments 
-                (doctor_id, patient_id, appointment_date, start_time, type, consultation_fee_snapshot, payment_method, payment_status, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (doctor_id, patient_id, appointment_date, start_time, type, consultation_fee_snapshot, payment_method, payment_status, status, clinic_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 doctor_id,
                 finalPatientId,
@@ -280,7 +322,8 @@ exports.bookAppointment = async (req, res) => {
                 quote.price,
                 payment_method || normalizedPaymentMethod,
                 'pending',
-                'pending'
+                'pending',
+                finalClinicId
             ]
         );
 
@@ -291,7 +334,6 @@ exports.bookAppointment = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        // Podríamos capturar error de choque de horas exacto aquí si tuviéramos un UNIQUE KEY para (doctor, fecha, hora)
         res.status(500).json({ message: 'Error al agendar la cita.' });
     }
 };

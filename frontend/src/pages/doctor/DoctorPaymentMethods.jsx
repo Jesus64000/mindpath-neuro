@@ -5,7 +5,9 @@ import {
     getPaymentTemplate,
     getCatalogKey,
     buildPaymentDetails,
-    createDefaultPaymentFields
+    createDefaultPaymentFields,
+    parsePaymentDetails,
+    VENEZUELAN_BANKS
 } from './paymentUtils';
 
 const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethods }) => {
@@ -50,7 +52,7 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
             sort_order: method.sort_order ?? 100,
         });
         setSelectedPaymentCatalogName(currentCatalogName);
-        setPaymentFields(createDefaultPaymentFields(currentCatalogName, method.account_details || ''));
+        setPaymentFields(parsePaymentDetails(currentCatalogName, method.account_details || ''));
         setPaymentTemplateHint(template?.hint || '');
         setPaymentError('');
     };
@@ -204,21 +206,57 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
 
                         {(getCatalogKey(selectedPaymentCatalogName) === 'pago movil' || getCatalogKey(selectedPaymentCatalogName) === 'pago móvil') && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" value={paymentFields.bank_name || ''} onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Banco" />
-                                <input type="text" value={paymentFields.phone_number || ''} onChange={e => setPaymentFields(p => ({ ...p, phone_number: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Teléfono" />
+                                <select
+                                    value={paymentFields.bank_name || ''}
+                                    onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))}
+                                    className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none"
+                                >
+                                    <option value="" className="bg-white dark:bg-slate-850">Selecciona un Banco...</option>
+                                    {VENEZUELAN_BANKS.map(bank => (
+                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-850">{bank.name}</option>
+                                    ))}
+                                </select>
+                                <div className="flex bg-white dark:bg-slate-800/80 rounded-2xl focus-within:ring-2 focus-within:ring-mindpath-primary/20 overflow-hidden">
+                                    <select
+                                        value={paymentFields.phone_prefix || '0412'}
+                                        onChange={e => setPaymentFields(p => ({ ...p, phone_prefix: e.target.value }))}
+                                        className="p-4 pr-6 bg-transparent text-sm text-gray-900 dark:text-white font-bold outline-none focus:ring-0 border-r border-gray-100 dark:border-slate-700/50 appearance-none"
+                                    >
+                                        <option value="0412">0412</option>
+                                        <option value="0414">0414</option>
+                                        <option value="0424">0424</option>
+                                        <option value="0416">0416</option>
+                                        <option value="0426">0426</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        maxLength={7}
+                                        value={paymentFields.phone_body || ''}
+                                        onChange={e => setPaymentFields(p => ({ ...p, phone_body: e.target.value.replace(/\D/g, '') }))}
+                                        className="w-full p-4 bg-transparent border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-0"
+                                        placeholder="Número (7 dígitos)"
+                                    />
+                                </div>
                                 <div className="flex bg-white dark:bg-slate-800/80 rounded-2xl focus-within:ring-2 focus-within:ring-mindpath-primary/20 overflow-hidden md:col-span-2">
                                     <select
                                         value={paymentFields.doc_type || 'V'}
                                         onChange={e => setPaymentFields(p => ({ ...p, doc_type: e.target.value }))}
                                         className="p-4 pr-6 bg-transparent text-sm text-gray-900 dark:text-white font-bold outline-none focus:ring-0 border-r border-gray-100 dark:border-slate-700/50 appearance-none"
                                     >
-                                        <option value="V" className="bg-white dark:bg-slate-800">V</option>
-                                        <option value="E" className="bg-white dark:bg-slate-800">E</option>
-                                        <option value="J" className="bg-white dark:bg-slate-800">J</option>
-                                        <option value="P" className="bg-white dark:bg-slate-800">P</option>
-                                        <option value="G" className="bg-white dark:bg-slate-800">G</option>
+                                        <option value="V">V</option>
+                                        <option value="E">E</option>
+                                        <option value="J">J</option>
+                                        <option value="P">P</option>
+                                        <option value="G">G</option>
+                                        <option value="R">R</option>
                                     </select>
-                                    <input type="text" value={paymentFields.id_number || ''} onChange={e => setPaymentFields(p => ({ ...p, id_number: e.target.value }))} className="w-full p-4 bg-transparent border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-0" placeholder="Cédula o RIF" />
+                                    <input
+                                        type="text"
+                                        value={paymentFields.id_number || ''}
+                                        onChange={e => setPaymentFields(p => ({ ...p, id_number: e.target.value.replace(/\D/g, '') }))}
+                                        className="w-full p-4 bg-transparent border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-0"
+                                        placeholder="Número de Cédula o RIF"
+                                    />
                                 </div>
                             </div>
                         )}
@@ -268,7 +306,7 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2">Orden</label>
+                            <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2">Orden de Visualización (Menor número se muestra primero)</label>
                             <input
                                 type="number"
                                 value={paymentForm.sort_order}

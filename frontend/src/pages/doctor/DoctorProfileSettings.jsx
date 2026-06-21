@@ -28,17 +28,23 @@ const DoctorProfileSettings = () => {
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [profilePicture, setProfilePicture] = useState(null);
     const [preview, setPreview] = useState(null);
+    const [signaturePicture, setSignaturePicture] = useState(null);
+    const [signaturePreview, setSignaturePreview] = useState(null);
+    const [clinicsCatalog, setClinicsCatalog] = useState([]);
+    const [selectedClinics, setSelectedClinics] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const fileInputRef = useRef(null);
+    const signatureInputRef = useRef(null);
 
     useEffect(() => {
         Promise.all([
             api.get('/doctors/profile/settings'),
             api.get('/doctors/specialties'),
             api.get('/doctors/payment-methods'),
-        ]).then(([profileRes, specialtiesRes, paymentRes]) => {
+            api.get('/doctors/clinics'),
+        ]).then(([profileRes, specialtiesRes, paymentRes, clinicsRes]) => {
             const d = profileRes.data;
             setFormData({
                 full_name:        d.full_name        ?? '',
@@ -56,6 +62,9 @@ const DoctorProfileSettings = () => {
                 setSelectedLanguages(d.languages.split(',').map(l => l.trim()).filter(Boolean));
             }
             if (d.profile_picture) setProfilePicture(d.profile_picture);
+            if (d.signature_picture) setSignaturePicture(d.signature_picture);
+            setSelectedClinics(d.clinics || []);
+            setClinicsCatalog(clinicsRes.data || []);
             setSpecialties(specialtiesRes.data.map(s => s.name));
             setPaymentCatalog(paymentRes.data.catalog || []);
             setPaymentMethods(paymentRes.data.methods || []);
@@ -90,12 +99,36 @@ const DoctorProfileSettings = () => {
         }
     };
 
+    const handleSignatureChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploadError('');
+        setSignaturePreview(URL.createObjectURL(file));
+        const form = new FormData();
+        form.append('file', file);
+        try {
+            const res = await api.post('/upload', form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setSignaturePicture(res.data.url);
+        } catch (err) {
+            setUploadError(err.response?.data?.message || 'Error al subir la firma.');
+            setSignaturePreview(null);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (selectedClinics.length === 0) {
+            alert('Debes seleccionar al menos un centro de salud / clínica.');
+            return;
+        }
         try {
             await api.put('/doctors/profile/settings', {
                 ...formData,
-                languages: selectedLanguages.join(', ')
+                languages: selectedLanguages.join(', '),
+                signature_picture: signaturePicture,
+                clinics: selectedClinics
             });
             updateUser({ full_name: formData.full_name });
             setSaved(true);
@@ -112,6 +145,12 @@ const DoctorProfileSettings = () => {
         ? preview
         : profilePicture
             ? `${BACKEND_URL}${profilePicture}`
+            : null;
+
+    const signatureSrc = signaturePreview
+        ? signaturePreview
+        : signaturePicture
+            ? `${BACKEND_URL}${signaturePicture}`
             : null;
 
     if (loading) return <div className="p-20 text-center font-bold text-mindpath-primary">Cargando tu configuración...</div>;
@@ -177,6 +216,31 @@ const DoctorProfileSettings = () => {
                         )}
                         <h2 className="font-black text-lg mt-3 text-gray-900 dark:text-white">{formData.full_name || 'Doctor'}</h2>
                         <p className="text-mindpath-primary dark:text-mindpath-primary text-sm font-bold uppercase">{formData.specialty}</p>
+                    </div>
+
+                    {/* Firma Digital */}
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm text-center">
+                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase flex items-center gap-2 mb-3 justify-center">
+                            Firma Digital (PNG transparente)
+                        </label>
+                        <div 
+                            className="relative border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-mindpath-primary/50 transition-colors bg-gray-50/50 dark:bg-slate-900/10"
+                            onClick={() => signatureInputRef.current?.click()}
+                        >
+                            {signatureSrc ? (
+                                <img src={signatureSrc} alt="Firma Digital" className="max-h-20 object-contain mx-auto" />
+                            ) : (
+                                <div className="py-4 text-gray-400 dark:text-slate-500 flex flex-col items-center gap-2">
+                                    <Camera size={24} />
+                                    <span className="text-xs font-medium">Subir firma digital</span>
+                                </div>
+                            )}
+                        </div>
+                        <input ref={signatureInputRef} type="file" accept="image/png" className="hidden" onChange={handleSignatureChange} />
+                        <button type="button" onClick={() => signatureInputRef.current?.click()}
+                            className="text-xs font-bold text-mindpath-primary hover:underline block mx-auto mt-3">
+                            {signaturePicture ? 'Cambiar firma' : 'Seleccionar firma'}
+                        </button>
                     </div>
 
                     {/* Bio */}
@@ -308,23 +372,43 @@ const DoctorProfileSettings = () => {
                     {/* Ubicación */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
                         <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
-                            <MapPin className="text-red-500"/> Ubicación del Consultorio
+                            <MapPin className="text-red-500"/> Centros de Salud / Clínicas
                         </h3>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2 flex items-center gap-2">
-                                <Building2 size={13}/> Clínica / Hospital
-                            </label>
-                            <input type="text" value={formData.clinic_name}
-                                onChange={e => setFormData({...formData, clinic_name: e.target.value})}
-                                className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
-                                placeholder="Ej: Centro Médico San Francisco" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2">Dirección Exacta</label>
-                            <input type="text" value={formData.clinic_address}
-                                onChange={e => setFormData({...formData, clinic_address: e.target.value})}
-                                className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
-                                placeholder="Ej: Calle 72, Piso 4, Consultorio 402" />
+                        <p className="text-xs text-gray-500 dark:text-slate-400">Selecciona los centros de salud donde consultas y personaliza la dirección de ser necesario.</p>
+                        <div className="space-y-3 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-2xl border border-gray-100 dark:border-slate-700">
+                            {clinicsCatalog.map(c => {
+                                const isChecked = selectedClinics.some(sc => sc.clinic_id === c.id);
+                                const currentSelection = selectedClinics.find(sc => sc.clinic_id === c.id);
+                                return (
+                                    <div key={c.id} className="space-y-2">
+                                        <label className="flex items-center space-x-2 text-sm font-bold text-gray-700 dark:text-slate-200 cursor-pointer">
+                                             <input type="checkbox" checked={isChecked}
+                                                 onChange={e => {
+                                                     if (e.target.checked) {
+                                                         setSelectedClinics([...selectedClinics, { clinic_id: c.id, custom_address: '' }]);
+                                                     } else {
+                                                         setSelectedClinics(selectedClinics.filter(sc => sc.clinic_id !== c.id));
+                                                     }
+                                                 }}
+                                                 className="rounded text-mindpath-primary focus:ring-mindpath-primary w-4 h-4 accent-mindpath-primary" />
+                                            <span>{c.name}</span>
+                                        </label>
+                                        {isChecked && (
+                                            <div className="pl-6">
+                                                <input type="text"
+                                                    value={currentSelection?.custom_address || ''}
+                                                    onChange={e => {
+                                                        setSelectedClinics(selectedClinics.map(sc => 
+                                                            sc.clinic_id === c.id ? { ...sc, custom_address: e.target.value } : sc
+                                                        ));
+                                                    }}
+                                                    className="block w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-mindpath-primary/20 font-medium"
+                                                    placeholder={`Dirección personalizada (por defecto: ${c.default_address || 'Online'})`} />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

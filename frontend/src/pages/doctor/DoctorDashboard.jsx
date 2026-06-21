@@ -31,6 +31,12 @@ const toLocalISO = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+const parseSafeDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    return new Date(`${datePart}T12:00:00`);
+};
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 const DoctorDashboard = () => {
     const { user } = useAuthStore();
@@ -388,7 +394,7 @@ const DoctorDashboard = () => {
                                         >
                                             <p className="font-black text-gray-900 dark:text-white group-hover:text-mindpath-primary transition-colors">{app.patient_name}</p>
                                             <p className="text-xs font-bold text-gray-400 dark:text-slate-500 mt-1 uppercase tracking-tighter">
-                                                {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString('es-ES', {day:'numeric',month:'short'})}
+                                                {app.start_time.slice(0,5)} • {parseSafeDate(app.appointment_date).toLocaleDateString('es-ES', {day:'numeric',month:'short'})}
                                             </p>
                                             {app.payment_proof_url && app.payment_status !== 'paid' && (
                                                 <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-block mt-1 animate-pulse">
@@ -429,7 +435,7 @@ const DoctorDashboard = () => {
                                         <div>
                                             <p className="font-black text-gray-900 dark:text-white group-hover:text-mindpath-primary transition-colors text-sm">{app.patient_name}</p>
                                             <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-tight mt-1">
-                                                {app.start_time.slice(0,5)} • {new Date(app.appointment_date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}
+                                                {app.start_time.slice(0,5)} • {parseSafeDate(app.appointment_date).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}
                                             </p>
                                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{app.type === 'virtual' ? 'Telemedicina' : 'Presencial'}</p>
                                             {app.payment_proof_url && app.payment_status !== 'paid' && (

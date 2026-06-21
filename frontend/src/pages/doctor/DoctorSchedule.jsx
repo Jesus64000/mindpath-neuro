@@ -37,6 +37,12 @@ const toLocalISO = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+const parseSafeDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    return new Date(`${datePart}T12:00:00`);
+};
+
 const STATUS_CONFIG = {
     pending:   { label: 'Pendiente',  color: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-500/30' },
     confirmed: { label: 'Confirmada', color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-500/30' },
@@ -62,11 +68,13 @@ const DoctorSchedule = () => {
     // --- Estado para "Mi Disponibilidad" ---
     const [schedules, setSchedules] = useState([]);
     const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [doctorClinics, setDoctorClinics] = useState([]);
     const [formSchedule, setFormSchedule] = useState({
         day_of_week: 'Monday',
         start_time: '08:00',
         end_time: '12:00',
-        slot_duration: '30'
+        slot_duration: '30',
+        clinic_id: ''
     });
 
     // --- Estado para Bloqueo de Emergencia ---
@@ -122,6 +130,7 @@ const DoctorSchedule = () => {
         try {
             const res = await api.get('/doctors/profile/settings');
             setIsBlocked(!!res.data.is_blocked);
+            setDoctorClinics(res.data.clinics || []);
             
             if (res.data.is_blocked && res.data.emergency_block_until) {
                 if (new Date(res.data.emergency_block_until) < new Date()) {
@@ -250,7 +259,7 @@ const DoctorSchedule = () => {
             await api.post('/doctors/schedules', formSchedule);
             fetchSchedules();
             // Reset form but keep the day
-            setFormSchedule(prev => ({ ...prev, start_time: '08:00', end_time: '12:00' }));
+            setFormSchedule(prev => ({ ...prev, start_time: '08:00', end_time: '12:00', clinic_id: '' }));
         } catch (err) {
             alert(err.response?.data?.message || 'Error al guardar el horario');
         }
@@ -474,7 +483,7 @@ const DoctorSchedule = () => {
                                             <div className="flex flex-col space-y-1.5 flex-1">
                                                 <div className="flex items-center text-gray-700 dark:text-slate-300 font-medium text-sm">
                                                     <Clock size={16} className="text-mindpath-primary mr-2 shrink-0" />
-                                                    {new Date(app.appointment_date).toLocaleDateString('es-ES')} a las {app.start_time.slice(0, 5)}
+                                                    {parseSafeDate(app.appointment_date).toLocaleDateString('es-ES')} a las {app.start_time.slice(0, 5)}
                                                 </div>
                                                 <div className="flex items-center text-sm font-bold text-gray-500 dark:text-slate-400">
                                                     {app.type === 'virtual' ? (
@@ -622,6 +631,22 @@ const DoctorSchedule = () => {
                                     </p>
                                 </div>
 
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase">Centro de Salud / Clínica</label>
+                                    <select 
+                                        value={formSchedule.clinic_id}
+                                        onChange={e => setFormSchedule({...formSchedule, clinic_id: e.target.value})}
+                                        className="w-full p-3.5 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-mindpath-primary/30 text-gray-800 dark:text-white shadow-sm font-medium"
+                                    >
+                                        <option value="">Consulta Virtual (Online)</option>
+                                        {doctorClinics.map(c => (
+                                            <option key={c.clinic_id} value={c.clinic_id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <button 
                                     type="submit"
                                     className="w-full mt-4 py-3.5 bg-mindpath-primary text-white font-bold rounded-2xl flex justify-center items-center hover:bg-mindpath-primaryHover transition-all shadow-md shadow-mindpath-primary/20"
@@ -649,25 +674,34 @@ const DoctorSchedule = () => {
                                                     <CalendarIcon size={14} className="text-mindpath-primary dark:text-mindpath-primary" /> {dayLabels[dayKey]}
                                                 </h4>
                                                 <div className="space-y-2">
-                                                    {daySchedules.map(slot => (
-                                                        <div key={slot.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
-                                                                    {slot.start_time.substring(0, 5)} - {slot.end_time.substring(0, 5)}
-                                                                </span>
-                                                                <span className="text-xs bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary dark:text-mindpath-primary px-2.5 py-1 rounded-md font-bold">
-                                                                    {slot.slot_duration} min
-                                                                </span>
+                                                    {daySchedules.map(slot => {
+                                                        const clinicObj = doctorClinics.find(c => c.clinic_id === slot.clinic_id);
+                                                        const clinicName = clinicObj ? clinicObj.name : 'Consulta Virtual (Online)';
+                                                        return (
+                                                            <div key={slot.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-sm font-bold text-gray-700 dark:text-slate-200">
+                                                                            {slot.start_time.substring(0, 5)} - {slot.end_time.substring(0, 5)}
+                                                                        </span>
+                                                                        <span className="text-xs bg-mindpath-light dark:bg-mindpath-primary/30 text-mindpath-primary dark:text-mindpath-primary px-2.5 py-1 rounded-md font-bold">
+                                                                            {slot.slot_duration} min
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-500 dark:text-slate-400 font-medium flex items-center">
+                                                                        <MapPin size={12} className="mr-1 text-gray-400" /> {clinicName}
+                                                                    </span>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => handleDeleteSchedule(slot.id)}
+                                                                    className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                    title="Eliminar Franja"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
                                                             </div>
-                                                            <button 
-                                                                onClick={() => handleDeleteSchedule(slot.id)}
-                                                                className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                                title="Eliminar Franja"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         );
@@ -760,7 +794,7 @@ const DoctorSchedule = () => {
                                             <div className="flex items-center">
                                                 <span className="font-bold text-gray-800 dark:text-white mr-4 flex items-center text-sm">
                                                     <CalendarIcon size={14} className="mr-1.5 text-mindpath-primary"/>
-                                                    {new Date(exc.exception_date).toLocaleDateString()}
+                                                    {parseSafeDate(exc.exception_date).toLocaleDateString()}
                                                 </span>
                                                 {exc.is_day_off ? (
                                                     <span className="bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/40 dark:border-red-500/30 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wide">Día Libre</span>

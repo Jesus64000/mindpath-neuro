@@ -70,14 +70,24 @@ exports.register = async (req, res) => {
                     specialty, phone, license_number, experience_years,
                     clinic_name, clinic_address, education, languages,
                     dni, modality, rif, title_picture, specialty_certificate,
-                    consultation_fee, catalog_method_id, account_details
+                    consultation_fee, catalog_method_id, account_details,
+                    clinics, payment_methods
                 } = req.body;
 
                 if (!specialty || !license_number) {
                     throw new Error('Especialidad y número de licencia son requeridos para doctores.');
                 }
-                if (!consultation_fee || !catalog_method_id || !account_details) {
-                    throw new Error('La tarifa de consulta y al menos un método de pago son requeridos.');
+
+                // Resolver clínica por defecto para retrocompatibilidad
+                let finalClinicName = clinic_name;
+                let finalClinicAddress = clinic_address;
+                if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+                    const firstClinic = clinics[0];
+                    const [cRow] = await connection.query('SELECT name, default_address FROM clinics WHERE id = ?', [firstClinic.clinic_id]);
+                    if (cRow.length > 0) {
+                        finalClinicName = cRow[0].name;
+                        finalClinicAddress = firstClinic.custom_address || cRow[0].default_address || null;
+                    }
                 }
 
                 const [docResult] = await connection.query(
@@ -86,23 +96,56 @@ exports.register = async (req, res) => {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         userId, specialty, phone || null, license_number, experience_years || null,
-                        clinic_name || null, clinic_address || null, education || null, languages || null,
+                        finalClinicName || null, finalClinicAddress || null, education || null, languages || null,
                         dni || null, modality || 'ambas', rif || null, title_picture || null, specialty_certificate || null,
                         consultation_fee
                     ]
                 );
                 const doctorId = docResult.insertId;
 
-                // Insertar primer método de pago
-                const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
-                const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+                // Insertar múltiples clínicas en doctor_clinics
+                if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+                    for (const c of clinics) {
+                        await connection.query(
+                            `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                             VALUES (?, ?, ?)`,
+                            [doctorId, c.clinic_id, c.custom_address || null]
+                        );
+                    }
+                } else if (clinic_name) {
+                    const [cRow] = await connection.query('SELECT id FROM clinics WHERE name = ?', [clinic_name]);
+                    if (cRow.length > 0) {
+                        await connection.query(
+                            `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                             VALUES (?, ?, ?)`,
+                            [doctorId, cRow[0].id, clinic_address || null]
+                        );
+                    }
+                }
 
-                await connection.query(
-                    `INSERT INTO doctor_payment_methods
-                        (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
-                     VALUES (?, ?, ?, ?, 1, 1)`,
-                    [doctorId, catalog_method_id, methodName, account_details]
-                );
+                // Insertar múltiples métodos de pago en doctor_payment_methods
+                if (payment_methods && Array.isArray(payment_methods) && payment_methods.length > 0) {
+                    for (let i = 0; i < payment_methods.length; i++) {
+                        const pm = payment_methods[i];
+                        const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [pm.catalog_method_id]);
+                        const methodName = pm.method_name || (catalogRows.length > 0 ? catalogRows[0].name : 'Método de Pago');
+                        await connection.query(
+                            `INSERT INTO doctor_payment_methods
+                                (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                             VALUES (?, ?, ?, ?, 1, ?)`,
+                            [doctorId, pm.catalog_method_id, methodName, pm.account_details, pm.sort_order || (i + 1)]
+                        );
+                    }
+                } else if (catalog_method_id && account_details) {
+                    const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
+                    const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+                    await connection.query(
+                        `INSERT INTO doctor_payment_methods
+                            (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                         VALUES (?, ?, ?, ?, 1, 1)`,
+                        [doctorId, catalog_method_id, methodName, account_details]
+                    );
+                }
             } else if (role === 'patient') {
                 const { phone, date_of_birth, gender, address, dni } = req.body;
 
@@ -281,34 +324,78 @@ exports.googleComplete = async (req, res) => {
         if (role === 'doctor') {
             const {
                 specialty, phone, license_number, experience_years,
-                clinic_name, modality, rif, dni,
-                consultation_fee, catalog_method_id, account_details
+                clinic_name, clinic_address, modality, rif, dni,
+                consultation_fee, catalog_method_id, account_details,
+                clinics, payment_methods
             } = req.body;
 
             if (!specialty || !license_number) {
                 throw new Error('Especialidad y número de licencia son requeridos para doctores.');
             }
-            if (!consultation_fee || !catalog_method_id || !account_details) {
-                throw new Error('La tarifa de consulta y método de pago son requeridos.');
+
+            // Resolver clínica por defecto para retrocompatibilidad
+            let finalClinicName = clinic_name;
+            let finalClinicAddress = clinic_address;
+            if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+                const firstClinic = clinics[0];
+                const [cRow] = await connection.query('SELECT name, default_address FROM clinics WHERE id = ?', [firstClinic.clinic_id]);
+                if (cRow.length > 0) {
+                    finalClinicName = cRow[0].name;
+                    finalClinicAddress = firstClinic.custom_address || cRow[0].default_address || null;
+                }
             }
 
             const [docResult] = await connection.query(
                 `INSERT INTO doctors
-                (user_id, specialty, phone, license_number, experience_years, clinic_name, modality, rif, dni, consultation_fee)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, modality, rif, dni, consultation_fee)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [userId, specialty, phone || null, license_number, experience_years || null,
-                 clinic_name || null, modality || 'ambas', rif || null, dni || null, consultation_fee]
+                 finalClinicName || null, finalClinicAddress || null, modality || 'ambas', rif || null, dni || null, consultation_fee]
             );
             const doctorId = docResult.insertId;
 
-            const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
-            const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+            // Insertar múltiples clínicas
+            if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+                for (const c of clinics) {
+                    await connection.query(
+                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                         VALUES (?, ?, ?)`,
+                        [doctorId, c.clinic_id, c.custom_address || null]
+                    );
+                }
+            } else if (clinic_name) {
+                const [cRow] = await connection.query('SELECT id FROM clinics WHERE name = ?', [clinic_name]);
+                if (cRow.length > 0) {
+                    await connection.query(
+                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                         VALUES (?, ?, ?)`,
+                        [doctorId, cRow[0].id, clinic_address || null]
+                    );
+                }
+            }
 
-            await connection.query(
-                `INSERT INTO doctor_payment_methods (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
-                 VALUES (?, ?, ?, ?, 1, 1)`,
-                [doctorId, catalog_method_id, methodName, account_details]
-            );
+            // Insertar múltiples métodos de pago
+            if (payment_methods && Array.isArray(payment_methods) && payment_methods.length > 0) {
+                for (let i = 0; i < payment_methods.length; i++) {
+                    const pm = payment_methods[i];
+                    const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [pm.catalog_method_id]);
+                    const methodName = pm.method_name || (catalogRows.length > 0 ? catalogRows[0].name : 'Método de Pago');
+                    await connection.query(
+                        `INSERT INTO doctor_payment_methods
+                            (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                         VALUES (?, ?, ?, ?, 1, ?)`,
+                        [doctorId, pm.catalog_method_id, methodName, pm.account_details, pm.sort_order || (i + 1)]
+                    );
+                }
+            } else if (catalog_method_id && account_details) {
+                const [catalogRows] = await connection.query('SELECT name FROM payment_method_catalog WHERE id = ?', [catalog_method_id]);
+                const methodName = catalogRows.length > 0 ? catalogRows[0].name : 'Método Inicial';
+                await connection.query(
+                    `INSERT INTO doctor_payment_methods (doctor_id, catalog_method_id, method_name, account_details, is_active, sort_order)
+                     VALUES (?, ?, ?, ?, 1, 1)`,
+                    [doctorId, catalog_method_id, methodName, account_details]
+                );
+            }
 
         } else if (role === 'patient') {
             const { date_of_birth, gender, phone, dni } = req.body;

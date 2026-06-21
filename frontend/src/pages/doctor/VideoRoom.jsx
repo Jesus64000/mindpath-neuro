@@ -48,6 +48,8 @@ const VideoRoom = () => {
     const finalTranscriptRef = useRef('');
 
     const recognitionRef = useRef(null);
+    const accumulatedTextRef = useRef('');
+    const shouldRestartRef = useRef(false);
 
     // Inicializar Web Speech API
     useEffect(() => {
@@ -64,39 +66,54 @@ const VideoRoom = () => {
         recognition.lang           = 'es-VE';
 
         recognition.onresult = (event) => {
-            let newFinal   = '';
-            let newInterim = '';
+            let finalSession = '';
+            let interimSession = '';
 
-            // Solo procesamos desde resultIndex (los anteriores ya fueron confirmados)
-            for (let i = event.resultIndex; i < event.results.length; i++) {
+            for (let i = 0; i < event.results.length; i++) {
                 const text = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    newFinal += text + ' ';   // Resultado confirmado → acumular
+                    finalSession += text + ' ';
                 } else {
-                    newInterim += text;       // Resultado parcial → temporal
+                    interimSession += text;
                 }
             }
 
-            if (newFinal) {
-                setFinalTranscript(prev => {
-                    const updated = prev + newFinal;
-                    finalTranscriptRef.current = updated; // Mantener ref en sync
-                    return updated;
-                });
-            }
-            setInterimTranscript(newInterim);
+            const updated = (accumulatedTextRef.current + " " + finalSession)
+                .replace(/\s+/g, ' ')
+                .trim();
+            
+            setFinalTranscript(updated);
+            finalTranscriptRef.current = updated;
+            setInterimTranscript(interimSession);
         };
 
         recognition.onerror = (e) => {
             console.warn('SpeechRecognition error:', e.error);
-            // Si pierde conexión o es abortado, simplemente reseteamos
+            if (e.error === 'not-allowed' || e.error === 'audio-capture') {
+                shouldRestartRef.current = false;
+                setIsListening(false);
+                setIsPaused(false);
+                alert('El micrófono está ocupado por la videollamada. En dispositivos móviles, el sistema operativo no permite compartir el micrófono de forma simultánea entre la videollamada y la transcripción de voz.');
+            }
             if (e.error === 'aborted') return;
-            setIsListening(false);
-            setIsPaused(false);
+        };
+
+        recognition.onend = () => {
+            accumulatedTextRef.current = finalTranscriptRef.current;
+            if (shouldRestartRef.current) {
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.warn('Fallo al reiniciar SpeechRecognition automáticamente:', err.message);
+                }
+            }
         };
 
         recognitionRef.current = recognition;
-        return () => recognition.stop();
+        return () => {
+            shouldRestartRef.current = false;
+            recognition.stop();
+        };
     }, []);
 
     // ── Controles del micrófono ─────────────────────────────────────────────
@@ -104,19 +121,32 @@ const VideoRoom = () => {
         if (!recognitionRef.current) {
             return alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
         }
-        recognitionRef.current.start();
+        accumulatedTextRef.current = finalTranscriptRef.current;
+        shouldRestartRef.current = true;
+        try {
+            recognitionRef.current.start();
+        } catch (err) {
+            console.warn('SpeechRecognition ya estaba iniciado:', err.message);
+        }
         setIsListening(true);
         setIsPaused(false);
     };
 
     const handlePause = () => {
+        shouldRestartRef.current = false;
         recognitionRef.current.stop();
         setInterimTranscript('');
         setIsPaused(true);
     };
 
     const handleResume = () => {
-        recognitionRef.current.start();
+        accumulatedTextRef.current = finalTranscriptRef.current;
+        shouldRestartRef.current = true;
+        try {
+            recognitionRef.current.start();
+        } catch (err) {
+            console.warn('SpeechRecognition ya estaba iniciado:', err.message);
+        }
         setIsPaused(false);
     };
 
@@ -137,6 +167,7 @@ const VideoRoom = () => {
     };
 
     const handleEndCall = () => {
+        shouldRestartRef.current = false;
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
@@ -202,6 +233,7 @@ const VideoRoom = () => {
                 joinTimeRef.current = Date.now(); // Guardar el momento de conexión exitosa
             },
             onLeaveRoom: () => {
+                shouldRestartRef.current = false;
                 if (recognitionRef.current) recognitionRef.current.stop();
                 deactivateRoom();
                 const duration = Date.now() - joinTimeRef.current;

@@ -143,8 +143,15 @@ const PatientAppointments = () => {
         emergency_reschedule: { label: 'Emergencia (Reagendar)', color: 'bg-red-600 text-white border-red-700 shadow-md shadow-red-500/20 animate-pulse' }
     };
 
+    const parseSafeDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+        return new Date(`${datePart}T12:00:00`);
+    };
+
     const isAppointmentToday = (dateString) => {
-        const appointmentDate = new Date(dateString).toDateString();
+        if (!dateString) return false;
+        const appointmentDate = parseSafeDate(dateString).toDateString();
         return appointmentDate === new Date().toDateString();
     };
 
@@ -256,7 +263,7 @@ const PatientAppointments = () => {
                                 <div className="w-full md:w-1/3">
                                     <div className="flex items-center text-gray-700 dark:text-slate-300 font-medium mb-1.5">
                                         <CalendarIcon size={16} className="text-gray-400 mr-2" />
-                                        {new Date(app.appointment_date).toLocaleDateString()} 
+                                        {parseSafeDate(app.appointment_date).toLocaleDateString()} 
                                         <Clock size={16} className="text-gray-400 ml-3 mr-1.5" />
                                         {app.start_time.slice(0, 5)}
                                     </div>
@@ -303,7 +310,7 @@ const PatientAppointments = () => {
                                             {app.type === 'virtual' && app.status === 'confirmed' && (
                                                 (() => {
                                                     const canJoin = (isToday || app.doctor_ready) && app.payment_status === 'paid';
-                                                    const formattedDate = new Date(app.appointment_date).toLocaleDateString('es-ES');
+                                                    const formattedDate = parseSafeDate(app.appointment_date).toLocaleDateString('es-ES');
                                                     return (
                                                         <button 
                                                             onClick={() => handleJoinVideoCall(app.appointment_id)}
@@ -408,7 +415,7 @@ const PatientAppointments = () => {
                             <p className="text-gray-600 dark:text-slate-300 font-bold mt-1">Dr(a). {selectedReport.doctor_name}</p>
                             <p className="text-xs text-gray-400 mt-0.5">
                                 {selectedReport.specialty} &bull; {selectedReport.clinic_name || 'MindPath Online'} &bull;{' '}
-                                {new Date(selectedReport.appointment_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                {parseSafeDate(selectedReport.appointment_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })}
                             </p>
                         </div>
 

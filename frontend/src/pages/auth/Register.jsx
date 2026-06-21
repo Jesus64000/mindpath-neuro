@@ -4,6 +4,13 @@ import { Mail, Lock, User, Stethoscope, BadgeCheck, BrainCircuit, Phone, Calenda
 import api from '../../api/axiosConfig';
 import useSettingsStore from '../../store/useSettingsStore';
 import { BACKEND_URL } from '../../api/constants';
+import { Trash2 } from 'lucide-react';
+import {
+    buildPaymentDetails,
+    createDefaultPaymentFields,
+    getCatalogKey,
+    VENEZUELAN_BANKS
+} from '../doctor/paymentUtils';
 
 const Register = () => {
     const [role, setRole] = useState('patient');
@@ -20,7 +27,9 @@ const Register = () => {
     const [fullName,  setFullName]  = useState('');
     const [email,     setEmail]     = useState('');
     const [password,  setPassword]  = useState('');
-    const [dni,       setDni]       = useState('');
+    const [dniPrefix, setDniPrefix] = useState('V');
+    const [dniBody,   setDniBody]   = useState('');
+    const dni = dniBody ? `${dniPrefix}-${dniBody}` : '';
 
     // Campos de paciente
     const [dateOfBirth, setDateOfBirth] = useState('');
@@ -30,13 +39,58 @@ const Register = () => {
     // Campos de doctor
     const [specialty,      setSpecialty]      = useState('');
     const [licenseNumber,  setLicenseNumber]  = useState('');
-    const [clinicName,     setClinicName]     = useState('');
     const [modality,       setModality]       = useState('ambas');
-    const [rif,            setRif]            = useState('');
+    const [rifPrefix,      setRifPrefix]      = useState('J');
+    const [rifBody,        setRifBody]        = useState('');
+    const rif = rifBody ? `${rifPrefix}-${rifBody}` : '';
     const [doctorPhone,    setDoctorPhone]    = useState('');
     const [consultationFee, setConsultationFee] = useState('');
-    const [catalogMethodId, setCatalogMethodId] = useState('');
-    const [accountDetails,  setAccountDetails]  = useState('');
+    
+    // Clínicas múltiples
+    const [selectedClinics, setSelectedClinics] = useState([]);
+    
+    // Métodos de pago múltiples
+    const [paymentMethodsList, setPaymentMethodsList] = useState([]);
+    const [selectedCatalogId, setSelectedCatalogId] = useState('');
+    const [selectedCatalogName, setSelectedCatalogName] = useState('');
+    const [paymentFields, setPaymentFields] = useState({ custom_details: '' });
+    const [visibleMethodName, setVisibleMethodName] = useState('');
+    const [paymentOrder, setPaymentOrder] = useState('1');
+
+    const handleCatalogSelectChange = (e) => {
+        const val = e.target.value;
+        setSelectedCatalogId(val);
+        if (!val) {
+            setSelectedCatalogName('');
+            setPaymentFields({ custom_details: '' });
+            return;
+        }
+        const cat = paymentCatalogs.find(p => String(p.id) === String(val));
+        const catName = cat ? cat.name : '';
+        setSelectedCatalogName(catName);
+        setPaymentFields(createDefaultPaymentFields(catName, cat?.default_details_template || ''));
+    };
+
+    const handleAddPaymentMethod = (e) => {
+        e.preventDefault();
+        if (!selectedCatalogId) return;
+        const details = buildPaymentDetails(selectedCatalogName, paymentFields);
+        const name = visibleMethodName || selectedCatalogName;
+        const newMethod = {
+            catalog_method_id: Number(selectedCatalogId),
+            method_name: name,
+            account_details: details,
+            sort_order: Number(paymentOrder) || 1
+        };
+        setPaymentMethodsList([...paymentMethodsList, newMethod]);
+        
+        // Reset form
+        setSelectedCatalogId('');
+        setSelectedCatalogName('');
+        setPaymentFields({ custom_details: '' });
+        setVisibleMethodName('');
+        setPaymentOrder(String(paymentMethodsList.length + 2));
+    };
 
     // Cargar especialidades, clínicas y catálogo de pagos al montar
     useEffect(() => {
@@ -57,13 +111,26 @@ const Register = () => {
         setSuccess('');
         setLoading(true);
 
+        if (role === 'doctor') {
+            if (selectedClinics.length === 0) {
+                setError('Debe seleccionar al menos un centro de salud / clínica.');
+                setLoading(false);
+                return;
+            }
+            if (paymentMethodsList.length === 0) {
+                setError('Debe agregar al menos un método de pago.');
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
             const payload = {
                 email,
                 password,
                 full_name: fullName,
                 role,
-                dni: dni || undefined,
+                dni: dniBody ? dni : undefined,
                 // Paciente
                 date_of_birth: role === 'patient' ? dateOfBirth : undefined,
                 gender:        role === 'patient' ? gender       : undefined,
@@ -71,12 +138,11 @@ const Register = () => {
                 // Doctor
                 specialty:      role === 'doctor' ? specialty      : undefined,
                 license_number: role === 'doctor' ? licenseNumber  : undefined,
-                clinic_name:    role === 'doctor' ? clinicName     : undefined,
                 modality:       role === 'doctor' ? modality       : undefined,
                 rif:            role === 'doctor' ? rif            : undefined,
                 consultation_fee: role === 'doctor' ? consultationFee : undefined,
-                catalog_method_id: role === 'doctor' ? catalogMethodId : undefined,
-                account_details:   role === 'doctor' ? accountDetails  : undefined,
+                clinics:         role === 'doctor' ? selectedClinics : undefined,
+                payment_methods: role === 'doctor' ? paymentMethodsList : undefined,
             };
 
             await api.post('/auth/register', payload);
@@ -152,11 +218,18 @@ const Register = () => {
                         {/* Cédula / DNI (campo común) */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Cédula de Identidad / DNI</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400 dark:text-slate-500" /></div>
-                                <input type="text" value={dni} onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
-                                    className={inputClass}
-                                    placeholder="Ej. 12345678" required />
+                            <div className="flex gap-2">
+                                <select value={dniPrefix} onChange={e => setDniPrefix(e.target.value)}
+                                    className="w-24 px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm transition-colors outline-none">
+                                    <option value="V">V</option>
+                                    <option value="E">E</option>
+                                </select>
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CreditCard size={18} className="text-gray-400 dark:text-slate-500" /></div>
+                                    <input type="text" value={dniBody} onChange={e => setDniBody(e.target.value.replace(/\D/g, ''))}
+                                        className={inputClass}
+                                        placeholder="Ej. 12345678" required />
+                                </div>
                             </div>
                         </div>
 
@@ -203,20 +276,43 @@ const Register = () => {
                                     </div>
                                 </div>
 
-                                {/* Centro de Salud / Clínica (dropdown desde BD) */}
+                                {/* Centros de Salud / Clínicas (Múltiples checkboxes + dirección personalizada) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Centro de Salud / Clínica</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Building2 size={18} className="text-gray-400" /></div>
-                                        <select value={clinicName} onChange={e => setClinicName(e.target.value)}
-                                            className={selectClass}
-                                            required={role === 'doctor'}>
-                                            <option value="">Seleccione un centro...</option>
-                                            {clinics.map(c => (
-                                                <option key={c.id} value={c.name}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Centros de Salud / Clínicas (Selecciona al menos una)</label>
+                                    <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+                                        {clinics.map(c => {
+                                            const isChecked = selectedClinics.some(sc => sc.clinic_id === c.id);
+                                            const currentSelection = selectedClinics.find(sc => sc.clinic_id === c.id);
+                                            return (
+                                                <div key={c.id} className="space-y-1">
+                                                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-750 dark:text-slate-300 cursor-pointer">
+                                                         <input type="checkbox" checked={isChecked}
+                                                             onChange={e => {
+                                                                 if (e.target.checked) {
+                                                                     setSelectedClinics([...selectedClinics, { clinic_id: c.id, custom_address: '' }]);
+                                                                 } else {
+                                                                     setSelectedClinics(selectedClinics.filter(sc => sc.clinic_id !== c.id));
+                                                                 }
+                                                             }}
+                                                             className="rounded text-mindpath-primary focus:ring-mindpath-primary" />
+                                                        <span>{c.name}</span>
+                                                    </label>
+                                                    {isChecked && (
+                                                        <div className="pl-6">
+                                                            <input type="text"
+                                                                value={currentSelection?.custom_address || ''}
+                                                                onChange={e => {
+                                                                    setSelectedClinics(selectedClinics.map(sc => 
+                                                                        sc.clinic_id === c.id ? { ...sc, custom_address: e.target.value } : sc
+                                                                    ));
+                                                                }}
+                                                                className="block w-full px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-mindpath-primary/20"
+                                                                placeholder={`Dirección personalizada (por defecto: ${c.default_address || 'Online'})`} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -249,12 +345,23 @@ const Register = () => {
 
                                 {/* RIF (Opcional) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">RIF (Opcional)</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FileText size={18} className="text-gray-400" /></div>
-                                        <input type="text" value={rif} onChange={e => setRif(e.target.value)}
-                                            className={inputClass}
-                                            placeholder="J-12345678-9" />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">RIF (Opcional)</label>
+                                    <div className="flex gap-2">
+                                        <select value={rifPrefix} onChange={e => setRifPrefix(e.target.value)}
+                                            className="w-24 px-3 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 text-gray-900 dark:text-white text-sm transition-colors outline-none">
+                                            <option value="J">J</option>
+                                            <option value="R">R</option>
+                                            <option value="G">G</option>
+                                            <option value="P">P</option>
+                                            <option value="V">V</option>
+                                            <option value="E">E</option>
+                                        </select>
+                                        <div className="relative flex-1">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FileText size={18} className="text-gray-400 dark:text-slate-500" /></div>
+                                            <input type="text" value={rifBody} onChange={e => setRifBody(e.target.value.replace(/\D/g, ''))}
+                                                className={inputClass}
+                                                placeholder="123456789" />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -267,28 +374,172 @@ const Register = () => {
                                     <div>
                                         <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Monto por Consulta ($)</label>
                                         <input type="number" value={consultationFee} onChange={e => setConsultationFee(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
+                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm outline-none"
                                             placeholder="Ej. 40" required={role === 'doctor'} />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Primer Método de Pago</label>
-                                        <select value={catalogMethodId} onChange={e => setCatalogMethodId(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
-                                            required={role === 'doctor'}>
-                                            <option value="">Selecciona un método...</option>
-                                            {paymentCatalogs.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
+                                    {/* Métodos agregados */}
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400">Métodos de pago agregados ({paymentMethodsList.length})</label>
+                                        {paymentMethodsList.length === 0 ? (
+                                            <p className="text-xs text-amber-650 dark:text-amber-500 italic">No has agregado ningún método aún. Usa el formulario de abajo para agregar al menos uno.</p>
+                                        ) : (
+                                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                {paymentMethodsList.map((m, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-900/30 text-xs">
+                                                        <div className="pr-2">
+                                                            <p className="font-bold text-gray-900 dark:text-white">{m.method_name} (Orden: {m.sort_order})</p>
+                                                            <p className="text-gray-500 dark:text-gray-400 whitespace-pre-line mt-0.5">{m.account_details}</p>
+                                                        </div>
+                                                        <button type="button" onClick={() => setPaymentMethodsList(paymentMethodsList.filter((_, i) => i !== idx))}
+                                                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md shrink-0">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Datos de Cuenta / Instrucciones</label>
-                                        <textarea value={accountDetails} onChange={e => setAccountDetails(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm resize-none"
-                                            placeholder="Ej. Zelle: correo@ejemplo.com (Titular: Juan Pérez)" 
-                                            rows={2} required={role === 'doctor'} />
+                                    {/* Formulario para agregar */}
+                                    <div className="border-t border-amber-200/50 dark:border-amber-700/50 pt-3 space-y-3">
+                                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Agregar nuevo método de pago:</p>
+                                        
+                                        <div>
+                                            <select value={selectedCatalogId} onChange={handleCatalogSelectChange}
+                                                className="block w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-xl focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none">
+                                                <option value="">Selecciona un tipo...</option>
+                                                {paymentCatalogs.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {selectedCatalogName && (
+                                            <div className="space-y-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                                                {(getCatalogKey(selectedCatalogName) === 'transferencia bancaria' || getCatalogKey(selectedCatalogName) === 'transferencia') && (
+                                                    <div className="space-y-2">
+                                                        <input type="text" value={paymentFields.bank_name || ''} onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Banco" />
+                                                        <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Titular" />
+                                                        <input type="text" value={paymentFields.account_number || ''} onChange={e => setPaymentFields(p => ({ ...p, account_number: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Número de cuenta" />
+                                                        <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                                            <select value={paymentFields.doc_type || 'V'} onChange={e => setPaymentFields(p => ({ ...p, doc_type: e.target.value }))} className="px-2 py-1.5 bg-gray-50 dark:bg-slate-700 text-xs border-r border-gray-200 dark:border-slate-700 outline-none">
+                                                                <option value="V">V</option>
+                                                                <option value="E">E</option>
+                                                                <option value="J">J</option>
+                                                                <option value="P">P</option>
+                                                                <option value="G">G</option>
+                                                            </select>
+                                                            <input type="text" value={paymentFields.id_number || ''} onChange={e => setPaymentFields(p => ({ ...p, id_number: e.target.value }))} className="w-full px-2 py-1.5 border-none text-xs outline-none" placeholder="Cédula/RIF" />
+                                                        </div>
+                                                        <input type="text" value={paymentFields.account_type || ''} onChange={e => setPaymentFields(p => ({ ...p, account_type: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Tipo de cuenta (corriente, ahorro...)" />
+                                                    </div>
+                                                )}
+
+                                                {getCatalogKey(selectedCatalogName) === 'zelle' && (
+                                                    <div className="space-y-2">
+                                                        <input type="email" value={paymentFields.zelle_email || ''} onChange={e => setPaymentFields(p => ({ ...p, zelle_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo Zelle" />
+                                                        <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Titular" />
+                                                    </div>
+                                                )}
+
+                                                {getCatalogKey(selectedCatalogName) === 'binance' && (
+                                                    <div className="space-y-2">
+                                                        <input type="text" value={paymentFields.binance_id || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_id: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Binance ID" />
+                                                        <input type="email" value={paymentFields.binance_email || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo" />
+                                                        <input type="text" value={paymentFields.binance_user || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_user: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Usuario / alias" />
+                                                    </div>
+                                                )}
+
+                                                {getCatalogKey(selectedCatalogName) === 'paypal' && (
+                                                    <div className="space-y-2">
+                                                        <input type="email" value={paymentFields.paypal_email || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo PayPal" />
+                                                        <input type="text" value={paymentFields.paypal_link || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_link: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Enlace paypal.me" />
+                                                    </div>
+                                                )}
+
+                                                {(getCatalogKey(selectedCatalogName) === 'pago movil' || getCatalogKey(selectedCatalogName) === 'pago móvil') && (
+                                                    <div className="space-y-2">
+                                                        <select
+                                                            value={paymentFields.bank_name || ''}
+                                                            onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))}
+                                                            className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 outline-none"
+                                                        >
+                                                            <option value="" className="bg-white dark:bg-slate-800">Selecciona un Banco...</option>
+                                                            {VENEZUELAN_BANKS.map(bank => (
+                                                                <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-800">{bank.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                                            <select
+                                                                value={paymentFields.phone_prefix || '0412'}
+                                                                onChange={e => setPaymentFields(p => ({ ...p, phone_prefix: e.target.value }))}
+                                                                className="px-2 py-1.5 bg-gray-50 dark:bg-slate-700 text-xs border-r border-gray-200 dark:border-slate-700 outline-none"
+                                                            >
+                                                                <option value="0412">0412</option>
+                                                                <option value="0414">0414</option>
+                                                                <option value="0424">0424</option>
+                                                                <option value="0416">0416</option>
+                                                                <option value="0426">0426</option>
+                                                            </select>
+                                                            <input
+                                                                type="text"
+                                                                maxLength={7}
+                                                                value={paymentFields.phone_body || ''}
+                                                                onChange={e => setPaymentFields(p => ({ ...p, phone_body: e.target.value.replace(/\D/g, '') }))}
+                                                                className="w-full px-2 py-1.5 border-none text-xs outline-none"
+                                                                placeholder="Número (7 dígitos)"
+                                                            />
+                                                        </div>
+                                                        <div className="flex border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                                            <select
+                                                                value={paymentFields.doc_type || 'V'}
+                                                                onChange={e => setPaymentFields(p => ({ ...p, doc_type: e.target.value }))}
+                                                                className="px-2 py-1.5 bg-gray-50 dark:bg-slate-700 text-xs border-r border-gray-200 dark:border-slate-700 outline-none"
+                                                            >
+                                                                <option value="V">V</option>
+                                                                <option value="E">E</option>
+                                                                <option value="J">J</option>
+                                                                <option value="P">P</option>
+                                                                <option value="G">G</option>
+                                                                <option value="R">R</option>
+                                                            </select>
+                                                            <input
+                                                                type="text"
+                                                                value={paymentFields.id_number || ''}
+                                                                onChange={e => setPaymentFields(p => ({ ...p, id_number: e.target.value.replace(/\D/g, '') }))}
+                                                                className="w-full px-2 py-1.5 border-none text-xs outline-none"
+                                                                placeholder="Número de Cédula o RIF"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {(getCatalogKey(selectedCatalogName) === 'efectivo en consultorio' || getCatalogKey(selectedCatalogName) === 'efectivo') && (
+                                                    <textarea value={paymentFields.cash_note || ''} onChange={e => setPaymentFields(p => ({ ...p, cash_note: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs resize-none outline-none" placeholder="Indicaciones para efectivo" rows={2} />
+                                                )}
+
+                                                {getCatalogKey(selectedCatalogName) === 'otro' && (
+                                                    <textarea value={paymentFields.custom_details || ''} onChange={e => setPaymentFields(p => ({ ...p, custom_details: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs resize-none outline-none" placeholder="Detalles de pago" rows={2} />
+                                                )}
+
+                                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-100/50">
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-400 font-bold uppercase">Nombre visible (opcional)</label>
+                                                        <input type="text" value={visibleMethodName} onChange={e => setVisibleMethodName(e.target.value)} className="block w-full px-2 py-1 border border-gray-250 dark:border-slate-700 rounded-lg text-[11px] outline-none" placeholder="Ej. Pago Móvil Personal" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-400 font-bold uppercase">Orden de visualización</label>
+                                                        <input type="number" value={paymentOrder} onChange={e => setPaymentOrder(e.target.value)} className="block w-full px-2 py-1 border border-gray-250 dark:border-slate-700 rounded-lg text-[11px] outline-none" min={1} />
+                                                    </div>
+                                                </div>
+
+                                                <button type="button" onClick={handleAddPaymentMethod}
+                                                    className="w-full mt-2 py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs transition-colors">
+                                                    Agregar a la lista
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </>
