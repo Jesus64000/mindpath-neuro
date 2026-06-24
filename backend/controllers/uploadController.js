@@ -3,8 +3,13 @@ const path   = require('path');
 const fs     = require('fs');
 const db     = require('../config/db');
 
-// Asegurar que la carpeta existe
-const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+const os = require('os');
+
+// Asegurar que la carpeta existe (en Vercel usamos el directorio temporal del OS)
+const uploadDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'uploads')
+    : path.join(__dirname, '..', 'public', 'uploads');
+
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({

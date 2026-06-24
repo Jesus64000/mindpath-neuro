@@ -7,9 +7,12 @@ const isSuperAdmin     = require('../middlewares/isSuperAdminMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // ── Multer para logos ─────────────────────────────────────────────────────────
-const logosDir = path.join(__dirname, '..', 'public', 'uploads', 'logos');
+const logosDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'logos')
+    : path.join(__dirname, '..', 'public', 'uploads', 'logos');
 if (!fs.existsSync(logosDir)) fs.mkdirSync(logosDir, { recursive: true });
 
 const storage = multer.diskStorage({

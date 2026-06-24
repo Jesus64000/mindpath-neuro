@@ -41,21 +41,14 @@ const restoreFileMiddleware = async (req, res, next) => {
             return next();
         }
 
-        // Si no existe físicamente, lo recuperamos de la base de datos
+        // Si no existe físicamente, lo recuperamos de la base de datos y lo servimos directo (ideal para Vercel Serverless)
         const [rows] = await db.query('SELECT file_data, mimetype FROM stored_files WHERE file_path = ?', [relativeUrl]);
         if (rows && rows.length > 0) {
-            console.log(`🔄 [Self-Healing] Restaurando archivo desde BD al disco: ${relativeUrl}`);
             const base64Data = rows[0].file_data;
             const buffer = Buffer.from(base64Data, 'base64');
-            
-            // Asegurar que exista la carpeta contenedora
-            const dir = path.dirname(absolutePath);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-
-            fs.writeFileSync(absolutePath, buffer);
-            console.log(`✅ Archivo regenerado exitosamente en disco: ${absolutePath}`);
+            res.setHeader('Content-Type', rows[0].mimetype);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            return res.send(buffer);
         }
         next();
     } catch (err) {

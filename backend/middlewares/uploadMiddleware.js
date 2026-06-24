@@ -1,10 +1,16 @@
 const multer = require('multer');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 
-// Configuración de almacenamiento local
+// Configuración de almacenamiento local/temporal
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Carpeta donde se guardarán los audios
+        const dest = process.env.VERCEL ? os.tmpdir() : 'uploads/';
+        if (!fs.existsSync(dest) && !process.env.VERCEL) {
+            fs.mkdirSync(dest, { recursive: true });
+        }
+        cb(null, dest); // Carpeta donde se guardarán los audios
     },
     filename: function (req, file, cb) {
         // Renombramos el archivo para que sea único: appointment_id + timestamp

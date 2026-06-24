@@ -33,7 +33,10 @@ app.use('/api/ratings', require('./routes/ratingRoutes'));
 app.get('/uploads/invoices/:filename', async (req, res, next) => {
     const fs = require('fs');
     const path = require('path');
-    const filePath = path.join(__dirname, 'public', 'uploads', 'invoices', req.params.filename);
+    const os = require('os');
+    const filePath = process.env.VERCEL
+        ? path.join(os.tmpdir(), 'invoices', req.params.filename)
+        : path.join(__dirname, 'public', 'uploads', 'invoices', req.params.filename);
 
     if (fs.existsSync(filePath)) {
         return res.sendFile(filePath);
@@ -150,3 +153,5 @@ app.listen(PORT, () => {
     console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
     console.log(`👉 Haz un GET a http://localhost:${PORT}/api/health para probar.`);
 });
+
+module.exports = app;

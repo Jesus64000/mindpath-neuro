@@ -214,7 +214,10 @@ exports.wrapUpConsultation = async (req, res) => {
                     id            = LAST_INSERT_ID(id)
             `, [appointmentId, data.doctor_id, data.patient_id, invoiceNumber, baseAmount, baseAmount]);
 
-            const invoiceLocalPath = path.join(__dirname, '..', 'public', 'uploads', 'invoices', `invoice_${invoiceNumber}.pdf`);
+            const os = require('os');
+            const invoiceLocalPath = process.env.VERCEL
+                ? path.join(os.tmpdir(), 'invoices', `invoice_${invoiceNumber}.pdf`)
+                : path.join(__dirname, '..', 'public', 'uploads', 'invoices', `invoice_${invoiceNumber}.pdf`);
             pdfPath = `/uploads/invoices/invoice_${invoiceNumber}.pdf`;
 
             // Asegurar que la carpeta exista antes de escribir el PDF (Evita el error 500 ENOENT)
