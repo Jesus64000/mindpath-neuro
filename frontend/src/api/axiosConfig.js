@@ -7,6 +7,11 @@ if (apiURL && !apiURL.startsWith('http://') && !apiURL.startsWith('https://')) {
     apiURL = 'https://' + apiURL;
 }
 
+// Red de seguridad: Asegurar que la URL del backend siempre termine con /api
+if (apiURL && !apiURL.endsWith('/api') && !apiURL.endsWith('/api/')) {
+    apiURL = apiURL.replace(/\/$/, '') + '/api';
+}
+
 const api = axios.create({
     baseURL: apiURL, // Ruta base de nuestro backend
     headers: {

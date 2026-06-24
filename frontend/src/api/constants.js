@@ -7,6 +7,11 @@ if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('http
     rawApiUrl = 'https://' + rawApiUrl;
 }
 
+// Red de seguridad: Asegurar que la URL del backend siempre termine con /api
+if (rawApiUrl && !rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
+    rawApiUrl = rawApiUrl.replace(/\/$/, '') + '/api';
+}
+
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
     (rawApiUrl ? rawApiUrl.replace(/\/api$/, '') : 'http://localhost:3000');
 
