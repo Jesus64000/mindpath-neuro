@@ -895,7 +895,17 @@ exports.getClinicsAdmin = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM clinics");
-        const total = totalRes[0].total;
+        let total = totalRes[0].total;
+
+        if (total === 0) {
+            await db.query("INSERT IGNORE INTO clinics (name, default_address) VALUES " +
+                "('Mindpath Online', 'Consulta Virtual (Online)'), " +
+                "('Centro Médico Zulia', 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo'), " +
+                "('Hospital San José', 'Calle 72 con Av. 15, Hospital San José, Maracaibo'), " +
+                "('Clínica Amado', 'Av. 5 de Julio, Clínica Amado, Maracaibo')");
+            const [newTotalRes] = await db.query("SELECT COUNT(*) AS total FROM clinics");
+            total = newTotalRes[0].total;
+        }
 
         const [rows] = await db.query(
             "SELECT * FROM clinics ORDER BY name ASC LIMIT ? OFFSET ?",
@@ -978,10 +988,16 @@ exports.deleteClinic = async (req, res) => {
     }
 };
 
-// ── CRUD Tipos de Exámenes Médicos ─────────────────────────────────────────────
 exports.getStudyTypes = async (_req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM study_types ORDER BY name ASC");
+        let [rows] = await db.query("SELECT * FROM study_types ORDER BY name ASC");
+        if (rows.length === 0) {
+            const initialStudies = ['Tomografía', 'EEG', 'Resonancia', 'Laboratorio', 'Otro'];
+            for (const study of initialStudies) {
+                await db.query("INSERT IGNORE INTO study_types (name) VALUES (?)", [study]);
+            }
+            [rows] = await db.query("SELECT * FROM study_types ORDER BY name ASC");
+        }
         res.status(200).json(rows);
     } catch (error) {
         console.error("Error en getStudyTypes:", error);
@@ -996,7 +1012,16 @@ exports.getStudyTypesAdmin = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM study_types");
-        const total = totalRes[0].total;
+        let total = totalRes[0].total;
+
+        if (total === 0) {
+            const initialStudies = ['Tomografía', 'EEG', 'Resonancia', 'Laboratorio', 'Otro'];
+            for (const study of initialStudies) {
+                await db.query("INSERT IGNORE INTO study_types (name) VALUES (?)", [study]);
+            }
+            const [newTotalRes] = await db.query("SELECT COUNT(*) AS total FROM study_types");
+            total = newTotalRes[0].total;
+        }
 
         const [rows] = await db.query(
             "SELECT * FROM study_types ORDER BY name ASC LIMIT ? OFFSET ?",

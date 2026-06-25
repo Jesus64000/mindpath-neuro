@@ -57,6 +57,7 @@ app.get('/uploads/invoices/:filename', async (req, res, next) => {
                 a.consultation_fee_snapshot,
                 a.type as appointmentType,
                 a.appointment_date,
+                a.start_time,
                 a.patient_id,
                 a.doctor_id,
                 a.payment_method,
@@ -67,12 +68,22 @@ app.get('/uploads/invoices/:filename', async (req, res, next) => {
                 du.full_name AS doctorName,
                 d.rif AS doctorRif,
                 d.phone AS doctorPhone,
-                d.specialty
+                d.specialty,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Mindpath Online'
+                    ELSE COALESCE(cl.name, d.clinic_name, 'Consultorio Presencial')
+                END AS clinicName,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Consultorio virtual disponible para telemedicina.'
+                    ELSE COALESCE(dc.custom_address, cl.default_address, d.clinic_address, 'Dirección no disponible')
+                END AS clinicAddress
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
             JOIN users pu ON p.user_id = pu.id
             JOIN doctors d ON a.doctor_id = d.id
             JOIN users du ON d.user_id = du.id
+            LEFT JOIN clinics cl ON a.clinic_id = cl.id
+            LEFT JOIN doctor_clinics dc ON (a.doctor_id = dc.doctor_id AND a.clinic_id = dc.clinic_id)
             WHERE a.id = ?
         `, [appointmentId]);
 
@@ -102,6 +113,9 @@ app.get('/uploads/invoices/:filename', async (req, res, next) => {
             patientPhone: data.patientPhone,
             appointmentType: data.appointmentType,
             appointmentDate: data.appointment_date,
+            startTime: data.start_time,
+            clinicName: data.clinicName,
+            clinicAddress: data.clinicAddress,
             baseAmount: baseAmount,
             totalAmount: baseAmount,
             currency: 'USD',

@@ -32,6 +32,26 @@ const DoctorProfileSettings = () => {
     const [signaturePreview, setSignaturePreview] = useState(null);
     const [clinicsCatalog, setClinicsCatalog] = useState([]);
     const [selectedClinics, setSelectedClinics] = useState([]);
+    const [selectedClinicId, setSelectedClinicId] = useState('');
+    const [customClinicAddress, setCustomClinicAddress] = useState('');
+    const [modality, setModality] = useState('ambas');
+
+    const handleAddClinic = () => {
+        if (!selectedClinicId) return;
+        const exists = selectedClinics.some(sc => String(sc.clinic_id) === String(selectedClinicId));
+        if (exists) {
+            alert('Esta clínica ya ha sido agregada.');
+            return;
+        }
+        setSelectedClinics([...selectedClinics, { clinic_id: parseInt(selectedClinicId), custom_address: customClinicAddress }]);
+        setSelectedClinicId('');
+        setCustomClinicAddress('');
+    };
+
+    const handleRemoveClinic = (clinicId) => {
+        setSelectedClinics(selectedClinics.filter(sc => String(sc.clinic_id) !== String(clinicId)));
+    };
+
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -63,6 +83,7 @@ const DoctorProfileSettings = () => {
             }
             if (d.profile_picture) setProfilePicture(d.profile_picture);
             if (d.signature_picture) setSignaturePicture(d.signature_picture);
+            setModality(d.modality || 'ambas');
             setSelectedClinics(d.clinics || []);
             setClinicsCatalog(clinicsRes.data || []);
             setSpecialties(specialtiesRes.data.map(s => s.name));
@@ -119,7 +140,7 @@ const DoctorProfileSettings = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (selectedClinics.length === 0) {
+        if (modality !== 'online' && selectedClinics.length === 0) {
             alert('Debes seleccionar al menos un centro de salud / clínica.');
             return;
         }
@@ -128,7 +149,8 @@ const DoctorProfileSettings = () => {
                 ...formData,
                 languages: selectedLanguages.join(', '),
                 signature_picture: signaturePicture,
-                clinics: selectedClinics
+                clinics: selectedClinics,
+                modality
             });
             updateUser({ full_name: formData.full_name });
             setSaved(true);
@@ -144,13 +166,13 @@ const DoctorProfileSettings = () => {
     const avatarSrc = preview
         ? preview
         : profilePicture
-            ? `${BACKEND_URL}${profilePicture}`
+            ? (profilePicture.startsWith('http') ? profilePicture : `${BACKEND_URL}${profilePicture}`)
             : null;
 
     const signatureSrc = signaturePreview
         ? signaturePreview
         : signaturePicture
-            ? `${BACKEND_URL}${signaturePicture}`
+            ? (signaturePicture.startsWith('http') ? signaturePicture : `${BACKEND_URL}${signaturePicture}`)
             : null;
 
     if (loading) return <div className="p-20 text-center font-bold text-mindpath-primary">Cargando tu configuración...</div>;
@@ -272,7 +294,7 @@ const DoctorProfileSettings = () => {
                                     <User size={13}/> Nombre Completo
                                 </label>
                                 <input type="text" value={formData.full_name}
-                                    onChange={e => setFormData({...formData, full_name: e.target.value})}
+                                    onChange={e => setFormData({...formData, full_name: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})}
                                     className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
                                     placeholder="Dr. Juan Pérez" />
                             </div>
@@ -312,6 +334,21 @@ const DoctorProfileSettings = () => {
                                     onChange={e => setFormData({...formData, experience_years: e.target.value})}
                                     className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
                                     placeholder="0" min={0} />
+                            </div>
+
+                            {/* Modalidad de atención */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2">Modalidad de Atención</label>
+                                <div className="relative">
+                                    <select value={modality}
+                                        onChange={e => setModality(e.target.value)}
+                                        className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none pr-10">
+                                        <option value="ambas">Ambas (Online y Presencial)</option>
+                                        <option value="online">Solo Online</option>
+                                        <option value="presencial">Solo Presencial</option>
+                                    </select>
+                                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
 
                             {/* Tarifa de consulta */}
@@ -368,49 +405,72 @@ const DoctorProfileSettings = () => {
                             className="w-full h-32 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-sm text-gray-900 dark:text-white leading-relaxed outline-none focus:ring-2 focus:ring-mindpath-primary/20 resize-none placeholder-gray-400 dark:placeholder-slate-500"
                             placeholder={"Ej. Universidad Central de Venezuela — Medicina, 2015\nHarvard Medical School — Neurología, 2018"} />
                     </div>
-
                     {/* Ubicación */}
-                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
-                        <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
-                            <MapPin className="text-red-500"/> Centros de Salud / Clínicas
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">Selecciona los centros de salud donde consultas y personaliza la dirección de ser necesario.</p>
-                        <div className="space-y-3 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-2xl border border-gray-100 dark:border-slate-700">
-                            {clinicsCatalog.map(c => {
-                                const isChecked = selectedClinics.some(sc => sc.clinic_id === c.id);
-                                const currentSelection = selectedClinics.find(sc => sc.clinic_id === c.id);
-                                return (
-                                    <div key={c.id} className="space-y-2">
-                                        <label className="flex items-center space-x-2 text-sm font-bold text-gray-700 dark:text-slate-200 cursor-pointer">
-                                             <input type="checkbox" checked={isChecked}
-                                                 onChange={e => {
-                                                     if (e.target.checked) {
-                                                         setSelectedClinics([...selectedClinics, { clinic_id: c.id, custom_address: '' }]);
-                                                     } else {
-                                                         setSelectedClinics(selectedClinics.filter(sc => sc.clinic_id !== c.id));
-                                                     }
-                                                 }}
-                                                 className="rounded text-mindpath-primary focus:ring-mindpath-primary w-4 h-4 accent-mindpath-primary" />
-                                            <span>{c.name}</span>
-                                        </label>
-                                        {isChecked && (
-                                            <div className="pl-6">
-                                                <input type="text"
-                                                    value={currentSelection?.custom_address || ''}
-                                                    onChange={e => {
-                                                        setSelectedClinics(selectedClinics.map(sc => 
-                                                            sc.clinic_id === c.id ? { ...sc, custom_address: e.target.value } : sc
-                                                        ));
-                                                    }}
-                                                    className="block w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-mindpath-primary/20 font-medium"
-                                                    placeholder={`Dirección personalizada (por defecto: ${c.default_address || 'Online'})`} />
-                                            </div>
-                                        )}
+                    {modality !== 'online' && (
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
+                            <h3 className="font-black text-xl text-gray-900 dark:text-white border-b dark:border-white/10 pb-4 flex items-center gap-2">
+                                <MapPin className="text-red-500"/> Centros de Salud / Clínicas
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-slate-400">Selecciona los centros de salud donde consultas y personaliza la dirección de ser necesario.</p>
+                            <div className="space-y-3 p-4 bg-gray-50 dark:bg-slate-700/30 rounded-2xl border border-gray-100 dark:border-slate-700">
+                                
+                                {/* Clínicas agregadas */}
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-gray-700 dark:text-slate-355">Clínicas asociadas ({selectedClinics.length})</label>
+                                    {selectedClinics.length === 0 ? (
+                                        <p className="text-xs text-red-500 italic">No has asociado ninguna clínica aún. Debes agregar al menos una usando el selector de abajo.</p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                            {selectedClinics.map((sc) => {
+                                                const clinicObj = clinicsCatalog.find(c => c.id === sc.clinic_id);
+                                                return (
+                                                    <div key={sc.clinic_id} className="flex justify-between items-center p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700/50 text-xs">
+                                                        <div className="pr-2">
+                                                            <p className="font-bold text-gray-900 dark:text-white">{clinicObj ? clinicObj.name : 'Cargando...'}</p>
+                                                            <p className="text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                Dirección: {sc.custom_address || clinicObj?.default_address || 'Online'}
+                                                            </p>
+                                                        </div>
+                                                        <button type="button" onClick={() => handleRemoveClinic(sc.clinic_id)}
+                                                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md shrink-0">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Formulario para agregar clínica */}
+                                <div className="border-t border-gray-200 dark:border-slate-700/50 pt-3 space-y-3">
+                                    <p className="text-xs font-bold text-gray-850 dark:text-slate-205">Asociar centro de salud:</p>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div>
+                                            <select value={selectedClinicId} onChange={e => setSelectedClinicId(e.target.value)}
+                                                className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-850 text-gray-900 dark:text-white text-xs outline-none">
+                                                <option value="">Selecciona clínica/centro...</option>
+                                                {clinicsCatalog.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <input type="text" value={customClinicAddress} onChange={e => setCustomClinicAddress(e.target.value)}
+                                                className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-850 text-gray-900 dark:text-white text-xs outline-none"
+                                                placeholder="Dirección personalizada (opcional)" />
+                                        </div>
                                     </div>
-                                );
-                            })}
+
+                                    <button type="button" onClick={handleAddClinic}
+                                        className="px-3 py-1.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-lg transition-all">
+                                        + Agregar Centro
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="flex justify-end pt-8">
                         <button type="submit" disabled={loading}

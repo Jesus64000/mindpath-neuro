@@ -54,8 +54,14 @@ const DoctorProfile = () => {
     const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()));
     const [availableSlots, setAvailableSlots] = useState([]);
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [selectedSlotObj, setSelectedSlotObj] = useState(null);
     const [modality, setModality] = useState('virtual');
     const [loadingSlots, setLoadingSlots] = useState(false);
+
+    useEffect(() => {
+        setSelectedSlot(null);
+        setSelectedSlotObj(null);
+    }, [modality]);
 
     const [weekOffset, setWeekOffset] = useState(0); // 0 = Esta semana, 1 = Próxima, etc.
 
@@ -101,14 +107,16 @@ const DoctorProfile = () => {
         const fetchAvailability = async () => {
             setLoadingSlots(true);
             setSelectedSlot(null);
+            setSelectedSlotObj(null);
             try {
-                const res = await api.get(`/bookings/availability?doctorId=${id}&date=${selectedDate}`);
+                const res = await api.get(`/bookings/availability?doctorId=${id}&date=${selectedDate}&format=object`);
                 let slots = res.data;
                 const todayStr = formatDateLocal(new Date());
                 if (selectedDate === todayStr) {
                     const now = new Date();
                     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                    slots = slots.filter(timeStr => {
+                    slots = slots.filter(slot => {
+                        const timeStr = typeof slot === 'string' ? slot : slot.time;
                         const [h, m] = timeStr.split(':').map(Number);
                         const slotMinutes = h * 60 + m;
                         return (slotMinutes - currentMinutes) >= 10;
@@ -154,8 +162,49 @@ const DoctorProfile = () => {
         return `${formattedHour}:${minute} ${ampm}`;
     };
 
-    const morningSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) < 12);
-    const afternoonSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) >= 12);
+    const filteredSlots = useMemo(() => {
+        return availableSlots.filter(slot => {
+            const isVirtual = slot.clinic_name === 'Mindpath Online' || !slot.clinic_id;
+            if (modality === 'virtual') {
+                return isVirtual;
+            } else {
+                return !isVirtual;
+            }
+        });
+    }, [availableSlots, modality]);
+
+    const morningSlots = filteredSlots.filter(slot => {
+        const timeStr = typeof slot === 'string' ? slot : slot.time;
+        return parseInt(timeStr.split(':')[0]) < 12;
+    });
+
+    const afternoonSlots = filteredSlots.filter(slot => {
+        const timeStr = typeof slot === 'string' ? slot : slot.time;
+        return parseInt(timeStr.split(':')[0]) >= 12;
+    });
+
+    let displayClinicName = 'Mindpath Online';
+    let displayClinicAddress = 'Consultorio virtual disponible para telemedicina.';
+
+    if (modality === 'presencial') {
+        if (selectedSlotObj && selectedSlotObj.clinic_name) {
+            displayClinicName = selectedSlotObj.clinic_name;
+            displayClinicAddress = selectedSlotObj.clinic_address || 'Dirección no disponible';
+        } else {
+            const firstPresencial = availableSlots.find(s => s.clinic_name && s.clinic_name !== 'Mindpath Online');
+            if (firstPresencial) {
+                displayClinicName = firstPresencial.clinic_name;
+                displayClinicAddress = firstPresencial.clinic_address || 'Dirección no disponible';
+            } else if (doctor?.clinics && doctor.clinics.length > 0) {
+                const firstDocClinic = doctor.clinics.find(c => c.name !== 'Mindpath Online') || doctor.clinics[0];
+                displayClinicName = firstDocClinic.name;
+                displayClinicAddress = firstDocClinic.custom_address || firstDocClinic.default_address || 'Dirección no disponible';
+            } else {
+                displayClinicName = doctor?.clinic_name || 'Consultorio Presencial';
+                displayClinicAddress = doctor?.clinic_address || 'Consulte al especialista por la dirección física.';
+            }
+        }
+    }
 
     if (loadingProfile && !doctor) {
         return <div className="flex justify-center items-center h-[70vh]"><Activity className="animate-spin text-mindpath-primary" size={48} /></div>;
@@ -235,12 +284,14 @@ const DoctorProfile = () => {
                     {/* Consultorio */}
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm flex items-start">
                         <div className="h-12 w-12 bg-mindpath-light dark:bg-mindpath-primary/20 text-mindpath-primary dark:text-mindpath-primary rounded-xl flex items-center justify-center shrink-0 mr-4">
-                            <MapPin size={24} />
+                            {modality === 'virtual' ? <Video size={24} /> : <MapPin size={24} />}
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Consultorio Presencial</h3>
-                            <p className="font-medium text-gray-800 dark:text-slate-200">{doctor.clinic_name || 'Centro Médico Mindpath'}</p>
-                            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">{doctor.clinic_address || 'Consultorio virtual disponible para telemedicina.'}</p>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                {modality === 'virtual' ? 'Consulta Virtual' : 'Consultorio Presencial'}
+                            </h3>
+                            <p className="font-medium text-gray-800 dark:text-slate-200">{displayClinicName}</p>
+                            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">{displayClinicAddress}</p>
                         </div>
                     </div>
 
@@ -376,19 +427,33 @@ const DoctorProfile = () => {
                                         <div>
                                             <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1">☀️ Mañana</h4>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {morningSlots.map(slot => (
-                                                    <button 
-                                                        key={slot}
-                                                        onClick={() => setSelectedSlot(slot)}
-                                                        className={`py-2 rounded-xl text-sm font-bold transition-all border ${
-                                                            selectedSlot === slot 
-                                                            ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
-                                                            : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
-                                                        }`}
-                                                    >
-                                                        {formatTimeAMPM(slot)}
-                                                    </button>
-                                                ))}
+                                                {morningSlots.map(slot => {
+                                                    const slotTime = typeof slot === 'string' ? slot : slot.time;
+                                                    const isSelected = selectedSlot === slotTime;
+                                                    return (
+                                                        <button 
+                                                            key={slotTime}
+                                                            onClick={() => {
+                                                                setSelectedSlot(slotTime);
+                                                                setSelectedSlotObj(typeof slot === 'string' ? null : slot);
+                                                            }}
+                                                            className={`py-2 px-1 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center ${
+                                                                isSelected 
+                                                                ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
+                                                                : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
+                                                            }`}
+                                                        >
+                                                            <span>{formatTimeAMPM(slotTime)}</span>
+                                                            {modality === 'presencial' && slot.clinic_name && (
+                                                                <span className={`text-[9px] mt-0.5 px-1 py-0.2 rounded truncate max-w-full font-medium ${
+                                                                    isSelected ? 'bg-white/20 text-white' : 'bg-mindpath-light dark:bg-mindpath-primary/20 text-mindpath-primary'
+                                                                }`}>
+                                                                    {slot.clinic_name}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -398,19 +463,33 @@ const DoctorProfile = () => {
                                         <div>
                                             <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1">🌤️ Tarde / Noche</h4>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {afternoonSlots.map(slot => (
-                                                    <button 
-                                                        key={slot}
-                                                        onClick={() => setSelectedSlot(slot)}
-                                                        className={`py-2 rounded-xl text-sm font-bold transition-all border ${
-                                                            selectedSlot === slot 
-                                                            ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
-                                                            : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
-                                                        }`}
-                                                    >
-                                                        {formatTimeAMPM(slot)}
-                                                    </button>
-                                                ))}
+                                                {afternoonSlots.map(slot => {
+                                                    const slotTime = typeof slot === 'string' ? slot : slot.time;
+                                                    const isSelected = selectedSlot === slotTime;
+                                                    return (
+                                                        <button 
+                                                            key={slotTime}
+                                                            onClick={() => {
+                                                                setSelectedSlot(slotTime);
+                                                                setSelectedSlotObj(typeof slot === 'string' ? null : slot);
+                                                            }}
+                                                            className={`py-2 px-1 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center ${
+                                                                isSelected 
+                                                                ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md' 
+                                                                : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
+                                                            }`}
+                                                        >
+                                                            <span>{formatTimeAMPM(slotTime)}</span>
+                                                            {modality === 'presencial' && slot.clinic_name && (
+                                                                <span className={`text-[9px] mt-0.5 px-1 py-0.2 rounded truncate max-w-full font-medium ${
+                                                                    isSelected ? 'bg-white/20 text-white' : 'bg-mindpath-light dark:bg-mindpath-primary/20 text-mindpath-primary'
+                                                                }`}>
+                                                                    {slot.clinic_name}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}

@@ -93,14 +93,24 @@ exports.getAppointmentReport = async (req, res) => {
         const [report] = await db.query(`
             SELECT 
                 a.appointment_date, a.start_time, a.type,
-                du.full_name AS doctor_name, d.specialty, d.clinic_name,
+                du.full_name AS doctor_name, d.specialty,
                 r.motivo_sintomas, r.antecedentes, r.hallazgos,
-                r.diagnostico, r.tratamiento, r.estudios_observaciones
+                r.diagnostico, r.tratamiento, r.estudios_observaciones,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Mindpath Online'
+                    ELSE COALESCE(cl.name, d.clinic_name, 'Consultorio Presencial')
+                END AS clinic_name,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Consultorio virtual disponible para telemedicina.'
+                    ELSE COALESCE(dc.custom_address, cl.default_address, d.clinic_address, 'Dirección no disponible')
+                END AS clinic_address
             FROM appointments a
             JOIN doctors d ON a.doctor_id = d.id
             JOIN users du ON d.user_id = du.id
             JOIN consultations c ON a.id = c.appointment_id
             JOIN clinical_reports r ON c.id = r.consultation_id
+            LEFT JOIN clinics cl ON a.clinic_id = cl.id
+            LEFT JOIN doctor_clinics dc ON (a.doctor_id = dc.doctor_id AND a.clinic_id = dc.clinic_id)
             WHERE a.id = ? AND a.patient_id = ? AND r.is_shared = TRUE
         `, [appointmentId, patientId]);
 
@@ -132,7 +142,6 @@ exports.getMyHistory = async (req, res) => {
                 a.legal_verification_code,
                 du.full_name  AS doctor_name,
                 d.specialty,
-                d.clinic_name,
                 d.profile_picture,
                 d.signature_picture,
                 d.rif,
@@ -145,7 +154,15 @@ exports.getMyHistory = async (req, res) => {
                 r.estudios_observaciones,
                 r.is_shared,
                 dr.rating     AS my_rating,
-                dr.comment    AS my_comment
+                dr.comment    AS my_comment,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Mindpath Online'
+                    ELSE COALESCE(cl.name, d.clinic_name, 'Consultorio Presencial')
+                END AS clinic_name,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Consultorio virtual disponible para telemedicina.'
+                    ELSE COALESCE(dc.custom_address, cl.default_address, d.clinic_address, 'Dirección no disponible')
+                END AS clinic_address
             FROM appointments a
             JOIN patients p    ON a.patient_id = p.id
             JOIN users pu      ON p.user_id = pu.id
@@ -153,6 +170,8 @@ exports.getMyHistory = async (req, res) => {
             JOIN users du      ON d.user_id = du.id
             JOIN consultations c       ON c.appointment_id = a.id
             JOIN clinical_reports r    ON r.consultation_id = c.id
+            LEFT JOIN clinics cl       ON a.clinic_id = cl.id
+            LEFT JOIN doctor_clinics dc ON (a.doctor_id = dc.doctor_id AND a.clinic_id = dc.clinic_id)
             LEFT JOIN doctor_ratings dr ON dr.appointment_id = a.id AND dr.patient_id = p.id
             WHERE pu.id = ? AND r.is_shared = TRUE AND a.status = 'completed'
             ORDER BY a.appointment_date DESC

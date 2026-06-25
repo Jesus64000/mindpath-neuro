@@ -131,8 +131,46 @@ pool.getConnection()
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
     })
-    .then(() => {
+    .then(async () => {
         console.log('✅ Tabla stored_files para persistencia de archivos verificada.');
+        
+        // Crear tablas clinics, study_types y doctor_clinics
+        await pool.query("CREATE TABLE IF NOT EXISTS clinics (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(150) NOT NULL UNIQUE, default_address VARCHAR(255) DEFAULT NULL)");
+        await pool.query("CREATE TABLE IF NOT EXISTS study_types (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(150) NOT NULL UNIQUE)");
+        await pool.query(`CREATE TABLE IF NOT EXISTS doctor_clinics (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            doctor_id INT NOT NULL,
+            clinic_id INT NOT NULL,
+            custom_address VARCHAR(255) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE,
+            FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_doctor_clinic (doctor_id, clinic_id)
+        )`);
+        
+        // Columnas faltantes opcionales
+        try {
+            await pool.query("ALTER TABLE doctors ADD COLUMN signature_picture VARCHAR(255) DEFAULT NULL");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE doctors ADD COLUMN modality ENUM('online', 'presencial', 'ambas') DEFAULT 'ambas'");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE doctor_schedules ADD COLUMN clinic_id INT DEFAULT NULL AFTER slot_duration");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE appointments ADD COLUMN clinic_id INT DEFAULT NULL AFTER doctor_ready");
+        } catch (e) {}
+
+        // Claves foráneas faltantes opcionales
+        try {
+            await pool.query("ALTER TABLE doctor_schedules ADD CONSTRAINT fk_doctor_schedules_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE appointments ADD CONSTRAINT fk_appointments_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL");
+        } catch (e) {}
+
+        console.log('✅ Tablas y columnas de clínicas y estudios médicos verificadas/creadas.');
     })
     .catch(err => {
         console.error('❌ Error fatal en inicialización/parche de BD:', err.message);

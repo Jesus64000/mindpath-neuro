@@ -135,7 +135,7 @@ const PatientSettings = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase ml-2 flex items-center gap-2"><User size={13}/> Nombre Completo</label>
                             <input type="text" value={formData.full_name}
-                                onChange={e => setFormData({...formData, full_name: e.target.value})}
+                                onChange={e => setFormData({...formData, full_name: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')})}
                                 className="w-full p-4 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border-none text-gray-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-mindpath-primary/20 placeholder-gray-400 dark:placeholder-slate-500"
                                 placeholder="Tu nombre completo" />
                         </div>

@@ -40,6 +40,9 @@ router.post('/emergency-block', authMiddleware, doctorController.toggleEmergency
 // Sprint 27: Estadísticas personales
 router.get('/my-stats', authMiddleware, doctorController.getMyStats);
 
+// Registro de pagos del doctor
+router.get('/payments', authMiddleware, doctorController.getDoctorPayments);
+
 // Catálogo público de especialidades (sin auth — para el registro y directorio)
 router.get('/specialties', doctorController.getSpecialties);
 

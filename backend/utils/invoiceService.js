@@ -154,17 +154,38 @@ exports.generateInvoicePDF = async (invoiceData, filePath) => {
                 dateStr = new Date().toLocaleDateString('es-VE');
             }
 
+            // Formatear hora si está presente
+            let timeStr = '';
+            if (invoiceData.startTime) {
+                try {
+                    const [hourStr, minute] = invoiceData.startTime.split(':');
+                    const hour = parseInt(hourStr, 10);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const formattedHour = hour % 12 || 12;
+                    timeStr = ` a las ${formattedHour}:${minute} ${ampm}`;
+                } catch (e) {
+                    timeStr = ` ${invoiceData.startTime}`;
+                }
+            }
+
             const typeStr = (invoiceData.appointmentType === 'presencial') ? 'Presencial' : 'En Línea / Telemedicina';
-            const itemText = `Consulta Médica Especializada (${typeStr}) — ${dateStr}`;
+            
+            let itemText = `Consulta Médica Especializada (${typeStr})\nFecha: ${dateStr}${timeStr}`;
+            if (invoiceData.clinicName) {
+                itemText += `\nLugar: ${sanitizeText(invoiceData.clinicName)}`;
+            }
+            if (invoiceData.clinicAddress) {
+                itemText += `\nDirección: ${sanitizeText(invoiceData.clinicAddress)}`;
+            }
 
             doc.text(itemText, 50, itemY, { width: 385 });
             doc.text(`${parseFloat(invoiceData.baseAmount || 0).toFixed(2)} ${invoiceData.currency || 'USD'}`, 450, itemY, { width: 95, align: 'right' });
             
-            // Row bottom border
-            const itemBottomY = itemY + 22;
+            // Row bottom border using doc.y dynamically to allow multiline growth
+            const itemBottomY = doc.y + 10;
             doc.moveTo(50, itemBottomY).lineTo(545, itemBottomY).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
             
-            doc.y = itemBottomY + 18;
+            doc.y = itemBottomY + 15;
             
             // ================= TOTALS SECTION =================
             const subtotalY = doc.y;

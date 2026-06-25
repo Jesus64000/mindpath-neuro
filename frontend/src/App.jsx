@@ -26,6 +26,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SuperAdminSetup from './pages/admin/SuperAdminSetup';
 import MyHistory from './pages/patient/MyHistory';
 import DoctorStats from './pages/doctor/DoctorStats';
+import DoctorPayments from './pages/doctor/DoctorPayments';
 import ResetPassword from './pages/auth/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import CompletarPerfil from './pages/auth/CompletarPerfil';
@@ -83,6 +84,7 @@ function App() {
               <Route path="/doctor/ia-lab" element={<AILab />} />
               <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
               <Route path="/doctor/stats" element={<DoctorStats />} />
+              <Route path="/doctor/payments" element={<DoctorPayments />} />
             </Route>
 
 

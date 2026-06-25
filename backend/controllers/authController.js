@@ -104,10 +104,19 @@ exports.register = async (req, res) => {
                 const doctorId = docResult.insertId;
 
                 // Insertar múltiples clínicas en doctor_clinics
-                if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+                if (clinics && Array.isArray(clinics)) {
+                    const [onlineClinicRow] = await connection.query("SELECT id FROM clinics WHERE name = 'Mindpath Online'");
+                    if (onlineClinicRow.length > 0) {
+                        const onlineClinicId = onlineClinicRow[0].id;
+                        const hasOnline = clinics.some(c => String(c.clinic_id) === String(onlineClinicId));
+                        if (!hasOnline && (modality === 'online' || modality === 'ambas')) {
+                            clinics.push({ clinic_id: onlineClinicId, custom_address: 'Consulta Virtual (Online)' });
+                        }
+                    }
+
                     for (const c of clinics) {
                         await connection.query(
-                            `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                            `INSERT IGNORE INTO doctor_clinics (doctor_id, clinic_id, custom_address)
                              VALUES (?, ?, ?)`,
                             [doctorId, c.clinic_id, c.custom_address || null]
                         );
@@ -355,10 +364,19 @@ exports.googleComplete = async (req, res) => {
             const doctorId = docResult.insertId;
 
             // Insertar múltiples clínicas
-            if (clinics && Array.isArray(clinics) && clinics.length > 0) {
+            if (clinics && Array.isArray(clinics)) {
+                const [onlineClinicRow] = await connection.query("SELECT id FROM clinics WHERE name = 'Mindpath Online'");
+                if (onlineClinicRow.length > 0) {
+                    const onlineClinicId = onlineClinicRow[0].id;
+                    const hasOnline = clinics.some(c => String(c.clinic_id) === String(onlineClinicId));
+                    if (!hasOnline && (modality === 'online' || modality === 'ambas')) {
+                        clinics.push({ clinic_id: onlineClinicId, custom_address: 'Consulta Virtual (Online)' });
+                    }
+                }
+
                 for (const c of clinics) {
                     await connection.query(
-                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                        `INSERT IGNORE INTO doctor_clinics (doctor_id, clinic_id, custom_address)
                          VALUES (?, ?, ?)`,
                         [doctorId, c.clinic_id, c.custom_address || null]
                     );

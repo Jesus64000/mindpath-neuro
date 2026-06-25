@@ -208,11 +208,13 @@ const MyHistory = () => {
                                                         doctor_name: rec.doctor_name,
                                                         specialty: rec.specialty,
                                                         appointment_date: rec.appointment_date,
+                                                        start_time: rec.start_time,
                                                         type: rec.type,
                                                         legal_verification_code: rec.legal_verification_code,
                                                         signature_picture: rec.signature_picture,
                                                         rif: rec.rif || 'J-12345678-9',
-                                                        clinic_name: rec.clinic_name || 'Mindpath Neuro'
+                                                        clinic_name: rec.clinic_name || 'Mindpath Neuro',
+                                                        clinic_address: rec.clinic_address
                                                     }}
                                                     className="!bg-mindpath-primary hover:!bg-mindpath-primaryHover text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-md shadow-mindpath-primary/10 transition-all shrink-0"
                                                 />

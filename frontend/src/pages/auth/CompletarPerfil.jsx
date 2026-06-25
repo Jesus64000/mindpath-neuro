@@ -56,6 +56,24 @@ const CompletarPerfil = () => {
     
     // Clínicas múltiples
     const [selectedClinics, setSelectedClinics] = useState([]);
+    const [selectedClinicId, setSelectedClinicId] = useState('');
+    const [customClinicAddress, setCustomClinicAddress] = useState('');
+
+    const handleAddClinic = () => {
+        if (!selectedClinicId) return;
+        const exists = selectedClinics.some(sc => String(sc.clinic_id) === String(selectedClinicId));
+        if (exists) {
+            alert('Esta clínica ya ha sido agregada.');
+            return;
+        }
+        setSelectedClinics([...selectedClinics, { clinic_id: parseInt(selectedClinicId), custom_address: customClinicAddress }]);
+        setSelectedClinicId('');
+        setCustomClinicAddress('');
+    };
+
+    const handleRemoveClinic = (clinicId) => {
+        setSelectedClinics(selectedClinics.filter(sc => String(sc.clinic_id) !== String(clinicId)));
+    };
     
     // Métodos de pago múltiples
     const [paymentMethodsList, setPaymentMethodsList] = useState([]);
@@ -124,7 +142,7 @@ const CompletarPerfil = () => {
         setLoading(true);
 
         if (role === 'doctor') {
-            if (selectedClinics.length === 0) {
+            if (modality !== 'online' && selectedClinics.length === 0) {
                 setError('Debe seleccionar al menos un centro de salud / clínica.');
                 setLoading(false);
                 return;
@@ -283,6 +301,84 @@ const CompletarPerfil = () => {
                                     </div>
                                 </div>
 
+                                {/* Modalidad */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Modalidad de Atención</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Globe size={18} className="text-gray-400 dark:text-slate-500" /></div>
+                                        <select value={modality} onChange={e => setModality(e.target.value)} className={selectClass} required>
+                                            <option value="ambas" className="dark:bg-slate-800">Ambas (Online y Presencial)</option>
+                                            <option value="online" className="dark:bg-slate-800">Solo Online</option>
+                                            <option value="presencial" className="dark:bg-slate-800">Solo Presencial</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
+                                    </div>
+                                </div>
+
+                                {/* Centros de Salud / Clínicas (Lista dinámica + Selector Dropdown) */}
+                                {modality !== 'online' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Centros de Salud / Clínicas (Agrega al menos una)</label>
+                                        <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+                                            
+                                            {/* Clínicas agregadas */}
+                                            <div className="space-y-2">
+                                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-355">Clínicas agregadas ({selectedClinics.length})</label>
+                                                {selectedClinics.length === 0 ? (
+                                                    <p className="text-xs text-red-500 italic">No has agregado ninguna clínica aún. Debes agregar al menos una usando el selector de abajo.</p>
+                                                ) : (
+                                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                        {selectedClinics.map((sc) => {
+                                                            const clinicObj = clinics.find(c => c.id === sc.clinic_id);
+                                                            return (
+                                                                <div key={sc.clinic_id} className="flex justify-between items-center p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/50 text-xs">
+                                                                    <div className="pr-2">
+                                                                        <p className="font-bold text-gray-900 dark:text-white">{clinicObj ? clinicObj.name : 'Cargando...'}</p>
+                                                                        <p className="text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                            Dirección: {sc.custom_address || clinicObj?.default_address || 'Online'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <button type="button" onClick={() => handleRemoveClinic(sc.clinic_id)}
+                                                                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-slate-800 rounded-md shrink-0">
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Formulario para agregar clínica */}
+                                            <div className="border-t border-gray-200 dark:border-slate-700/50 pt-3 space-y-3">
+                                                <p className="text-xs font-bold text-gray-850 dark:text-slate-205">Asociar centro de salud:</p>
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    <div>
+                                                        <select value={selectedClinicId} onChange={e => setSelectedClinicId(e.target.value)}
+                                                            className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none">
+                                                            <option value="">Selecciona clínica/centro...</option>
+                                                            {clinics.map(c => (
+                                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <input type="text" value={customClinicAddress} onChange={e => setCustomClinicAddress(e.target.value)}
+                                                            className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none"
+                                                            placeholder="Dirección personalizada (opcional)" />
+                                                    </div>
+                                                </div>
+
+                                                <button type="button" onClick={handleAddClinic}
+                                                    className="px-3 py-1.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-lg transition-all">
+                                                    + Agregar Centro
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Licencia / CMVP */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Licencia / CMVP</label>
@@ -290,46 +386,6 @@ const CompletarPerfil = () => {
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><BadgeCheck size={18} className="text-gray-400 dark:text-slate-500" /></div>
                                         <input type="text" value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)}
                                             className={inputClass} placeholder="Nro. de registro" required />
-                                    </div>
-                                </div>
-
-                                {/* Centros de Salud / Clínicas (Múltiples checkboxes + dirección personalizada) */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Centros de Salud / Clínicas (Selecciona al menos una)</label>
-                                    <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
-                                        {clinics.map(c => {
-                                            const isChecked = selectedClinics.some(sc => sc.clinic_id === c.id);
-                                            const currentSelection = selectedClinics.find(sc => sc.clinic_id === c.id);
-                                            return (
-                                                <div key={c.id} className="space-y-1">
-                                                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-755 dark:text-slate-305 cursor-pointer">
-                                                         <input type="checkbox" checked={isChecked}
-                                                             onChange={e => {
-                                                                 if (e.target.checked) {
-                                                                     setSelectedClinics([...selectedClinics, { clinic_id: c.id, custom_address: '' }]);
-                                                                 } else {
-                                                                     setSelectedClinics(selectedClinics.filter(sc => sc.clinic_id !== c.id));
-                                                                 }
-                                                             }}
-                                                             className="rounded text-mindpath-primary focus:ring-mindpath-primary" />
-                                                        <span>{c.name}</span>
-                                                    </label>
-                                                    {isChecked && (
-                                                        <div className="pl-6">
-                                                            <input type="text"
-                                                                value={currentSelection?.custom_address || ''}
-                                                                onChange={e => {
-                                                                    setSelectedClinics(selectedClinics.map(sc => 
-                                                                        sc.clinic_id === c.id ? { ...sc, custom_address: e.target.value } : sc
-                                                                    ));
-                                                                }}
-                                                                className="block w-full px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-mindpath-primary/20"
-                                                                placeholder={`Dirección personalizada (por defecto: ${c.default_address || 'Online'})`} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
                                     </div>
                                 </div>
 
@@ -351,20 +407,6 @@ const CompletarPerfil = () => {
                                             <input type="text" name="doctorPhoneBody" id="doctorPhoneBody" autoComplete="tel-national" maxLength={7} value={doctorPhoneBody} onChange={e => setDoctorPhoneBody(e.target.value.replace(/\D/g, ''))}
                                                 className={inputClass} placeholder="7 dígitos" required />
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Modalidad */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Modalidad de Atención</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Globe size={18} className="text-gray-400 dark:text-slate-500" /></div>
-                                        <select value={modality} onChange={e => setModality(e.target.value)} className={selectClass} required>
-                                            <option value="ambas" className="dark:bg-slate-800">Ambas (Online y Presencial)</option>
-                                            <option value="online" className="dark:bg-slate-800">Solo Online</option>
-                                            <option value="presencial" className="dark:bg-slate-800">Solo Presencial</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><ChevronDown size={16} className="text-gray-400" /></div>
                                     </div>
                                 </div>
 

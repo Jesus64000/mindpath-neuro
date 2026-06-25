@@ -118,10 +118,20 @@ export const ReportPDFDocument = ({ report, header }) => {
         ? (logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`)
         : '/logo.png';
 
+    const formatTimeAMPM = (timeStr) => {
+        if (!timeStr) return '';
+        const [hourStr, minute] = timeStr.split(':');
+        const hour = parseInt(hourStr, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12;
+        return `${formattedHour}:${minute} ${ampm}`;
+    };
+
+    const timeStr = header?.start_time ? ` a las ${formatTimeAMPM(header.start_time)}` : '';
     const fecha = header?.appointment_date
         ? new Date(header.appointment_date.split('T')[0] + 'T12:00:00').toLocaleDateString('es-ES', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-          })
+          }) + timeStr
         : '';
 
     return (
@@ -141,6 +151,7 @@ export const ReportPDFDocument = ({ report, header }) => {
                         {header?.doctor_name  && <Text style={styles.metaRow}>Dr(a). {header.doctor_name}</Text>}
                         {header?.specialty    && <Text style={styles.metaRow}>{header.specialty}</Text>}
                         {header?.clinic_name  && <Text style={styles.metaRow}>{header.clinic_name}</Text>}
+                        {header?.clinic_address && <Text style={styles.metaRow}>{header.clinic_address}</Text>}
                         {header?.rif          && <Text style={styles.metaRow}>RIF: {header.rif}</Text>}
                         {fecha                && <Text style={styles.metaRow}>{fecha}</Text>}
                     </View>

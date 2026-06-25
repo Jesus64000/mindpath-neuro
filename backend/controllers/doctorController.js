@@ -61,7 +61,15 @@ exports.getPublicPaymentCatalog = async (req, res) => {
 
 exports.getClinics = async (_req, res) => {
     try {
-        const [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+        let [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+        if (clinics.length === 0) {
+            await db.query("INSERT IGNORE INTO clinics (name, default_address) VALUES " +
+                "('Mindpath Online', 'Consulta Virtual (Online)'), " +
+                "('Centro Médico Zulia', 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo'), " +
+                "('Hospital San José', 'Calle 72 con Av. 15, Hospital San José, Maracaibo'), " +
+                "('Clínica Amado', 'Av. 5 de Julio, Clínica Amado, Maracaibo')");
+            [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+        }
         res.status(200).json(clinics);
     } catch (error) {
         console.error('Error al obtener clínicas:', error);
@@ -282,7 +290,7 @@ exports.getProfileSettings = async (req, res) => {
             SELECT u.full_name, u.email, d.id AS doctor_id, d.specialty, d.bio, d.clinic_name,
                    d.clinic_address, d.license_number, d.experience_years,
                    d.consultation_fee, d.languages, d.education, d.profile_picture,
-                   d.is_blocked, d.emergency_block_until, d.signature_picture
+                   d.is_blocked, d.emergency_block_until, d.signature_picture, d.modality
             FROM doctors d 
             JOIN users u ON d.user_id = u.id 
             WHERE u.id = ?
@@ -316,7 +324,7 @@ exports.updateProfileSettings = async (req, res) => {
         const {
             specialty, bio, clinic_name, clinic_address,
             license_number, experience_years, consultation_fee,
-            languages, education, full_name, signature_picture, clinics
+            languages, education, full_name, signature_picture, clinics, modality
         } = req.body;
 
         const finalConsultationFee = consultation_fee === '' ? null : consultation_fee;
@@ -335,20 +343,30 @@ exports.updateProfileSettings = async (req, res) => {
                 UPDATE doctors SET 
                     specialty = ?, bio = ?, clinic_name = ?, clinic_address = ?,
                     license_number = ?, experience_years = ?, consultation_fee = ?,
-                    languages = ?, education = ?, signature_picture = ?
+                    languages = ?, education = ?, signature_picture = ?, modality = ?
                 WHERE id = ?
             `, [specialty, bio, clinic_name || null, clinic_address || null, license_number,
-                experience_years || null, finalConsultationFee, languages || null, education || null, signature_picture || null, doctorId]);
+                experience_years || null, finalConsultationFee, languages || null, education || null, signature_picture || null, modality || 'ambas', doctorId]);
 
             if (full_name) {
                 await connection.query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
             }
 
             if (clinics && Array.isArray(clinics)) {
+                // Ensure Mindpath Online is auto-associated if modality is online/ambas
+                const [onlineClinicRow] = await connection.query("SELECT id FROM clinics WHERE name = 'Mindpath Online'");
+                if (onlineClinicRow.length > 0) {
+                    const onlineClinicId = onlineClinicRow[0].id;
+                    const hasOnline = clinics.some(c => String(c.clinic_id) === String(onlineClinicId));
+                    if (!hasOnline && (modality === 'online' || modality === 'ambas')) {
+                        clinics.push({ clinic_id: onlineClinicId, custom_address: 'Consulta Virtual (Online)' });
+                    }
+                }
+
                 await connection.query('DELETE FROM doctor_clinics WHERE doctor_id = ?', [doctorId]);
                 for (const c of clinics) {
                     await connection.query(
-                        `INSERT INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+                        `INSERT IGNORE INTO doctor_clinics (doctor_id, clinic_id, custom_address)
                          VALUES (?, ?, ?)`,
                         [doctorId, c.clinic_id, c.custom_address || null]
                     );
@@ -881,3 +899,43 @@ exports.deleteException = async (req, res) => {
         res.status(500).json({ message: "Error al eliminar." });
     }
 };
+
+// Obtener el historial de pagos del doctor
+exports.getDoctorPayments = async (req, res) => {
+    try {
+        const [docRes] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [req.user.id]);
+        if (docRes.length === 0) {
+            return res.status(404).json({ message: "Perfil del especialista no encontrado." });
+        }
+        const doctorId = docRes[0].id;
+
+        const [payments] = await db.query(`
+            SELECT 
+                a.id AS appointment_id,
+                a.appointment_date,
+                a.start_time,
+                a.type AS appointment_type,
+                a.status AS appointment_status,
+                a.payment_status,
+                a.payment_method,
+                a.payment_reference,
+                a.payment_proof_url,
+                a.consultation_fee_snapshot AS amount,
+                u.full_name AS patient_name,
+                i.invoice_number,
+                i.pdf_path AS invoice_pdf_path
+            FROM appointments a
+            JOIN patients p ON a.patient_id = p.id
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN invoices i ON a.id = i.appointment_id
+            WHERE a.doctor_id = ?
+            ORDER BY a.appointment_date DESC, a.start_time DESC
+        `, [doctorId]);
+
+        res.status(200).json(payments);
+    } catch (error) {
+        console.error("Error en getDoctorPayments:", error);
+        res.status(500).json({ message: "Error al obtener el historial de pagos." });
+    }
+};
+

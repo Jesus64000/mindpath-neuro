@@ -35,6 +35,7 @@ const AppointmentDetail = () => {
     // Hooks de comprobante de pago siempre al inicio
     const [verifying, setVerifying] = useState(false);
     const [verifyMsg, setVerifyMsg] = useState('');
+    const [zoomImage, setZoomImage] = useState(null);
 
     // Función para recargar el detalle de la cita
     const fetchDetail = async () => {
@@ -118,7 +119,12 @@ const AppointmentDetail = () => {
                     {isPDF ? (
                         <a href={url} target="_blank" rel="noopener noreferrer" className="text-mindpath-primary underline font-bold">Ver PDF</a>
                     ) : (
-                        <img src={url} alt="Comprobante de pago" className="max-w-xs rounded-xl border mt-2" />
+                        <img 
+                            src={url} 
+                            alt="Comprobante de pago" 
+                            className="max-w-xs rounded-xl border mt-2 cursor-zoom-in hover:opacity-90 transition-opacity" 
+                            onClick={() => setZoomImage(url)} 
+                        />
                     )}
 
                     {/* Botones de verificación solo si está pendiente */}
@@ -410,6 +416,33 @@ const AppointmentDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {zoomImage && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+                    onClick={() => setZoomImage(null)}
+                >
+                    <div className="relative max-w-4xl w-full flex flex-col items-center">
+                        <button 
+                            className="absolute -top-12 right-0 text-white hover:text-gray-300 font-black text-sm bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-all flex items-center gap-1"
+                            onClick={() => setZoomImage(null)}
+                        >
+                            <XCircle size={16} /> Cerrar
+                        </button>
+                        <img 
+                            src={zoomImage} 
+                            alt="Comprobante de pago ampliado" 
+                            className="max-h-[80vh] max-w-full rounded-2xl object-contain border border-white/20 shadow-2xl cursor-default" 
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        {appt.payment_reference && (
+                            <p className="mt-4 text-white font-bold bg-black/60 px-4 py-2 rounded-xl text-sm" onClick={(e) => e.stopPropagation()}>
+                                Referencia: {appt.payment_reference}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
