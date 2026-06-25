@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import {
     Calendar as CalendarIcon, Clock, Video, MapPin, Activity, Stethoscope,
-    AlertCircle, ChevronLeft, ChevronRight, FileText, X, Star
+    AlertCircle, ChevronLeft, ChevronRight, FileText, X, Star, Building2
 } from 'lucide-react';
 import { BACKEND_URL } from '../../api/constants';
 import Avatar from '../../components/ui/Avatar';
@@ -270,6 +270,15 @@ const PatientAppointments = () => {
                                     <p className="text-sm font-bold text-gray-500 dark:text-slate-400 flex items-center">
                                         {app.type === 'virtual' ? <><Video size={16} className="text-blue-500 mr-2" /> Telemedicina (Online)</> : <><MapPin size={16} className="text-green-500 mr-2" /> Presencial</>}
                                     </p>
+                                    {app.type === 'presencial' && app.clinic_name && (
+                                        <p className="text-xs text-gray-650 dark:text-slate-400 mt-1 flex items-start">
+                                            <Building2 size={14} className="text-gray-400 mr-1.5 mt-0.5 shrink-0" />
+                                            <span>
+                                                <b>Centro:</b> {app.clinic_name}
+                                                {app.clinic_address && <span className="block text-[11px] text-gray-500 dark:text-slate-500">{app.clinic_address}</span>}
+                                            </span>
+                                        </p>
+                                    )}
                                     {/* Monto y método de pago */}
                                     <div className="text-xs mt-2 text-gray-700 dark:text-slate-300">
                                         <b>Monto:</b> {app.consultation_fee_snapshot ? `$${Number(app.consultation_fee_snapshot).toFixed(2)}` : 'No definido'}<br/>

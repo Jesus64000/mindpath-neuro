@@ -9,7 +9,8 @@ const expectedTables = {
     doctor_payment_methods: "CREATE TABLE IF NOT EXISTS doctor_payment_methods (id INT AUTO_INCREMENT PRIMARY KEY, doctor_id INT NOT NULL, catalog_method_id INT DEFAULT NULL, method_name VARCHAR(100) NOT NULL, account_details TEXT NOT NULL, is_active BOOLEAN NOT NULL DEFAULT TRUE, sort_order INT NOT NULL DEFAULT 100, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (catalog_method_id) REFERENCES payment_method_catalog(id) ON DELETE SET NULL)",
     invoices: "CREATE TABLE IF NOT EXISTS invoices (id INT AUTO_INCREMENT PRIMARY KEY, appointment_id INT NOT NULL, doctor_id INT NOT NULL, patient_id INT NOT NULL, invoice_number VARCHAR(50) NOT NULL UNIQUE, base_amount DECIMAL(10,2) NOT NULL, tax_amount DECIMAL(10,2) DEFAULT '0.00', total_amount DECIMAL(10,2) NOT NULL, currency VARCHAR(3) DEFAULT 'USD', legal_text TEXT NOT NULL, pdf_path VARCHAR(255) DEFAULT NULL, issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE)",
     doctor_clinics: "CREATE TABLE IF NOT EXISTS doctor_clinics (id INT AUTO_INCREMENT PRIMARY KEY, doctor_id INT NOT NULL, clinic_id INT NOT NULL, custom_address VARCHAR(255) DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE, FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE, UNIQUE KEY unique_doctor_clinic (doctor_id, clinic_id))",
-    patient_attachments: "CREATE TABLE IF NOT EXISTS patient_attachments (id INT AUTO_INCREMENT PRIMARY KEY, patient_id INT NOT NULL, doctor_id INT NOT NULL, exam_name VARCHAR(100) NOT NULL, file_path VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE)"
+    patient_attachments: "CREATE TABLE IF NOT EXISTS patient_attachments (id INT AUTO_INCREMENT PRIMARY KEY, patient_id INT NOT NULL, doctor_id INT NOT NULL, exam_name VARCHAR(100) NOT NULL, file_path VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE, FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE)",
+    study_types: "CREATE TABLE IF NOT EXISTS study_types (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(150) NOT NULL UNIQUE)"
 };
 
 const expectedColumns = {
@@ -176,6 +177,13 @@ async function verifyAndSyncDB() {
         await db.query("UPDATE clinics SET default_address = 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo' WHERE name = 'Centro Médico Zulia' AND default_address IS NULL");
         await db.query("UPDATE clinics SET default_address = 'Calle 72 con Av. 15, Hospital San José, Maracaibo' WHERE name = 'Hospital San José' AND default_address IS NULL");
         await db.query("UPDATE clinics SET default_address = 'Av. 5 de Julio, Clínica Amado, Maracaibo' WHERE name = 'Clínica Amado' AND default_address IS NULL");
+
+        // Sembrar tipos de estudios por defecto
+        console.log('✅ Sembrando tipos de estudios clínicos...');
+        const initialStudies = ['Tomografía', 'EEG', 'Resonancia', 'Laboratorio', 'Otro'];
+        for (const study of initialStudies) {
+            await db.query("INSERT IGNORE INTO study_types (name) VALUES (?)", [study]);
+        }
 
         
         const catalogVals = [

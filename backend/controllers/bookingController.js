@@ -327,6 +327,24 @@ exports.bookAppointment = async (req, res) => {
             ]
         );
 
+        // Limpiar citas anteriores pendientes o suspendidas para evitar alertas residuales
+        try {
+            await db.query(
+                `UPDATE appointments 
+                 SET status = 'cancelled' 
+                 WHERE patient_id = ? AND status = 'emergency_reschedule'`,
+                [finalPatientId]
+            );
+            await db.query(
+                `UPDATE appointments 
+                 SET status = 'cancelled' 
+                 WHERE patient_id = ? AND status IN ('confirmed', 'scheduled', 'pending') AND appointment_date < ?`,
+                [finalPatientId, appointment_date]
+            );
+        } catch (cleanupError) {
+            console.error('Error al limpiar citas anteriores del paciente:', cleanupError.message);
+        }
+
         res.status(201).json({
             message: 'Cita agendada con éxito.',
             appointment_id: result.insertId,

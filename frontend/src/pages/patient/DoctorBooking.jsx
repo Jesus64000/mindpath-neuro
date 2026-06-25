@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { BACKEND_URL } from '../../api/constants';
-import { Calendar as CalendarIcon, Clock, Video, MapPin, Star, ChevronRight, ChevronLeft, CheckCircle, XCircle, Activity } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, MapPin, Star, ChevronRight, ChevronLeft, CheckCircle, XCircle, Activity, Building2 } from 'lucide-react';
 
 // ── Toast ───────────────────────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => {
@@ -91,13 +91,14 @@ const DoctorBooking = () => {
             setLoadingSlots(true);
             setSelectedSlot(null);
             try {
-                const res = await api.get(`/bookings/availability?doctorId=${doctorId}&date=${selectedDate}`);
+                const res = await api.get(`/bookings/availability?doctorId=${doctorId}&date=${selectedDate}&format=object`);
                 let slots = res.data;
                 const todayStr = formatDateLocal(new Date());
                 if (selectedDate === todayStr) {
                     const now = new Date();
                     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                    slots = slots.filter(timeStr => {
+                    slots = slots.filter(slot => {
+                        const timeStr = typeof slot === 'string' ? slot : slot.time;
                         const [h, m] = timeStr.split(':').map(Number);
                         const slotMinutes = h * 60 + m;
                         return (slotMinutes - currentMinutes) >= 10;
@@ -138,7 +139,7 @@ const DoctorBooking = () => {
                         doctorId,
                         date: selectedDate,
                         type: modality,
-                        start_time: `${selectedSlot}:00`,
+                        start_time: typeof selectedSlot === 'string' ? `${selectedSlot}:00` : `${selectedSlot.time}:00`,
                     }
                 });
                 setQuote(res.data);
@@ -163,7 +164,7 @@ const DoctorBooking = () => {
             await api.post('/bookings/book', {
                 doctor_id:        doctorId,
                 appointment_date: selectedDate,
-                start_time:       `${selectedSlot}:00`,
+                start_time:       typeof selectedSlot === 'string' ? `${selectedSlot}:00` : `${selectedSlot.time}:00`,
                 type:             modality,
                 payment_method:   paymentMethod,
             });
@@ -335,21 +336,29 @@ const DoctorBooking = () => {
                         <Activity className="animate-spin text-mindpath-primary" size={28} />
                     </div>
                 ) : availableSlots.length > 0 ? (
-                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                        {availableSlots.map(time => (
-                            <button
-                                key={time}
-                                onClick={() => setSelectedSlot(time)}
-                                className={`p-3 rounded-xl font-bold text-sm transition-all border ${
-                                    selectedSlot === time
-                                        ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md'
-                                        : 'bg-gray-50 dark:bg-slate-700 border-gray-100 dark:border-white/10 text-gray-700 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
-                                }`}
-                            >
-                                <Clock size={13} className="mx-auto mb-1" />
-                                {time}
-                            </button>
-                        ))}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {availableSlots.map(slot => {
+                            const time = typeof slot === 'string' ? slot : slot.time;
+                            const isSelected = selectedSlot && (typeof selectedSlot === 'string' ? selectedSlot === time : selectedSlot.time === time);
+                            return (
+                                <button
+                                    key={time}
+                                    onClick={() => setSelectedSlot(slot)}
+                                    className={`p-3 rounded-xl font-bold text-xs sm:text-sm transition-all border flex flex-col items-center justify-center ${
+                                        isSelected
+                                            ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-md'
+                                            : 'bg-gray-50 dark:bg-slate-700 border-gray-100 dark:border-white/10 text-gray-700 dark:text-slate-300 hover:border-mindpath-primary hover:text-mindpath-primary'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-1"><Clock size={13} /> {time}</span>
+                                    {typeof slot === 'object' && slot.clinic_name && (
+                                        <span className={`block text-[10px] mt-1 truncate max-w-full ${isSelected ? 'text-white/80' : 'text-gray-400 dark:text-slate-400'}`}>
+                                            {slot.clinic_name}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 ) : (
                     <p className="text-center text-red-400 dark:text-red-400 py-6 font-medium bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-500/30">
@@ -372,12 +381,21 @@ const DoctorBooking = () => {
                             </span>
                             <span className="flex items-center">
                                 <CalendarIcon size={15} className="mr-2 text-mindpath-primary" />
-                                {new Date(selectedDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} a las {selectedSlot}
+                                {new Date(selectedDate.replace(/-/g, '\/')).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} a las {typeof selectedSlot === 'string' ? selectedSlot : selectedSlot.time}
                             </span>
                             <span className="flex items-center">
                                 <span className="mr-2 text-mindpath-primary">$</span>
                                 {quoteLoading ? 'Calculando tarifa...' : quote ? `${quote.price.toFixed(2)} ${quote.currency}` : 'Tarifa por confirmar'}
                             </span>
+                            {modality === 'presencial' && typeof selectedSlot === 'object' && selectedSlot?.clinic_name && (
+                                <span className="flex items-start">
+                                    <Building2 size={15} className="mr-2 mt-0.5 text-mindpath-primary shrink-0" />
+                                    <div>
+                                        <p className="font-bold text-gray-800 dark:text-white">{selectedSlot.clinic_name}</p>
+                                        {selectedSlot.clinic_address && <p className="text-xs text-gray-550 dark:text-slate-400">{selectedSlot.clinic_address}</p>}
+                                    </div>
+                                </span>
+                            )}
                             {modality === 'presencial' && (
                                 <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
                                     {paymentMethod === 'in_person' ? 'Pago en consultorio' : 'Pago por plataforma'}

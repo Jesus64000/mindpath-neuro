@@ -178,11 +178,15 @@ exports.getDoctorAppointments = async (req, res) => {
                 a.payment_method, a.payment_status, a.payment_reference, a.payment_proof_url, a.consultation_fee_snapshot,
                 i.pdf_path AS invoice_pdf,
                 u.full_name AS patient_name, u.email AS patient_email,
-                p.date_of_birth, p.gender, p.phone
+                p.date_of_birth, p.gender, p.phone,
+                c.name AS clinic_name,
+                COALESCE(dc.custom_address, c.default_address) AS clinic_address
             FROM appointments a
             LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN patients p ON a.patient_id = p.id
             JOIN users u ON p.user_id = u.id
+            LEFT JOIN clinics c ON a.clinic_id = c.id
+            LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
             WHERE a.doctor_id = ? ${filterDate ? 'AND a.appointment_date = ?' : ''}
             ORDER BY a.appointment_date ASC, a.start_time ASC
             LIMIT ? OFFSET ?
@@ -307,7 +311,7 @@ exports.getPatientAppointments = async (req, res) => {
         const totalRecords = countResult[0].total;
         const totalPages = Math.ceil(totalRecords / limit);
 
-        // Página actual con JOIN a doctores/usuarios
+        // Página actual con JOIN a doctores/usuarios y clínicas
         const [appointments] = await db.query(`
             SELECT 
                 a.*,
@@ -317,11 +321,15 @@ exports.getPatientAppointments = async (req, res) => {
                 d.id AS doctor_id,
                 d.specialty,
                 d.profile_picture,
-                d.emergency_block_until
+                d.emergency_block_until,
+                c.name AS clinic_name,
+                COALESCE(dc.custom_address, c.default_address) AS clinic_address
             FROM appointments a
             LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN doctors d ON a.doctor_id = d.id
             JOIN users u ON d.user_id = u.id
+            LEFT JOIN clinics c ON a.clinic_id = c.id
+            LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
             WHERE a.patient_id = ?
             ORDER BY a.appointment_date DESC, a.start_time DESC
             LIMIT ? OFFSET ?
@@ -363,7 +371,7 @@ exports.getAppointmentDetail = async (req, res) => {
         if (!doctorRows.length) return res.status(404).json({ message: 'Perfil de doctor no encontrado.' });
         const doctorId = doctorRows[0].id;
 
-        // 1. Datos de la cita + paciente (solo columnas garantizadas)
+        // 1. Datos de la cita + paciente (con clínicas)
         const [apptRows] = await db.query(`
             SELECT
                 a.id AS appointment_id,
@@ -382,11 +390,15 @@ exports.getAppointmentDetail = async (req, res) => {
                 p.gender,
                 p.phone,
                 u.full_name AS patient_name,
-                u.email AS patient_email
+                u.email AS patient_email,
+                c.name AS clinic_name,
+                COALESCE(dc.custom_address, c.default_address) AS clinic_address
             FROM appointments a
             LEFT JOIN invoices i ON a.id = i.appointment_id
             JOIN patients p ON a.patient_id = p.id
             JOIN users u ON p.user_id = u.id
+            LEFT JOIN clinics c ON a.clinic_id = c.id
+            LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
             WHERE a.id = ? AND a.doctor_id = ?
         `, [id, doctorId]);
 

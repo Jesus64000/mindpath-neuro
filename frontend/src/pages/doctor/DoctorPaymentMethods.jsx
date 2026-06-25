@@ -161,7 +161,16 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
 
                         {(getCatalogKey(selectedPaymentCatalogName) === 'transferencia bancaria' || getCatalogKey(selectedPaymentCatalogName) === 'transferencia') && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" value={paymentFields.bank_name || ''} onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Banco" />
+                                <select
+                                    value={paymentFields.bank_name || ''}
+                                    onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))}
+                                    className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none"
+                                >
+                                    <option value="" className="bg-white dark:bg-slate-850">Selecciona un Banco...</option>
+                                    {VENEZUELAN_BANKS.map(bank => (
+                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-850">{bank.name}</option>
+                                    ))}
+                                </select>
                                 <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Titular" />
                                 <input type="text" value={paymentFields.account_number || ''} onChange={e => setPaymentFields(p => ({ ...p, account_number: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Número de cuenta" />
                                 <div className="flex bg-white dark:bg-slate-800/80 rounded-2xl focus-within:ring-2 focus-within:ring-mindpath-primary/20 overflow-hidden">
@@ -227,6 +236,7 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
                                         <option value="0424">0424</option>
                                         <option value="0416">0416</option>
                                         <option value="0426">0426</option>
+                                        <option value="0422">0422</option>
                                     </select>
                                     <input
                                         type="text"

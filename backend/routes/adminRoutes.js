@@ -63,4 +63,17 @@ router.post('/users/:id/send-reset', authMiddleware, isSuperAdmin, adminControll
 
 router.get('/appointments', authMiddleware, isStaff, adminController.getAllAppointments);
 
+// Clínicas / Centros de Salud CRUD
+router.get('/clinics/admin',      authMiddleware, isStaff, adminController.getClinicsAdmin);
+router.post('/clinics',           authMiddleware, isStaff, adminController.createClinic);
+router.put('/clinics/:id',        authMiddleware, isStaff, adminController.updateClinic);
+router.delete('/clinics/:id',     authMiddleware, isStaff, adminController.deleteClinic);
+
+// Tipos de Estudios / Exámenes Médicos CRUD
+router.get('/study-types',        authMiddleware, adminController.getStudyTypes); // accessible to all authenticated users
+router.get('/study-types/admin',  authMiddleware, isStaff, adminController.getStudyTypesAdmin);
+router.post('/study-types',       authMiddleware, isStaff, adminController.createStudyType);
+router.put('/study-types/:id',    authMiddleware, isStaff, adminController.updateStudyType);
+router.delete('/study-types/:id', authMiddleware, isStaff, adminController.deleteStudyType);
+
 module.exports = router;

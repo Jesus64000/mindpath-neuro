@@ -44,6 +44,7 @@ const PatientFile = () => {
         description: '',
         file: null
     });
+    const [studyTypes, setStudyTypes] = useState([]);
     const attachmentFileInputRef = useRef(null);
 
     // ── Notas rápidas (Sprint 27) ────────────────────────────────────────────
@@ -250,6 +251,16 @@ const PatientFile = () => {
         // Cargar adjuntos
         api.get(`/patients/${id}/attachments`)
             .then(res => setAttachments(res.data || []))
+            .catch(console.error);
+
+        // Cargar catálogo de tipos de estudios
+        api.get('/admin/study-types')
+            .then(res => {
+                setStudyTypes(res.data || []);
+                if (res.data && res.data.length > 0) {
+                    setNewAttachment(prev => ({ ...prev, type: res.data[0].name }));
+                }
+            })
             .catch(console.error);
     }, [id]);
 
@@ -667,11 +678,18 @@ const PatientFile = () => {
                                             onChange={e => setNewAttachment({...newAttachment, type: e.target.value})}
                                             className="w-full p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600 outline-none text-gray-850 dark:text-white shadow-sm font-medium"
                                         >
-                                            <option value="Tomografía">Tomografía</option>
-                                            <option value="EEG">EEG</option>
-                                            <option value="Resonancia">Resonancia</option>
-                                            <option value="Laboratorio">Laboratorio</option>
-                                            <option value="Otro">Otro</option>
+                                            {studyTypes.map(st => (
+                                                <option key={st.id} value={st.name}>{st.name}</option>
+                                            ))}
+                                            {studyTypes.length === 0 && (
+                                                <>
+                                                    <option value="Tomografía">Tomografía</option>
+                                                    <option value="EEG">EEG</option>
+                                                    <option value="Resonancia">Resonancia</option>
+                                                    <option value="Laboratorio">Laboratorio</option>
+                                                    <option value="Otro">Otro</option>
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div>

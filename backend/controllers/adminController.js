@@ -886,3 +886,176 @@ exports.getAllAppointments = async (req, res) => {
         res.status(500).json({ message: "Error al obtener citas" });
     }
 };
+
+// ── CRUD Clínicas / Centros de Salud ───────────────────────────────────────────
+exports.getClinicsAdmin = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM clinics");
+        const total = totalRes[0].total;
+
+        const [rows] = await db.query(
+            "SELECT * FROM clinics ORDER BY name ASC LIMIT ? OFFSET ?",
+            [limit, offset]
+        );
+
+        res.status(200).json({
+            data: rows,
+            pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+        });
+    } catch (error) {
+        console.error("Error en getClinicsAdmin:", error);
+        res.status(500).json({ message: "Error al cargar clínicas." });
+    }
+};
+
+exports.createClinic = async (req, res) => {
+    try {
+        const { name, default_address } = req.body;
+        if (!name?.trim())
+            return res.status(400).json({ message: "El nombre es requerido." });
+        const [result] = await db.query(
+            "INSERT INTO clinics (name, default_address) VALUES (?, ?)",
+            [name.trim(), default_address?.trim() || null],
+        );
+        res.status(201).json({ id: result.insertId, name: name.trim(), default_address: default_address?.trim() || null });
+    } catch (error) {
+        if (error.code === "ER_DUP_ENTRY")
+            return res.status(409).json({ message: "La clínica ya existe." });
+        res.status(500).json({ message: "Error al crear clínica." });
+    }
+};
+
+exports.updateClinic = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, default_address } = req.body;
+        if (!name?.trim())
+            return res.status(400).json({ message: "El nombre es requerido." });
+        const [result] = await db.query(
+            "UPDATE clinics SET name = ?, default_address = ? WHERE id = ?",
+            [name.trim(), default_address?.trim() || null, id],
+        );
+        if (result.affectedRows === 0)
+            return res.status(404).json({ message: "Clínica no encontrada." });
+        res.status(200).json({ message: "Clínica actualizada." });
+    } catch (error) {
+        res.status(500).json({ message: "Error al actualizar clínica." });
+    }
+};
+
+exports.deleteClinic = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [doctors] = await db.query(
+            "SELECT COUNT(*) AS total FROM doctor_clinics WHERE clinic_id = ?",
+            [id],
+        );
+        if (doctors[0]?.total > 0) {
+            return res.status(409).json({
+                message: `No puedes eliminar esta clínica: hay ${doctors[0].total} doctor(es) asociado(s).`,
+            });
+        }
+        const [appointments] = await db.query(
+            "SELECT COUNT(*) AS total FROM appointments WHERE clinic_id = ?",
+            [id],
+        );
+        if (appointments[0]?.total > 0) {
+            return res.status(409).json({
+                message: `No puedes eliminar esta clínica: hay ${appointments[0].total} cita(s) asociada(s).`,
+            });
+        }
+        const [result] = await db.query("DELETE FROM clinics WHERE id = ?", [id]);
+        if (result.affectedRows === 0)
+            return res.status(404).json({ message: "Clínica no encontrada." });
+        res.status(200).json({ message: "Clínica eliminada." });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al eliminar clínica." });
+    }
+};
+
+// ── CRUD Tipos de Exámenes Médicos ─────────────────────────────────────────────
+exports.getStudyTypes = async (_req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM study_types ORDER BY name ASC");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Error en getStudyTypes:", error);
+        res.status(500).json({ message: "Error al obtener tipos de estudios." });
+    }
+};
+
+exports.getStudyTypesAdmin = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        const [totalRes] = await db.query("SELECT COUNT(*) AS total FROM study_types");
+        const total = totalRes[0].total;
+
+        const [rows] = await db.query(
+            "SELECT * FROM study_types ORDER BY name ASC LIMIT ? OFFSET ?",
+            [limit, offset]
+        );
+
+        res.status(200).json({
+            data: rows,
+            pagination: { total, page, totalPages: Math.ceil(total / limit), limit }
+        });
+    } catch (error) {
+        console.error("Error en getStudyTypesAdmin:", error);
+        res.status(500).json({ message: "Error al cargar tipos de estudios." });
+    }
+};
+
+exports.createStudyType = async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name?.trim())
+            return res.status(400).json({ message: "El nombre es requerido." });
+        const [result] = await db.query(
+            "INSERT INTO study_types (name) VALUES (?)",
+            [name.trim()],
+        );
+        res.status(201).json({ id: result.insertId, name: name.trim() });
+    } catch (error) {
+        if (error.code === "ER_DUP_ENTRY")
+            return res.status(409).json({ message: "El tipo de estudio ya existe." });
+        res.status(500).json({ message: "Error al crear tipo de estudio." });
+    }
+};
+
+exports.updateStudyType = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        if (!name?.trim())
+            return res.status(400).json({ message: "El nombre es requerido." });
+        const [result] = await db.query(
+            "UPDATE study_types SET name = ? WHERE id = ?",
+            [name.trim(), id],
+        );
+        if (result.affectedRows === 0)
+            return res.status(404).json({ message: "Tipo de estudio no encontrado." });
+        res.status(200).json({ message: "Tipo de estudio actualizado." });
+    } catch (error) {
+        res.status(500).json({ message: "Error al actualizar tipo de estudio." });
+    }
+};
+
+exports.deleteStudyType = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await db.query("DELETE FROM study_types WHERE id = ?", [id]);
+        if (result.affectedRows === 0)
+            return res.status(404).json({ message: "Tipo de estudio no encontrado." });
+        res.status(200).json({ message: "Tipo de estudio eliminado." });
+    } catch (error) {
+        res.status(500).json({ message: "Error al eliminar tipo de estudio." });
+    }
+};

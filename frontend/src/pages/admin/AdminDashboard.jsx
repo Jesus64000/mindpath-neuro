@@ -75,8 +75,23 @@ const AdminDashboard = () => {
     const [paymentCatalogForm, setPaymentCatalogForm] = useState({ name: '', description: '', sort_order: 100, is_active: true });
     const [editingPaymentCatalog, setEditingPaymentCatalog] = useState(null);
 
+    // Clínicas
+    const [clinics, setClinics] = useState([]);
+    const [clinicsPagination, setClinicsPagination] = useState(null);
+    const [clinicsPage, setClinicsPage] = useState(1);
+    const [newClinicName, setNewClinicName] = useState('');
+    const [newClinicAddress, setNewClinicAddress] = useState('');
+    const [editClinic, setEditClinic] = useState(null);
+
+    // Tipos de examen
+    const [studyTypes, setStudyTypes] = useState([]);
+    const [studyTypesPagination, setStudyTypesPagination] = useState(null);
+    const [studyTypesPage, setStudyTypesPage] = useState(1);
+    const [newStudyTypeName, setNewStudyTypeName] = useState('');
+    const [editStudyType, setEditStudyType] = useState(null);
+
     const [toast, setToast]             = useState(null);
-    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true });
+    const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true, clinics: true, studyTypes: true });
     const { clinicName, logoUrl, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
 
     // Theming
@@ -189,9 +204,31 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, staff: false })); }
     }, [staffPage]);
 
+    const loadClinicsAdmin = useCallback(async () => {
+        setLoading(p => ({ ...p, clinics: true }));
+        try { 
+            const res = await api.get(`/admin/clinics/admin?page=${clinicsPage}&limit=10`); 
+            setClinics(res.data.data); 
+            setClinicsPagination(res.data.pagination);
+        }
+        catch { /* silencioso */ }
+        finally { setLoading(p => ({ ...p, clinics: false })); }
+    }, [clinicsPage]);
+
+    const loadStudyTypesAdmin = useCallback(async () => {
+        setLoading(p => ({ ...p, studyTypes: true }));
+        try { 
+            const res = await api.get(`/admin/study-types/admin?page=${studyTypesPage}&limit=10`); 
+            setStudyTypes(res.data.data); 
+            setStudyTypesPagination(res.data.pagination);
+        }
+        catch { /* silencioso */ }
+        finally { setLoading(p => ({ ...p, studyTypes: false })); }
+    }, [studyTypesPage]);
+
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog();
-    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog]);
+        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog(); loadClinicsAdmin(); loadStudyTypesAdmin();
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog, loadClinicsAdmin, loadStudyTypesAdmin]);
 
     useEffect(() => {
         setTheme({ 
@@ -281,6 +318,79 @@ const AdminDashboard = () => {
         if (!confirm('Eliminar esta especialidad?')) return;
         try { await api.delete(`/admin/specialties/${id}`); setSpecialties(p => p.filter(s => s.id !== id)); showToast('Especialidad eliminada.'); }
         catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
+    };
+
+    // CRUD Clínicas
+    const createClinic = async () => {
+        if (!newClinicName.trim()) return;
+        try {
+            await api.post('/admin/clinics', { name: newClinicName.trim(), default_address: newClinicAddress.trim() });
+            setNewClinicName('');
+            setNewClinicAddress('');
+            showToast('Clínica / Centro de salud creado.');
+            loadClinicsAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al crear clínica.', 'error');
+        }
+    };
+
+    const updateClinic = async () => {
+        if (!editClinic?.name.trim()) return;
+        try {
+            await api.put(`/admin/clinics/${editClinic.id}`, { name: editClinic.name.trim(), default_address: editClinic.default_address?.trim() });
+            setEditClinic(null);
+            showToast('Clínica actualizada.');
+            loadClinicsAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al actualizar.', 'error');
+        }
+    };
+
+    const deleteClinic = async (id) => {
+        if (!confirm('¿Eliminar esta clínica?')) return;
+        try {
+            await api.delete(`/admin/clinics/${id}`);
+            showToast('Clínica eliminada.');
+            loadClinicsAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al eliminar.', 'error');
+        }
+    };
+
+    // CRUD Tipos de Exámenes
+    const createStudyType = async () => {
+        if (!newStudyTypeName.trim()) return;
+        try {
+            await api.post('/admin/study-types', { name: newStudyTypeName.trim() });
+            setNewStudyTypeName('');
+            showToast('Examen médico creado.');
+            loadStudyTypesAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al crear examen.', 'error');
+        }
+    };
+
+    const updateStudyType = async () => {
+        if (!editStudyType?.name.trim()) return;
+        try {
+            await api.put(`/admin/study-types/${editStudyType.id}`, { name: editStudyType.name.trim() });
+            setEditStudyType(null);
+            showToast('Examen médico actualizado.');
+            loadStudyTypesAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al actualizar.', 'error');
+        }
+    };
+
+    const deleteStudyType = async (id) => {
+        if (!confirm('¿Eliminar este examen médico?')) return;
+        try {
+            await api.delete(`/admin/study-types/${id}`);
+            showToast('Examen médico eliminado.');
+            loadStudyTypesAdmin();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al eliminar.', 'error');
+        }
     };
 
     const toggleUserActive = async (userId, currentlyActive) => {
@@ -470,6 +580,36 @@ const AdminDashboard = () => {
                     onCreatePaymentCatalog={createPaymentCatalog}
                     onUpdatePaymentCatalog={updatePaymentCatalog}
                     onDeletePaymentCatalog={deletePaymentCatalog}
+                    
+                    // Nuevos catálogos: Clínicas
+                    clinics={clinics}
+                    clinicsPagination={clinicsPagination}
+                    clinicsPage={clinicsPage}
+                    onClinicsPageChange={setClinicsPage}
+                    clinicsLoading={loading.clinics}
+                    newClinicName={newClinicName}
+                    setNewClinicName={setNewClinicName}
+                    newClinicAddress={newClinicAddress}
+                    setNewClinicAddress={setNewClinicAddress}
+                    editClinic={editClinic}
+                    setEditClinic={setEditClinic}
+                    onCreateClinic={createClinic}
+                    onUpdateClinic={updateClinic}
+                    onDeleteClinic={deleteClinic}
+
+                    // Nuevos catálogos: Exámenes
+                    studyTypes={studyTypes}
+                    studyTypesPagination={studyTypesPagination}
+                    studyTypesPage={studyTypesPage}
+                    onStudyTypesPageChange={setStudyTypesPage}
+                    studyTypesLoading={loading.studyTypes}
+                    newStudyTypeName={newStudyTypeName}
+                    setNewStudyTypeName={setNewStudyTypeName}
+                    editStudyType={editStudyType}
+                    setEditStudyType={setEditStudyType}
+                    onCreateStudyType={createStudyType}
+                    onUpdateStudyType={updateStudyType}
+                    onDeleteStudyType={deleteStudyType}
                 />
             )}
 

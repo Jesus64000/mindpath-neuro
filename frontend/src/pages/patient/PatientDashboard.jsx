@@ -1,5 +1,5 @@
 import { useAuthStore } from '../../store/useAuthStore';
-import { Video, Calendar, ArrowRight, Clock, Users, PlusCircle, Activity, AlertCircle } from 'lucide-react';
+import { Video, Calendar, ArrowRight, Clock, Users, PlusCircle, Activity, AlertCircle, Building2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
@@ -261,6 +261,12 @@ const PatientDashboard = () => {
                                                 <p className="text-xs text-gray-500 dark:text-slate-400">
                                                     {new Date(app.appointment_date.split('T')[0] + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} • {app.start_time.slice(0, 5)}
                                                 </p>
+                                                {app.type === 'presencial' && app.clinic_name && (
+                                                    <p className="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 flex items-center">
+                                                        <Building2 size={12} className="text-gray-400 mr-1 shrink-0" />
+                                                        <span className="line-clamp-1"><b>Centro:</b> {app.clinic_name}</span>
+                                                    </p>
+                                                )}
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${sc.cls}`}>
                                                     {sc.label}
                                                 </span>
