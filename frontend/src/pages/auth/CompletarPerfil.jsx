@@ -323,7 +323,7 @@ const CompletarPerfil = () => {
                                             
                                             {/* Clínicas agregadas */}
                                             <div className="space-y-2">
-                                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-355">Clínicas agregadas ({selectedClinics.length})</label>
+                                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">Clínicas agregadas ({selectedClinics.length})</label>
                                                 {selectedClinics.length === 0 ? (
                                                     <p className="text-xs text-red-500 italic">No has agregado ninguna clínica aún. Debes agregar al menos una usando el selector de abajo.</p>
                                                 ) : (
@@ -351,15 +351,15 @@ const CompletarPerfil = () => {
 
                                             {/* Formulario para agregar clínica */}
                                             <div className="border-t border-gray-200 dark:border-slate-700/50 pt-3 space-y-3">
-                                                <p className="text-xs font-bold text-gray-850 dark:text-slate-205">Asociar centro de salud:</p>
+                                                <p className="text-xs font-bold text-gray-700 dark:text-slate-300">Asociar centro de salud:</p>
                                                 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                     <div>
                                                         <select value={selectedClinicId} onChange={e => setSelectedClinicId(e.target.value)}
                                                             className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none">
-                                                            <option value="">Selecciona clínica/centro...</option>
+                                                            <option value="" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Selecciona clínica/centro...</option>
                                                             {clinics.map(c => (
-                                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                                                <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">{c.name}</option>
                                                             ))}
                                                         </select>
                                                     </div>
@@ -437,15 +437,15 @@ const CompletarPerfil = () => {
                                         <CreditCard size={16} className="mr-2 text-mindpath-primary" /> Configuración de Cobro
                                     </h4>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-slate-350 mb-1">Monto por Consulta ($)</label>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">Monto por Consulta ($)</label>
                                         <input type="number" value={consultationFee} onChange={e => setConsultationFee(e.target.value)}
-                                            className="block w-full px-3 py-2 border border-gray-205 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm outline-none"
+                                            className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm outline-none"
                                             placeholder="Ej. 40" required />
                                     </div>
 
                                     {/* Métodos agregados */}
                                     <div className="space-y-2">
-                                        <label className="block text-xs font-bold text-gray-700 dark:text-slate-350">Métodos de pago agregados ({paymentMethodsList.length})</label>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">Métodos de pago agregados ({paymentMethodsList.length})</label>
                                         {paymentMethodsList.length === 0 ? (
                                             <p className="text-xs text-gray-500 dark:text-slate-400 italic">No has agregado ningún método aún. Usa el formulario de abajo para agregar al menos uno.</p>
                                         ) : (

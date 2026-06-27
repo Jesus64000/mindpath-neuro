@@ -166,9 +166,9 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
                                     onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))}
                                     className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none"
                                 >
-                                    <option value="" className="bg-white dark:bg-slate-850">Selecciona un Banco...</option>
+                                    <option value="" className="bg-white dark:bg-slate-800">Selecciona un Banco...</option>
                                     {VENEZUELAN_BANKS.map(bank => (
-                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-850">{bank.name}</option>
+                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-800">{bank.name}</option>
                                     ))}
                                 </select>
                                 <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20" placeholder="Titular" />
@@ -220,9 +220,9 @@ const DoctorPaymentMethods = ({ paymentCatalog, paymentMethods, setPaymentMethod
                                     onChange={e => setPaymentFields(p => ({ ...p, bank_name: e.target.value }))}
                                     className="w-full p-4 bg-white dark:bg-slate-800/80 rounded-2xl border-none text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-mindpath-primary/20 appearance-none"
                                 >
-                                    <option value="" className="bg-white dark:bg-slate-850">Selecciona un Banco...</option>
+                                    <option value="" className="bg-white dark:bg-slate-800">Selecciona un Banco...</option>
                                     {VENEZUELAN_BANKS.map(bank => (
-                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-850">{bank.name}</option>
+                                        <option key={bank.code} value={bank.name} className="bg-white dark:bg-slate-800">{bank.name}</option>
                                     ))}
                                 </select>
                                 <div className="flex bg-white dark:bg-slate-800/80 rounded-2xl focus-within:ring-2 focus-within:ring-mindpath-primary/20 overflow-hidden">
