@@ -362,7 +362,11 @@ const DoctorSchedule = () => {
                     <CalendarIcon size={18} className="mr-2" /> Mis Citas
                 </button>
                 <button
-                    onClick={() => setActiveTab('availability')}
+                    onClick={() => {
+                        setActiveTab('availability');
+                        fetchProfileSettings();
+                        fetchSchedules();
+                    }}
                     className={`pb-4 px-6 font-bold text-sm transition-colors flex items-center border-b-2 ${
                         activeTab === 'availability'
                             ? 'border-mindpath-primary text-mindpath-primary dark:text-mindpath-primary'
@@ -638,13 +642,24 @@ const DoctorSchedule = () => {
                                         onChange={e => setFormSchedule({...formSchedule, clinic_id: e.target.value})}
                                         className="w-full p-3.5 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-mindpath-primary/30 text-gray-800 dark:text-white shadow-sm font-medium"
                                     >
-                                        <option value="">Consulta Virtual (Online)</option>
-                                        {doctorClinics.map(c => (
-                                            <option key={c.clinic_id} value={c.clinic_id}>
-                                                {c.name}
-                                            </option>
-                                        ))}
+                                        <option value="" className="bg-white dark:bg-slate-800 text-gray-800 dark:text-white">🎥 Consulta Virtual (Online)</option>
+                                        {doctorClinics
+                                            .filter(c => c.name !== 'Mindpath Online')
+                                            .map(c => (
+                                                <option key={c.clinic_id} value={c.clinic_id} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-white">
+                                                    🏥 {c.name} {c.custom_address ? `(${c.custom_address})` : c.default_address ? `(${c.default_address})` : ''}
+                                                </option>
+                                            ))
+                                        }
                                     </select>
+                                    {doctorClinics.filter(c => c.name !== 'Mindpath Online').length === 0 && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-start gap-1">
+                                            <span>⚠️ Si consultas en clínicas físicas y no aparecen aquí, asócialas en tu </span>
+                                            <button type="button" onClick={() => navigate('/doctor/profile-settings')} className="underline font-bold hover:text-mindpath-primary">
+                                                Perfil Profesional
+                                            </button>.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <button 
@@ -675,8 +690,8 @@ const DoctorSchedule = () => {
                                                 </h4>
                                                 <div className="space-y-2">
                                                     {daySchedules.map(slot => {
-                                                        const clinicObj = doctorClinics.find(c => c.clinic_id === slot.clinic_id);
-                                                        const clinicName = clinicObj ? clinicObj.name : 'Consulta Virtual (Online)';
+                                                        const clinicObj = doctorClinics.find(c => String(c.clinic_id) === String(slot.clinic_id));
+                                                        const clinicName = clinicObj ? `${clinicObj.name} ${clinicObj.custom_address ? `(${clinicObj.custom_address})` : ''}` : 'Consulta Virtual (Online)';
                                                         return (
                                                             <div key={slot.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
                                                                 <div className="flex flex-col gap-1">
