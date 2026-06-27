@@ -39,6 +39,8 @@ const CatalogsTab = ({
     onCreateClinic,
     onUpdateClinic,
     onDeleteClinic,
+    pendingPrivateClinics = [],
+    onVerifyPrivateClinic,
 
     // Exámenes
     studyTypes = [],
@@ -186,6 +188,70 @@ const CatalogsTab = ({
                 </div>
 
                 <Pagination pagination={clinicsPagination} onPageChange={onClinicsPageChange} />
+
+                {/* Subsección: Solicitudes de Consultorios Privados por Verificar */}
+                <div className="mt-6 p-5 bg-purple-50/60 dark:bg-purple-950/20 rounded-2xl border border-purple-100 dark:border-purple-800/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 flex items-center gap-2">
+                            <span>🏠</span> Solicitudes de Consultorios Privados / Propios
+                            {pendingPrivateClinics.filter(c => !c.is_verified).length > 0 && (
+                                <span className="bg-purple-600 text-white px-2 py-0.5 rounded-full text-xs font-black">
+                                    {pendingPrivateClinics.filter(c => !c.is_verified).length} por verificar
+                                </span>
+                            )}
+                        </h3>
+                    </div>
+                    
+                    {pendingPrivateClinics.length === 0 ? (
+                        <p className="text-xs text-purple-700/70 dark:text-purple-300/60 italic">No hay solicitudes de consultorios privados registradas.</p>
+                    ) : (
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            {pendingPrivateClinics.map(pc => (
+                                <div key={pc.clinic_id} className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-purple-100 dark:border-purple-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-gray-900 dark:text-white text-sm">{pc.clinic_name}</span>
+                                            <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                                {pc.clinic_type || 'Consultorio Privado'}
+                                            </span>
+                                            {pc.is_verified ? (
+                                                <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                                    ✅ Verificado
+                                                </span>
+                                            ) : (
+                                                <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-md text-[10px] font-bold animate-pulse">
+                                                    ⏳ Pendiente
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-600 dark:text-slate-300">
+                                            <span className="font-bold">Especialista:</span> Dr(a). {pc.doctor_name} ({pc.doctor_email})
+                                        </p>
+                                        <p className="text-gray-500 dark:text-slate-400">
+                                            <span className="font-bold">Dirección:</span> {pc.address}
+                                        </p>
+                                    </div>
+                                    {!pc.is_verified && (
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                            <button
+                                                onClick={() => onVerifyPrivateClinic(pc.clinic_id, true)}
+                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors text-xs"
+                                            >
+                                                Aprobar
+                                            </button>
+                                            <button
+                                                onClick={() => onVerifyPrivateClinic(pc.clinic_id, false)}
+                                                className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-300 font-bold rounded-lg transition-colors text-xs"
+                                            >
+                                                Rechazar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* 3. SECCIÓN TIPOS DE EXÁMENES MÉDICOS */}

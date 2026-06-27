@@ -37,7 +37,11 @@ const expectedColumns = {
         { name: 'signature_picture', definition: 'VARCHAR(255) DEFAULT NULL' }
     ],
     clinics: [
-        { name: 'default_address', definition: 'VARCHAR(255) DEFAULT NULL' }
+        { name: 'default_address', definition: 'VARCHAR(255) DEFAULT NULL' },
+        { name: 'is_private', definition: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'owner_doctor_id', definition: 'INT DEFAULT NULL' },
+        { name: 'is_verified', definition: 'BOOLEAN DEFAULT TRUE' },
+        { name: 'clinic_type', definition: "VARCHAR(100) DEFAULT 'Clínica Privada'" }
     ],
     system_settings: [
         { name: 'font_family', definition: "VARCHAR(50) DEFAULT 'Inter' AFTER primary_color" },

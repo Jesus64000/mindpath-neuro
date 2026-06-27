@@ -48,6 +48,35 @@ const DoctorProfileSettings = () => {
         setCustomClinicAddress('');
     };
 
+    const [showCustomClinicModal, setShowCustomClinicModal] = useState(false);
+    const [customClinicForm, setCustomClinicForm] = useState({
+        name: '',
+        address: '',
+        clinic_type: 'Consultorio en Casa'
+    });
+    const [customClinicLoading, setCustomClinicLoading] = useState(false);
+
+    const handleRequestCustomClinic = async (e) => {
+        e.preventDefault();
+        if (!customClinicForm.name.trim() || !customClinicForm.address.trim()) {
+            alert('Por favor completa el nombre y la dirección completa.');
+            return;
+        }
+        setCustomClinicLoading(true);
+        try {
+            const res = await api.post('/doctors/custom-clinic', customClinicForm);
+            alert(res.data.message || 'Solicitud registrada exitosamente.');
+            const profileRes = await api.get('/doctors/profile/settings');
+            setSelectedClinics(profileRes.data.clinics || []);
+            setShowCustomClinicModal(false);
+            setCustomClinicForm({ name: '', address: '', clinic_type: 'Consultorio en Casa' });
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error al solicitar consultorio.');
+        } finally {
+            setCustomClinicLoading(false);
+        }
+    };
+
     const handleRemoveClinic = (clinicId) => {
         setSelectedClinics(selectedClinics.filter(sc => String(sc.clinic_id) !== String(clinicId)));
     };
@@ -418,17 +447,38 @@ const DoctorProfileSettings = () => {
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">Clínicas asociadas ({selectedClinics.length})</label>
                                     {selectedClinics.length === 0 ? (
-                                        <p className="text-xs text-red-500 italic">No has asociado ninguna clínica aún. Debes agregar al menos una usando el selector de abajo.</p>
+                                        <p className="text-xs text-red-500 italic">No has asociado ninguna clínica aún. Debes agregar al menos una usando el selector de abajo o registrando tu consultorio privado.</p>
                                     ) : (
-                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                        <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                                             {selectedClinics.map((sc) => {
-                                                const clinicObj = clinicsCatalog.find(c => c.id === sc.clinic_id);
+                                                const clinicObj = clinicsCatalog.find(c => String(c.id) === String(sc.clinic_id)) || sc;
+                                                const isPrivate = sc.is_private || clinicObj?.is_private;
+                                                const isVerified = (sc.is_verified !== undefined && sc.is_verified !== null) ? sc.is_verified : (clinicObj?.is_verified ?? true);
+                                                const clinicType = sc.clinic_type || clinicObj?.clinic_type || 'Consultorio Privado';
+
                                                 return (
-                                                    <div key={sc.clinic_id} className="flex justify-between items-center p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700/50 text-xs">
-                                                        <div className="pr-2">
-                                                            <p className="font-bold text-gray-900 dark:text-white">{clinicObj ? clinicObj.name : 'Cargando...'}</p>
-                                                            <p className="text-gray-500 dark:text-gray-400 mt-0.5">
-                                                                Dirección: {sc.custom_address || clinicObj?.default_address || 'Online'}
+                                                    <div key={sc.clinic_id} className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/50 text-xs">
+                                                        <div className="pr-2 space-y-1">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <p className="font-bold text-gray-900 dark:text-white">{sc.name || clinicObj?.name || 'Consultorio'}</p>
+                                                                {isPrivate && (
+                                                                    <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                                                        🏠 {clinicType}
+                                                                    </span>
+                                                                )}
+                                                                {isPrivate && !isVerified && (
+                                                                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-0.5 rounded-md text-[10px] font-bold animate-pulse">
+                                                                        ⏳ Pendiente de verificación
+                                                                    </span>
+                                                                )}
+                                                                {isPrivate && isVerified && (
+                                                                    <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                                                        ✅ Verificado
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-gray-500 dark:text-gray-400">
+                                                                Dirección: {sc.custom_address || clinicObj?.default_address || 'Sin dirección especificada'}
                                                             </p>
                                                         </div>
                                                         <button type="button" onClick={() => handleRemoveClinic(sc.clinic_id)}
@@ -442,15 +492,15 @@ const DoctorProfileSettings = () => {
                                     )}
                                 </div>
 
-                                {/* Formulario para agregar clínica */}
+                                {/* Formulario para agregar clínica pública o solicitar consultorio privado */}
                                 <div className="border-t border-gray-200 dark:border-slate-700/50 pt-3 space-y-3">
-                                    <p className="text-xs font-bold text-gray-700 dark:text-slate-300">Asociar centro de salud:</p>
+                                    <p className="text-xs font-bold text-gray-700 dark:text-slate-300">Asociar centro de salud público:</p>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div>
                                             <select value={selectedClinicId} onChange={e => setSelectedClinicId(e.target.value)}
                                                 className="block w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-mindpath-primary bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-xs outline-none">
-                                                <option value="" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Selecciona clínica/centro...</option>
+                                                <option value="" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Selecciona clínica/centro del catálogo...</option>
                                                 {clinicsCatalog.map(c => (
                                                     <option key={c.id} value={c.id} className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">{c.name}</option>
                                                 ))}
@@ -463,10 +513,17 @@ const DoctorProfileSettings = () => {
                                         </div>
                                     </div>
 
-                                    <button type="button" onClick={handleAddClinic}
-                                        className="px-3 py-1.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-lg transition-all">
-                                        + Agregar Centro
-                                    </button>
+                                    <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
+                                        <button type="button" onClick={handleAddClinic}
+                                            className="px-3 py-1.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-lg transition-all">
+                                            + Agregar Centro del Catálogo
+                                        </button>
+
+                                        <button type="button" onClick={() => setShowCustomClinicModal(true)}
+                                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1">
+                                            🏠 Registrar Consultorio Privado / Propio
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -486,6 +543,83 @@ const DoctorProfileSettings = () => {
                     paymentMethods={paymentMethods} 
                     setPaymentMethods={setPaymentMethods} 
                 />
+            )}
+
+            {/* Modal para Solicitar Registro de Consultorio Privado */}
+            {showCustomClinicModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-gray-100 dark:border-slate-700 relative">
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                            <span>🏠</span> Registrar Consultorio Privado / Propio
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mb-6">
+                            Ingresa los datos de tu consultorio en casa, consultorio alquilado o clínica privada. Tu solicitud será revisada y verificada por el equipo de administración por motivos de seguridad.
+                        </p>
+
+                        <form onSubmit={handleRequestCustomClinic} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1 uppercase">
+                                    Nombre del Consultorio / Clínica *
+                                </label>
+                                <input 
+                                    type="text"
+                                    required
+                                    value={customClinicForm.name}
+                                    onChange={e => setCustomClinicForm({ ...customClinicForm, name: e.target.value })}
+                                    placeholder="Ej: Consultorio Neurológico Dr. Pérez"
+                                    className="w-full p-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-mindpath-primary outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1 uppercase">
+                                    Tipo de Instalación *
+                                </label>
+                                <select
+                                    value={customClinicForm.clinic_type}
+                                    onChange={e => setCustomClinicForm({ ...customClinicForm, clinic_type: e.target.value })}
+                                    className="w-full p-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-mindpath-primary outline-none"
+                                >
+                                    <option value="Consultorio en Casa">Consultorio en Casa</option>
+                                    <option value="Consultorio Alquilado">Consultorio Alquilado</option>
+                                    <option value="Clínica / Centro Privado">Clínica / Centro Privado</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1 uppercase">
+                                    Dirección Completa *
+                                </label>
+                                <textarea 
+                                    required
+                                    rows={3}
+                                    value={customClinicForm.address}
+                                    onChange={e => setCustomClinicForm({ ...customClinicForm, address: e.target.value })}
+                                    placeholder="Ej: Av. Bella Vista con Calle 72, Quinta Los Pinos Nro 45, Planta Baja, Maracaibo"
+                                    className="w-full p-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-mindpath-primary outline-none"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCustomClinicModal(false)}
+                                    className="px-4 py-2 text-xs font-bold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={customClinicLoading}
+                                    className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {customClinicLoading ? 'Enviando...' : 'Enviar a Verificación Admin'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );

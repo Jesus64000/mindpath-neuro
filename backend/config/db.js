@@ -159,6 +159,21 @@ pool.getConnection()
             await pool.query("ALTER TABLE doctor_schedules ADD COLUMN clinic_id INT DEFAULT NULL AFTER slot_duration");
         } catch (e) {}
         try {
+            await pool.query("ALTER TABLE clinics ADD COLUMN is_private BOOLEAN DEFAULT FALSE");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE clinics ADD COLUMN owner_doctor_id INT DEFAULT NULL");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE clinics ADD COLUMN is_verified BOOLEAN DEFAULT TRUE");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE clinics ADD COLUMN clinic_type VARCHAR(100) DEFAULT 'Clínica Privada'");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE clinics DROP INDEX name");
+        } catch (e) {}
+        try {
             await pool.query("ALTER TABLE appointments ADD COLUMN clinic_id INT DEFAULT NULL AFTER doctor_ready");
         } catch (e) {}
 

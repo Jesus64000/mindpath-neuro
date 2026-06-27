@@ -16,6 +16,8 @@ const paymentStatusConfig = {
 };
 
 const methodLabels = {
+    platform: 'Plataforma (Online)',
+    in_person: 'Pago en Consultorio',
     pago_movil: 'Pago Móvil',
     transferencia: 'Transferencia Bancaria',
     zelle: 'Zelle',

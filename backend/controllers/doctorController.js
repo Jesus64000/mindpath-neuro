@@ -61,14 +61,14 @@ exports.getPublicPaymentCatalog = async (req, res) => {
 
 exports.getClinics = async (_req, res) => {
     try {
-        let [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+        let [clinics] = await db.query("SELECT * FROM clinics WHERE (is_private = FALSE OR is_private IS NULL) AND (is_verified = TRUE OR is_verified IS NULL) ORDER BY name ASC");
         if (clinics.length === 0) {
-            await db.query("INSERT IGNORE INTO clinics (name, default_address) VALUES " +
-                "('Mindpath Online', 'Consulta Virtual (Online)'), " +
-                "('Centro Médico Zulia', 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo'), " +
-                "('Hospital San José', 'Calle 72 con Av. 15, Hospital San José, Maracaibo'), " +
-                "('Clínica Amado', 'Av. 5 de Julio, Clínica Amado, Maracaibo')");
-            [clinics] = await db.query('SELECT * FROM clinics ORDER BY name ASC');
+            await db.query("INSERT IGNORE INTO clinics (name, default_address, is_private, is_verified) VALUES " +
+                "('Mindpath Online', 'Consulta Virtual (Online)', FALSE, TRUE), " +
+                "('Centro Médico Zulia', 'Av. Bella Vista, Edif. Centro Médico Zulia, Maracaibo', FALSE, TRUE), " +
+                "('Hospital San José', 'Calle 72 con Av. 15, Hospital San José, Maracaibo', FALSE, TRUE), " +
+                "('Clínica Amado', 'Av. 5 de Julio, Clínica Amado, Maracaibo', FALSE, TRUE)");
+            [clinics] = await db.query("SELECT * FROM clinics WHERE (is_private = FALSE OR is_private IS NULL) AND (is_verified = TRUE OR is_verified IS NULL) ORDER BY name ASC");
         }
         res.status(200).json(clinics);
     } catch (error) {
@@ -302,7 +302,7 @@ exports.getProfileSettings = async (req, res) => {
 
         const doctor = doctorRows[0];
         const [clinicsRows] = await db.query(`
-            SELECT dc.clinic_id, dc.custom_address, c.name, c.default_address
+            SELECT dc.clinic_id, dc.custom_address, c.name, c.default_address, c.is_private, c.is_verified, c.clinic_type, c.owner_doctor_id
             FROM doctor_clinics dc
             JOIN clinics c ON dc.clinic_id = c.id
             WHERE dc.doctor_id = ?
@@ -936,6 +936,48 @@ exports.getDoctorPayments = async (req, res) => {
     } catch (error) {
         console.error("Error en getDoctorPayments:", error);
         res.status(500).json({ message: "Error al obtener el historial de pagos." });
+    }
+};
+
+// Registrar solicitud de consultorio privado / propio (pendiente de verificación)
+exports.requestCustomClinic = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, address, clinic_type } = req.body;
+
+        if (!name?.trim() || !address?.trim()) {
+            return res.status(400).json({ message: "El nombre y la dirección son obligatorios." });
+        }
+
+        const [docRow] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (docRow.length === 0) return res.status(404).json({ message: "Perfil de doctor no encontrado." });
+        const doctorId = docRow[0].id;
+
+        const type = clinic_type?.trim() || 'Consultorio Privado';
+
+        // Insertar en clinics como consultorio privado no verificado
+        const [result] = await db.query(
+            `INSERT INTO clinics (name, default_address, is_private, owner_doctor_id, is_verified, clinic_type)
+             VALUES (?, ?, TRUE, ?, FALSE, ?)`,
+            [name.trim(), address.trim(), doctorId, type]
+        );
+
+        const newClinicId = result.insertId;
+
+        // Enlazar en doctor_clinics automáticamente
+        await db.query(
+            `INSERT IGNORE INTO doctor_clinics (doctor_id, clinic_id, custom_address)
+             VALUES (?, ?, ?)`,
+            [doctorId, newClinicId, address.trim()]
+        );
+
+        res.status(201).json({
+            message: "Solicitud de consultorio registrada exitosamente. Un administrador la verificará pronto.",
+            clinic: { clinic_id: newClinicId, name: name.trim(), custom_address: address.trim(), is_private: true, is_verified: false, clinic_type: type }
+        });
+    } catch (error) {
+        console.error("Error en requestCustomClinic:", error);
+        res.status(500).json({ message: "Error al registrar la solicitud de consultorio." });
     }
 };
 

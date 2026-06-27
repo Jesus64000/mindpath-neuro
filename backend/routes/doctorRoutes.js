@@ -48,6 +48,7 @@ router.get('/specialties', doctorController.getSpecialties);
 
 // Sprint 29: Catálogo público de clínicas/hospitales (sin auth — para el registro)
 router.get('/clinics', doctorController.getClinics);
+router.post('/custom-clinic', authMiddleware, doctorController.requestCustomClinic);
 
 // Catálogo público de métodos de pago (sin auth — para el registro)
 router.get('/payment-catalog', doctorController.getPublicPaymentCatalog);

@@ -82,6 +82,7 @@ const AdminDashboard = () => {
     const [newClinicName, setNewClinicName] = useState('');
     const [newClinicAddress, setNewClinicAddress] = useState('');
     const [editClinic, setEditClinic] = useState(null);
+    const [pendingPrivateClinics, setPendingPrivateClinics] = useState([]);
 
     // Tipos de examen
     const [studyTypes, setStudyTypes] = useState([]);
@@ -226,9 +227,16 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, studyTypes: false })); }
     }, [studyTypesPage]);
 
+    const loadPendingPrivateClinics = useCallback(async () => {
+        try {
+            const res = await api.get('/admin/private-clinics/pending');
+            setPendingPrivateClinics(res.data || []);
+        } catch { /* silencioso */ }
+    }, []);
+
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog(); loadClinicsAdmin(); loadStudyTypesAdmin();
-    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog, loadClinicsAdmin, loadStudyTypesAdmin]);
+        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog(); loadClinicsAdmin(); loadStudyTypesAdmin(); loadPendingPrivateClinics();
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog, loadClinicsAdmin, loadStudyTypesAdmin, loadPendingPrivateClinics]);
 
     useEffect(() => {
         setTheme({ 
@@ -339,21 +347,30 @@ const AdminDashboard = () => {
         try {
             await api.put(`/admin/clinics/${editClinic.id}`, { name: editClinic.name.trim(), default_address: editClinic.default_address?.trim() });
             setEditClinic(null);
-            showToast('Clínica actualizada.');
-            loadClinicsAdmin();
         } catch (e) {
             showToast(e.response?.data?.message || 'Error al actualizar.', 'error');
         }
     };
 
     const deleteClinic = async (id) => {
-        if (!confirm('¿Eliminar esta clínica?')) return;
+        if (!confirm('¿Seguro que deseas eliminar esta clínica?')) return;
         try {
             await api.delete(`/admin/clinics/${id}`);
             showToast('Clínica eliminada.');
             loadClinicsAdmin();
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Error al eliminar.', 'error');
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al eliminar.', 'error');
+        }
+    };
+
+    const handleVerifyPrivateClinic = async (id, approved) => {
+        try {
+            const res = await api.put(`/admin/private-clinics/${id}/verify`, { approved });
+            showToast(res.data.message);
+            loadPendingPrivateClinics();
+            loadClinicsAdmin();
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al procesar.', 'error');
         }
     };
 
@@ -596,6 +613,9 @@ const AdminDashboard = () => {
                     onCreateClinic={createClinic}
                     onUpdateClinic={updateClinic}
                     onDeleteClinic={deleteClinic}
+
+                    pendingPrivateClinics={pendingPrivateClinics}
+                    onVerifyPrivateClinic={handleVerifyPrivateClinic}
 
                     // Nuevos catálogos: Exámenes
                     studyTypes={studyTypes}

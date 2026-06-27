@@ -69,6 +69,10 @@ router.post('/clinics',           authMiddleware, isStaff, adminController.creat
 router.put('/clinics/:id',        authMiddleware, isStaff, adminController.updateClinic);
 router.delete('/clinics/:id',     authMiddleware, isStaff, adminController.deleteClinic);
 
+// Verificación de Consultorios Privados
+router.get('/private-clinics/pending', authMiddleware, isStaff, adminController.getPendingPrivateClinics);
+router.put('/private-clinics/:id/verify', authMiddleware, isStaff, adminController.verifyPrivateClinic);
+
 // Tipos de Estudios / Exámenes Médicos CRUD
 router.get('/study-types',        authMiddleware, adminController.getStudyTypes); // accessible to all authenticated users
 router.get('/study-types/admin',  authMiddleware, isStaff, adminController.getStudyTypesAdmin);

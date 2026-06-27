@@ -1084,3 +1084,43 @@ exports.deleteStudyType = async (req, res) => {
         res.status(500).json({ message: "Error al eliminar tipo de estudio." });
     }
 };
+
+// ── Verificación de Consultorios Privados por Admin ──────────────────────────────────
+exports.getPendingPrivateClinics = async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT c.id AS clinic_id, c.name AS clinic_name, c.default_address AS address,
+                   c.clinic_type, c.is_verified, c.created_at,
+                   u.full_name AS doctor_name, u.email AS doctor_email, d.id AS doctor_id
+            FROM clinics c
+            JOIN doctors d ON c.owner_doctor_id = d.id
+            JOIN users u ON d.user_id = u.id
+            WHERE c.is_private = TRUE
+            ORDER BY c.is_verified ASC, c.id DESC
+        `);
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Error en getPendingPrivateClinics:", error);
+        res.status(500).json({ message: "Error al obtener solicitudes de consultorios." });
+    }
+};
+
+exports.verifyPrivateClinic = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approved } = req.body;
+
+        if (approved) {
+            await db.query("UPDATE clinics SET is_verified = TRUE WHERE id = ?", [id]);
+            res.status(200).json({ message: "Consultorio verificado exitosamente." });
+        } else {
+            await db.query("DELETE FROM doctor_clinics WHERE clinic_id = ?", [id]);
+            await db.query("DELETE FROM clinics WHERE id = ?", [id]);
+            res.status(200).json({ message: "Solicitud de consultorio rechazada y eliminada." });
+        }
+    } catch (error) {
+        console.error("Error en verifyPrivateClinic:", error);
+        res.status(500).json({ message: "Error al procesar la verificación del consultorio." });
+    }
+};
+
