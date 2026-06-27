@@ -1124,3 +1124,19 @@ exports.verifyPrivateClinic = async (req, res) => {
     }
 };
 
+exports.sendTestEmail = async (req, res) => {
+    try {
+        const { target_email } = req.body;
+        const recipient = target_email || req.user.email;
+
+        const { sendTestEmailService } = require("../utils/emailService");
+        await sendTestEmailService(recipient);
+
+        res.status(200).json({ message: `Correo de prueba enviado con éxito a ${recipient}.` });
+    } catch (error) {
+        console.error("Error en sendTestEmail:", error);
+        res.status(500).json({ message: error.message || "Error al enviar correo de prueba." });
+    }
+};
+
+

@@ -37,6 +37,7 @@ router.post('/bootstrap', adminController.bootstrapAdmin);
 router.get('/stats',              authMiddleware, isSuperAdmin, adminController.getStats);
 router.put('/settings',           authMiddleware, isSuperAdmin, adminController.updateSettings);
 router.post('/settings/sync-bcv',  authMiddleware, isSuperAdmin, adminController.syncBcv);
+router.post('/send-test-email',    authMiddleware, isSuperAdmin, adminController.sendTestEmail);
 router.post('/upload/logo',       authMiddleware, isSuperAdmin, upload.single('logo'), adminController.uploadLogo);
 router.post('/create-supervisor', authMiddleware, isSuperAdmin, adminController.createSupervisor);
 router.put('/users/:id/role',     authMiddleware, isSuperAdmin, adminController.changeUserRole);

@@ -6,21 +6,32 @@ const { decrypt } = require('./encryption');
  * Helper interno para obtener el transportador SMTP dinámico desde la base de datos
  */
 const getMailTransporter = async () => {
-    // 1. Obtener configuración SMTP de la base de datos
-    const [settings] = await db.query('SELECT smtp_email, smtp_password FROM system_settings LIMIT 1');
+    let smtp_email = null;
+    let decryptedPassword = null;
 
-    if (!settings || !settings[0] || !settings[0].smtp_email || !settings[0].smtp_password) {
-        throw new Error('Configuración SMTP no encontrada. El administrador debe configurarla en el panel de apariencia.');
+    try {
+        const [settings] = await db.query('SELECT smtp_email, smtp_password FROM system_settings LIMIT 1');
+        if (settings && settings[0] && settings[0].smtp_email && settings[0].smtp_password) {
+            smtp_email = settings[0].smtp_email.trim();
+            decryptedPassword = decrypt(settings[0].smtp_password);
+            if (!decryptedPassword) {
+                decryptedPassword = settings[0].smtp_password; // Intentar en texto plano si desencriptado da null
+            }
+        }
+    } catch (err) {
+        console.warn('Advertencia al consultar system_settings para SMTP:', err.message);
     }
 
-    const { smtp_email, smtp_password } = settings[0];
-    const decryptedPassword = decrypt(smtp_password);
-
-    if (!decryptedPassword) {
-        throw new Error('Error al desencriptar la contraseña SMTP de la base de datos.');
+    // Fallback a variables de entorno si no está en la BD
+    if (!smtp_email || !decryptedPassword) {
+        smtp_email = process.env.SMTP_EMAIL || process.env.GMAIL_USER;
+        decryptedPassword = process.env.SMTP_PASSWORD || process.env.GMAIL_PASS;
     }
 
-    // 2. Configurar Nodemailer con Gmail
+    if (!smtp_email || !decryptedPassword) {
+        throw new Error('Configuración SMTP no encontrada. Por favor configúrala en el Panel de Administración (Sistema > Servidor de Correo).');
+    }
+
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -460,9 +471,31 @@ const sendDoctorRejectionEmail = async (doctorEmail, doctorName, reason) => {
     }
 };
 
+const sendTestEmailService = async (targetEmail) => {
+    const { transporter, smtp_email } = await getMailTransporter();
+    await transporter.sendMail({
+        from: `"Mindpath Neuro" <${smtp_email}>`,
+        to: targetEmail,
+        subject: '🧪 Prueba de Servidor SMTP — Mindpath Neuro',
+        html: `
+            <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;padding:30px;background:#f0f4ff;border-radius:16px;max-width:500px;margin:0 auto;">
+                <h2 style="color:#4f46e5;margin-top:0;">✅ ¡Servidor SMTP Operativo!</h2>
+                <p style="color:#334155;line-height:1.6;">Este es un correo de verificación enviado desde <strong>Mindpath Neuro</strong> utilizando las credenciales SMTP configuradas en el Panel de Administración.</p>
+                <div style="background:#ffffff;padding:15px;border-radius:10px;border:1px solid #cbd5e1;margin:20px 0;">
+                    <p style="margin:0;font-size:13px;color:#64748b;"><strong>Remitente Emisor:</strong> ${smtp_email}</p>
+                    <p style="margin:5px 0 0 0;font-size:13px;color:#64748b;"><strong>Destinatario:</strong> ${targetEmail}</p>
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin-bottom:0;">Todos los correos de verificación de cuenta, restablecimiento de contraseña y notificaciones utilizarán este servidor.</p>
+            </div>
+        `
+    });
+    return { success: true };
+};
+
 module.exports = {
     sendResetPasswordEmail,
     sendWelcomeEmail,
     sendDoctorApprovalEmail,
-    sendDoctorRejectionEmail
+    sendDoctorRejectionEmail,
+    sendTestEmailService
 };

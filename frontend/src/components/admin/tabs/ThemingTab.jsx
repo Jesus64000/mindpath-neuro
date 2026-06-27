@@ -14,8 +14,11 @@ const ThemingTab = ({
     onPreviewColor, 
     saving,
     onSyncBcv,
-    syncingBcv
+    syncingBcv,
+    onSendTestEmail,
+    sendingTestEmail = false
 }) => {
+    const [testEmailInput, setTestEmailInput] = useState('');
     
     const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
 
@@ -187,7 +190,7 @@ const ThemingTab = ({
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-gray-800 dark:text-white">Servidor de Correo (SMTP)</h3>
-                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">Recuperación de contraseñas</p>
+                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">Correos del sistema, Verificación y Recuperación</p>
                             </div>
                         </div>
                         
@@ -214,6 +217,29 @@ const ThemingTab = ({
                                 <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
                                     Usa una <strong>Contraseña de Aplicación</strong> de Google. Por seguridad, este valor se guarda cifrado en el servidor.
                                 </p>
+                            </div>
+
+                            {/* Probar conexión de correo */}
+                            <div className="pt-3 border-t border-gray-100 dark:border-slate-800 space-y-2">
+                                <label className="block text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase">Probar envío de correo</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="email"
+                                        value={testEmailInput}
+                                        onChange={e => setTestEmailInput(e.target.value)}
+                                        placeholder="Destinatario para la prueba..."
+                                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={sendingTestEmail}
+                                        onClick={() => onSendTestEmail && onSendTestEmail(testEmailInput)}
+                                        className="px-4 py-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        {sendingTestEmail ? <RefreshCw size={14} className="animate-spin" /> : <Mail size={14} />}
+                                        {sendingTestEmail ? 'Enviando...' : 'Enviar Prueba'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

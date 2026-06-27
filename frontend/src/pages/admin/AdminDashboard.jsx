@@ -93,6 +93,7 @@ const AdminDashboard = () => {
 
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true, clinics: true, studyTypes: true });
+    const [sendingTestEmail, setSendingTestEmail] = useState(false);
     const { clinicName, logoUrl, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
 
     // Theming
@@ -484,6 +485,18 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleSendTestEmail = async (targetEmail) => {
+        setSendingTestEmail(true);
+        try {
+            const res = await api.post('/admin/send-test-email', { target_email: targetEmail });
+            showToast(res.data.message || 'Correo de prueba enviado con éxito ✉️');
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al enviar correo de prueba.', 'error');
+        } finally {
+            setSendingTestEmail(false);
+        }
+    };
+
     const handleKpiClick = (type) => {
         if (!isAdmin) return;
         switch (type) {
@@ -690,6 +703,8 @@ const AdminDashboard = () => {
                     saving={savingTheme}
                     onSyncBcv={syncBcvRate}
                     syncingBcv={syncingBcv}
+                    onSendTestEmail={handleSendTestEmail}
+                    sendingTestEmail={sendingTestEmail}
                 />
             )}
         </div>
