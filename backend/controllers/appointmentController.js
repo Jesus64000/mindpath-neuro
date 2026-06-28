@@ -5,27 +5,48 @@ const { decrypt } = require('../utils/encryption');
 exports.verifyPaymentProof = async (req, res) => {
     try {
         const userId = req.user.id;
+        const userRole = req.user.role;
         const { id } = req.params; // appointmentId
         const { approved } = req.body;
-        if (typeof approved !== 'boolean') return res.status(400).json({ message: 'Falta el campo "approved" (boolean).' });
+        
+        const isApproved = approved === true || approved === 'true';
 
-        // Verificar que la cita pertenezca al doctor logueado
-        const [doctor] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
-        if (!doctor.length) return res.status(404).json({ message: 'Doctor no encontrado.' });
-        const doctorId = doctor[0].id;
-        const [appt] = await db.query('SELECT id FROM appointments WHERE id = ? AND doctor_id = ?', [id, doctorId]);
-        if (!appt.length) return res.status(404).json({ message: 'Cita no encontrada o no tienes permisos.' });
+        // Verificar que la cita exista
+        const [appt] = await db.query('SELECT id, doctor_id, status FROM appointments WHERE id = ?', [id]);
+        if (!appt.length) return res.status(404).json({ message: 'Cita no encontrada.' });
 
-        if (approved) {
-            await db.query('UPDATE appointments SET payment_status = "paid" WHERE id = ?', [id]);
-            return res.status(200).json({ message: 'Pago verificado correctamente.' });
+        // Si es doctor, verificar que la cita le pertenezca
+        if (userRole === 'doctor') {
+            const [doctor] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+            if (!doctor.length || doctor[0].id !== appt[0].doctor_id) {
+                return res.status(403).json({ message: 'No tienes permisos para gestionar el pago de esta cita.' });
+            }
+        } else if (!['admin', 'supervisor'].includes(userRole)) {
+            return res.status(403).json({ message: 'No tienes permisos para verificar pagos.' });
+        }
+
+        if (isApproved) {
+            await db.query(
+                `UPDATE appointments 
+                 SET payment_status = 'paid', 
+                     status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END 
+                 WHERE id = ?`, 
+                [id]
+            );
+            return res.status(200).json({ message: 'Pago verificado correctamente y cita confirmada.' });
         } else {
-            await db.query('UPDATE appointments SET payment_status = "rejected", payment_proof_url = NULL WHERE id = ?', [id]);
+            await db.query(
+                `UPDATE appointments 
+                 SET payment_status = 'rejected', 
+                     payment_proof_url = NULL 
+                 WHERE id = ?`, 
+                [id]
+            );
             return res.status(200).json({ message: 'Comprobante rechazado. El paciente podrá volver a subirlo.' });
         }
     } catch (error) {
         console.error('Error al verificar comprobante de pago:', error);
-        res.status(500).json({ message: 'Error interno al verificar comprobante.' });
+        res.status(500).json({ message: 'Error interno al verificar comprobante: ' + (error.message || '') });
     }
 };
 // Subir comprobante de pago (PDF/imagen) para una cita
