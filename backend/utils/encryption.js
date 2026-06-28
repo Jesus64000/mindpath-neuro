@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 require('dotenv').config();
 
-const ENCRYPTION_KEY = process.env. ENCRYPTION_KEY; // Debe ser de 32 bytes (caracteres)
+const rawKey = (process.env.ENCRYPTION_KEY || 'mindpath_secret_key_32_bytes_safe_default_key!').trim();
+const ENCRYPTION_KEY = rawKey.slice(0, 32).padEnd(32, '0');
 const ALGORITHM = 'aes-256-cbc';
 
 /**

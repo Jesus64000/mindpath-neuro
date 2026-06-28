@@ -11,6 +11,15 @@ const app = express();
 
 // Middlewares Globales
 app.use(cors()); // Permite peticiones del frontend
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 app.use(express.json()); // Permite recibir JSON en los POST
 app.use(express.urlencoded({ extended: true })); // Para recibir archivos (audio) después
 
@@ -159,6 +168,17 @@ app.get('/api/health', async (req, res) => {
             error: error.message
         });
     }
+});
+
+// Middleware global de gestión de errores no capturados
+app.use((err, req, res, _next) => {
+    console.error('❌ Error global no capturado en servidor:', err);
+    res.header('Access-Control-Allow-Origin', '*');
+    res.status(err.status || 500).json({
+        ok: false,
+        message: err.message || 'Error interno del servidor.',
+        error: process.env.NODE_ENV === 'development' ? err : undefined
+    });
 });
 
 // Arranque del servidor
