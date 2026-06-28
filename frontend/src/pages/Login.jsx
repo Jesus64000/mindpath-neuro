@@ -197,7 +197,7 @@ const GoogleLoginButton = ({ onSuccess, isLoading }) => {
                     onError={() => {
                         console.error('Error al iniciar sesión con Google');
                     }}
-                    width="100%"
+                    width="380"
                     text="continue_with"
                     locale="es"
                     shape="rectangular"

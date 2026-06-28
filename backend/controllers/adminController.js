@@ -383,8 +383,8 @@ exports.syncBcv = async (req, res) => {
 // ── Configuración del sistema (theming) ───────────────────────────────────────
 exports.getSettings = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM system_settings WHERE id = 1");
-    if (rows.length === 0) {
+    const [rows] = await db.query("SELECT * FROM system_settings LIMIT 1");
+    if (!rows || rows.length === 0) {
       return res.status(200).json({
         clinic_name: "MindPath Neuro",
         logo_url: null,
@@ -397,7 +397,7 @@ exports.getSettings = async (req, res) => {
       });
     }
 
-    const settings = rows[0];
+    const settings = { ...rows[0] };
 
     // Si está en modo automático, verificar si la tasa tiene más de 2 horas sin actualizarse
     if (settings.exchange_rate_mode === 'auto') {
@@ -415,13 +415,13 @@ exports.getSettings = async (req, res) => {
         settings.zego_server_secret = '••••••••••••••••';
     }
 
-    res.status(200).json(settings);
+    return res.status(200).json(settings);
   } catch (error) {
     console.warn(
       "system_settings no disponible, usando defaults:",
       error.message,
     );
-    res.status(200).json({
+    return res.status(200).json({
       clinic_name: "MindPath Neuro",
       logo_url: null,
       hide_sidebar_text: false,
