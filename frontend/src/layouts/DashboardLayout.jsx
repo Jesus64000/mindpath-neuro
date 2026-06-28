@@ -148,13 +148,13 @@ const DashboardLayout = () => {
     const renderSidebarContent = () => (
         <>
             {/* Logo */}
-            <div className={`h-16 flex items-center justify-between px-5 border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
-                <div className="flex items-center truncate">
+            <div className={`min-h-[64px] py-3 flex items-center justify-between px-5 border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
+                <div className="flex items-center truncate max-w-full">
                 {logoUrl ? (
                         <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
                             alt="Logo" 
-                            style={{ height: hideSidebarText ? `${Math.min((logoSize || 40) * 1.3, 56)}px` : `${Math.min(logoSize || 36, 48)}px` }}
-                            className={`w-auto max-w-[210px] object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
+                            style={{ height: `${logoSize || (hideSidebarText ? 56 : 36)}px` }}
+                            className={`w-auto max-w-[240px] object-contain mr-2 shrink-0 rounded-md transition-all ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     ) : (
                         <img src="/logo.png" alt="MindPath Logo"
                             style={{ height: '36px' }}

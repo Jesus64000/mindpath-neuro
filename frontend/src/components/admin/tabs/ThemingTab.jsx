@@ -162,30 +162,31 @@ const ThemingTab = ({
                             <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tamaño / Altura del Logo</label>
-                                    <span className="text-xs font-black text-mindpath-primary bg-mindpath-primary/10 px-2.5 py-0.5 rounded-full font-mono">{theme.logo_size || 40} px</span>
+                                    <span className="text-xs font-black text-mindpath-primary bg-mindpath-primary/10 px-2.5 py-0.5 rounded-full font-mono">{theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} px</span>
                                 </div>
                                 <input 
                                     type="range" 
                                     min="20" 
-                                    max="120" 
-                                    step="2"
-                                    value={theme.logo_size || 40} 
+                                    max="240" 
+                                    step="4"
+                                    value={theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} 
                                     onChange={e => setTheme(p => ({ ...p, logo_size: parseInt(e.target.value) }))}
                                     className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-mindpath-primary"
                                 />
-                                <div className="flex items-center justify-between gap-1 pt-1">
+                                <div className="flex items-center justify-between gap-1 pt-1 overflow-x-auto pb-1">
                                     {[
-                                        { label: 'S (30px)', val: 30 },
-                                        { label: 'M (45px)', val: 45 },
-                                        { label: 'L (60px)', val: 60 },
-                                        { label: 'XL (80px)', val: 80 },
-                                        { label: '2XL (100px)', val: 100 }
+                                        { label: 'Normal (36px)', val: 36 },
+                                        { label: 'M (60px)', val: 60 },
+                                        { label: 'L (90px)', val: 90 },
+                                        { label: 'XL (120px)', val: 120 },
+                                        { label: '2XL (180px)', val: 180 },
+                                        { label: 'Doble Máx (240px)', val: 240 }
                                     ].map(preset => (
                                         <button
                                             key={preset.val}
                                             type="button"
                                             onClick={() => setTheme(p => ({ ...p, logo_size: preset.val }))}
-                                            className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${ (theme.logo_size || 40) === preset.val ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-sm' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700' }`}
+                                            className={`text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 transition-all ${ (theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)) === preset.val ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-sm' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700' }`}
                                         >
                                             {preset.label}
                                         </button>
@@ -193,13 +194,13 @@ const ThemingTab = ({
                                 </div>
 
                                 {/* Previsualización inmediata de tamaño */}
-                                <div className="mt-3 p-3 bg-slate-900/90 dark:bg-slate-950/90 border border-slate-800 rounded-xl flex items-center justify-center min-h-[90px]">
+                                <div className="mt-3 p-4 bg-slate-900/90 dark:bg-slate-950/90 border border-slate-800 rounded-xl flex items-center justify-center min-h-[140px] overflow-auto">
                                     {theme.logo_url || logoFile ? (
                                         <img 
                                             src={logoFile ? URL.createObjectURL(logoFile) : (theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`)} 
                                             alt="Vista previa logo" 
-                                            style={{ height: `${theme.logo_size || 40}px` }}
-                                            className="w-auto object-contain transition-all"
+                                            style={{ height: `${theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)}px` }}
+                                            className="w-auto object-contain transition-all max-w-full"
                                         />
                                     ) : (
                                         <span className="text-xs text-slate-500 italic">Vista previa del tamaño aparecerá aquí al seleccionar un logo</span>
