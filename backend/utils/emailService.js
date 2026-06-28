@@ -485,21 +485,79 @@ const sendDoctorRejectionEmail = async (doctorEmail, doctorName, reason) => {
 
 const sendTestEmailService = async (targetEmail) => {
     const { transporter, smtp_email } = await getMailTransporter();
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Prueba de Servidor SMTP — Mindpath Neuro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4ff;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- CABECERA -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 50%,#7c3aed 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+              <div style="margin-bottom:16px;">
+                <span style="display:inline-block;background:rgba(255,255,255,0.2);padding:12px 20px;border-radius:50px;color:#ffffff;font-size:24px;">🧪</span>
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Mindpath Neuro</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Verificación de Servidor SMTP</p>
+            </td>
+          </tr>
+
+          <!-- CUERPO PRINCIPAL -->
+          <tr>
+            <td style="background:#ffffff;padding:40px;border-left:1px solid #e8eaf6;border-right:1px solid #e8eaf6;">
+              <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:22px;font-weight:700;">¡Conexión Exitosa! ⚡</h2>
+              <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
+                Este es un correo de verificación enviado desde <strong style="color:#6366f1;">Mindpath Neuro</strong> para certificar que el servidor SMTP está correctamente configurado y operativo.
+              </p>
+
+              <div style="height:3px;background:linear-gradient(90deg,#6366f1,#7c3aed,#a78bfa);border-radius:3px;margin-bottom:28px;"></div>
+
+              <div style="background:#f8f7ff;border:1px solid #e0e7ff;border-left:4px solid #6366f1;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+                <p style="margin:0 0 8px;color:#4c1d95;font-size:13px;font-weight:700;text-transform:uppercase;">Detalles del Envío</p>
+                <p style="margin:0 0 4px;color:#334155;font-size:14px;"><strong>Remitente Emisor:</strong> <span style="color:#6366f1;">${smtp_email}</span></p>
+                <p style="margin:0;color:#334155;font-size:14px;"><strong>Destinatario:</strong> ${targetEmail}</p>
+              </div>
+
+              <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">
+                Todos los correos de verificación de cuenta, restablecimiento de contraseña y notificaciones utilizarán este servidor configurado.
+              </p>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-radius:0 0 20px 20px;border:1px solid #e8eaf6;border-top:none;padding:28px 40px;text-align:center;">
+              <p style="margin:0 0 6px;color:#94a3b8;font-size:12px;">
+                Este correo fue enviado automáticamente desde el Panel de Administración.
+              </p>
+              <p style="margin:0;color:#cbd5e1;font-size:11px;">
+                &copy; 2026 <strong>Mindpath Neuro Intelligent</strong> &nbsp;·&nbsp; Todos los derechos reservados
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
     await transporter.sendMail({
         from: `"Mindpath Neuro" <${smtp_email}>`,
         to: targetEmail,
         subject: '🧪 Prueba de Servidor SMTP — Mindpath Neuro',
-        html: `
-            <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;padding:30px;background:#f0f4ff;border-radius:16px;max-width:500px;margin:0 auto;">
-                <h2 style="color:#4f46e5;margin-top:0;">✅ ¡Servidor SMTP Operativo!</h2>
-                <p style="color:#334155;line-height:1.6;">Este es un correo de verificación enviado desde <strong>Mindpath Neuro</strong> utilizando las credenciales SMTP configuradas en el Panel de Administración.</p>
-                <div style="background:#ffffff;padding:15px;border-radius:10px;border:1px solid #cbd5e1;margin:20px 0;">
-                    <p style="margin:0;font-size:13px;color:#64748b;"><strong>Remitente Emisor:</strong> ${smtp_email}</p>
-                    <p style="margin:5px 0 0 0;font-size:13px;color:#64748b;"><strong>Destinatario:</strong> ${targetEmail}</p>
-                </div>
-                <p style="font-size:12px;color:#94a3b8;margin-bottom:0;">Todos los correos de verificación de cuenta, restablecimiento de contraseña y notificaciones utilizarán este servidor.</p>
-            </div>
-        `
+        html: htmlContent
     });
     return { success: true };
 };

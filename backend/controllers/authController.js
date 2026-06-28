@@ -458,11 +458,13 @@ exports.googleComplete = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
+    const cleanEmail = String(email || '').trim().toLowerCase();
 
     try {
-        const [users] = await db.query('SELECT id, full_name, email, auth_provider FROM users WHERE email = ?', [email]);
+        const [users] = await db.query('SELECT id, full_name, email, auth_provider FROM users WHERE LOWER(TRIM(email)) = ?', [cleanEmail]);
 
         if (users.length === 0) {
+            console.log(`ℹ️ Solicitar recuperación para correo no registrado: ${cleanEmail}`);
             return res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
         }
 
@@ -487,13 +489,14 @@ exports.forgotPassword = async (req, res) => {
         );
 
         // Enviar correo
-        await sendResetPasswordEmail(user.email, user.full_name, resetToken);
+        console.log(`✉️ Enviando correo de recuperación a: ${user.email}`);
+        await sendResetPasswordEmail(user.email.trim(), user.full_name, resetToken);
 
         res.status(200).json({ message: 'Si el correo está registrado, recibirás un enlace de recuperación pronto.' });
 
     } catch (error) {
         console.error('Error en forgotPassword:', error);
-        res.status(500).json({ message: 'Error al procesar la solicitud de recuperación.' });
+        res.status(500).json({ message: 'Error al procesar la solicitud de recuperación: ' + (error.message || '') });
     }
 };
 
