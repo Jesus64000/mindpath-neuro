@@ -85,7 +85,7 @@ exports.getStats = async (req, res) => {
                 JOIN doctors d ON a.doctor_id = d.id
                 JOIN users u ON d.user_id = u.id
                 WHERE a.status = 'completed'
-                GROUP BY a.doctor_id
+                GROUP BY a.doctor_id, u.full_name, d.specialty
                 ORDER BY total_appts DESC
                 LIMIT 5
             `),
@@ -151,8 +151,8 @@ exports.getPendingDoctors = async (req, res) => {
             JOIN users u ON d.user_id = u.id
             WHERE d.is_verified = FALSE
             ORDER BY u.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [limit, offset]);
+            LIMIT ${Number(limit)} OFFSET ${Number(offset)}
+        `);
 
     res.status(200).json({
         data: doctors,
@@ -241,8 +241,7 @@ exports.getSpecialties = async (req, res) => {
     const total = totalRes[0].total;
 
     const [rows] = await db.query(
-      "SELECT * FROM specialties ORDER BY name ASC LIMIT ? OFFSET ?",
-      [limit, offset]
+      `SELECT * FROM specialties ORDER BY name ASC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
     );
 
     res.status(200).json({
@@ -663,9 +662,9 @@ exports.getUsers = async (req, res) => {
                 d.license_number
             ${baseQuery}
             ORDER BY u.created_at DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${Number(limit)} OFFSET ${Number(offset)}
         `;
-    const [users] = await db.query(sql, [...params, limit, offset]);
+    const [users] = await db.query(sql, params);
 
     res.status(200).json({
         data: users,
@@ -915,10 +914,10 @@ exports.getAllAppointments = async (req, res) => {
                    d_user.full_name AS doctor_name, d.specialty
             ${baseQuery}
             ORDER BY a.appointment_date DESC, a.start_time DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${Number(limit)} OFFSET ${Number(offset)}
         `;
 
-        const [appointments] = await db.query(query, [...params, limit, offset]);
+        const [appointments] = await db.query(query, params);
         
         res.json({
             data: appointments,
@@ -951,8 +950,7 @@ exports.getClinicsAdmin = async (req, res) => {
         }
 
         const [rows] = await db.query(
-            "SELECT * FROM clinics ORDER BY name ASC LIMIT ? OFFSET ?",
-            [limit, offset]
+            `SELECT * FROM clinics ORDER BY name ASC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
         );
 
         res.status(200).json({
@@ -1067,8 +1065,7 @@ exports.getStudyTypesAdmin = async (req, res) => {
         }
 
         const [rows] = await db.query(
-            "SELECT * FROM study_types ORDER BY name ASC LIMIT ? OFFSET ?",
-            [limit, offset]
+            `SELECT * FROM study_types ORDER BY name ASC LIMIT ${Number(limit)} OFFSET ${Number(offset)}`
         );
 
         res.status(200).json({
