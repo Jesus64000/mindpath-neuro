@@ -61,7 +61,7 @@ const VerificationBanner = () => {
 
 const DashboardLayout = () => {
     const { user, logout, updateUser } = useAuthStore();
-    const { clinicName, logoUrl, hideSidebarText } = useSettingsStore();
+    const { clinicName, logoUrl, logoSize, hideSidebarText } = useSettingsStore();
     const location = useLocation();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -152,10 +152,13 @@ const DashboardLayout = () => {
                 <div className="flex items-center truncate">
                 {logoUrl ? (
                         <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
-                            alt="Logo" className={`${(hideSidebarText && logoUrl) ? 'h-14 max-w-[210px]' : 'h-9'} w-auto object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
+                            alt="Logo" 
+                            style={{ height: hideSidebarText ? `${Math.min((logoSize || 40) * 1.3, 56)}px` : `${Math.min(logoSize || 36, 48)}px` }}
+                            className={`w-auto max-w-[210px] object-contain mr-2 shrink-0 rounded-md ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     ) : (
                         <img src="/logo.png" alt="MindPath Logo"
-                            className="h-9 w-auto object-contain mr-2 shrink-0 rounded-md mix-blend-multiply" />
+                            style={{ height: '36px' }}
+                            className="w-auto object-contain mr-2 shrink-0 rounded-md mix-blend-multiply" />
                     )}
                     {!(hideSidebarText && logoUrl) && (
                         <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>

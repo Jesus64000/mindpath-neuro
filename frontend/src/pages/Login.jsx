@@ -12,7 +12,7 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const { login, loginWithGoogle, isLoading, error } = useAuthStore();
     const navigate = useNavigate();
-    const { clinicName, logoUrl } = useSettingsStore();
+    const { clinicName, logoUrl, logoSize } = useSettingsStore();
 
     // ── Login tradicional ──────────────────────────────────────────
     const handleSubmit = async (e) => {
@@ -60,7 +60,8 @@ const Login = () => {
                             <img 
                                 src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`} 
                                 alt={clinicName} 
-                                className="h-16 w-auto object-contain max-w-[280px]" 
+                                style={{ height: `${logoSize ? Math.min(Math.max(logoSize * 1.5, 48), 110) : 64}px` }}
+                                className="w-auto object-contain max-w-[280px] transition-all" 
                             />
                         </div>
                     ) : (

@@ -53,7 +53,8 @@ const expectedColumns = {
         { name: 'zego_server_secret', definition: 'VARCHAR(255) DEFAULT NULL' },
         { name: 'exchange_rate', definition: "DECIMAL(10,4) DEFAULT 36.50 AFTER smtp_password" },
         { name: 'exchange_rate_mode', definition: "ENUM('auto', 'manual') DEFAULT 'auto' AFTER exchange_rate" },
-        { name: 'exchange_rate_updated_at', definition: "TIMESTAMP NULL DEFAULT NULL AFTER exchange_rate_mode" }
+        { name: 'exchange_rate_updated_at', definition: "TIMESTAMP NULL DEFAULT NULL AFTER exchange_rate_mode" },
+        { name: 'logo_size', definition: "INT DEFAULT 40" }
     ],
     doctor_schedules: [
         { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER slot_duration' }
