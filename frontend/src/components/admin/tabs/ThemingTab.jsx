@@ -8,6 +8,8 @@ const ThemingTab = ({
     setTheme, 
     logoFile, 
     setLogoFile, 
+    logoDarkFile,
+    setLogoDarkFile,
     customFontName, 
     setCustomFontName, 
     onSave, 
@@ -17,6 +19,22 @@ const ThemingTab = ({
     syncingBcv
 }) => {
     const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
+
+    let lightPreviewSrc = null;
+    if (logoFile) {
+        lightPreviewSrc = URL.createObjectURL(logoFile);
+    } else if (theme.logo_url) {
+        lightPreviewSrc = theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`;
+    }
+
+    let darkPreviewSrc = null;
+    if (logoDarkFile) {
+        darkPreviewSrc = URL.createObjectURL(logoDarkFile);
+    } else if (theme.logo_dark_url) {
+        darkPreviewSrc = theme.logo_dark_url.startsWith('http') ? theme.logo_dark_url : `${BACKEND_URL}${theme.logo_dark_url}`;
+    } else {
+        darkPreviewSrc = lightPreviewSrc;
+    }
 
     return (
         <div className="space-y-6 animate-fadeIn">
@@ -137,76 +155,123 @@ const ThemingTab = ({
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Logo</label>
-                        <div className="space-y-3">
+                    <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 space-y-5">
+                        <div>
+                            <h3 className="text-sm font-extrabold text-gray-800 dark:text-white uppercase tracking-wider mb-1">Identidad Visual & Logos</h3>
+                            <p className="text-xs text-gray-400">Configura logos independientes para el tema claro y oscuro del sistema.</p>
+                        </div>
+
+                        {/* LOGO MODO CLARO */}
+                        <div className="p-4 bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700 rounded-2xl space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg text-xs font-bold">☀️ Modo Claro</span>
+                                <span className="text-xs text-gray-400">Logo para fondos blancos y claros</span>
+                            </div>
                             <div>
-                                <p className="text-xs text-gray-400 mb-1">Subir desde disco</p>
-                                <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-xl p-3 hover:border-mindpath-primary transition-colors">
+                                <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-xl p-3 hover:border-mindpath-primary bg-white dark:bg-slate-800 transition-colors">
                                     <Upload size={16} className="text-gray-400"/>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{logoFile ? logoFile.name : 'Subir PNG transparente (Sin fondo · recomendado)'}</span>
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{logoFile ? logoFile.name : 'Subir logo para modo claro (PNG transparente)'}</span>
                                     <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" className="hidden" onChange={e => {
                                         if (e.target.files[0]) setLogoFile(e.target.files[0]);
                                     }}/>
                                 </label>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-400 mb-1">O pegar URL externa</p>
                                 <input value={theme.logo_url} onChange={e => setTheme(p => ({ ...p, logo_url: e.target.value }))}
-                                    placeholder="https://mi-sitio.com/logo.png"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-700 dark:border-slate-600 dark:text-white" 
+                                    placeholder="O pegar URL externa (https://...)"
+                                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:text-white" 
                                 />
                             </div>
+                        </div>
 
-                            {/* Control de Tamaño de Logo */}
-                            <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tamaño / Altura del Logo</label>
-                                    <span className="text-xs font-black text-mindpath-primary bg-mindpath-primary/10 px-2.5 py-0.5 rounded-full font-mono">{theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} px</span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="20" 
-                                    max="240" 
-                                    step="4"
-                                    value={theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} 
-                                    onChange={e => setTheme(p => ({ ...p, logo_size: parseInt(e.target.value) }))}
-                                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-mindpath-primary"
+                        {/* LOGO MODO OSCURO */}
+                        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-xs font-bold">🌙 Modo Oscuro</span>
+                                <span className="text-xs text-slate-400">Logo para fondos oscuros y barra lateral</span>
+                            </div>
+                            <div>
+                                <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-slate-700 rounded-xl p-3 hover:border-indigo-400 bg-slate-900 transition-colors">
+                                    <Upload size={16} className="text-slate-400"/>
+                                    <span className="text-xs font-medium text-slate-300 truncate">{logoDarkFile ? logoDarkFile.name : (theme.logo_dark_url ? 'Modo oscuro configurado (Clic para cambiar)' : 'Subir logo exclusivo para modo oscuro')}</span>
+                                    <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" className="hidden" onChange={e => {
+                                        if (e.target.files[0]) setLogoDarkFile(e.target.files[0]);
+                                    }}/>
+                                </label>
+                            </div>
+                            <div>
+                                <input value={theme.logo_dark_url || ''} onChange={e => setTheme(p => ({ ...p, logo_dark_url: e.target.value }))}
+                                    placeholder="O pegar URL externa para modo oscuro (https://...)"
+                                    className="w-full border border-slate-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-400 bg-slate-900 text-white" 
                                 />
-                                <div className="flex items-center justify-between gap-1 pt-1 overflow-x-auto pb-1">
-                                    {[
-                                        { label: 'Normal (36px)', val: 36 },
-                                        { label: 'M (60px)', val: 60 },
-                                        { label: 'L (90px)', val: 90 },
-                                        { label: 'XL (120px)', val: 120 },
-                                        { label: '2XL (180px)', val: 180 },
-                                        { label: 'Doble Máx (240px)', val: 240 }
-                                    ].map(preset => (
-                                        <button
-                                            key={preset.val}
-                                            type="button"
-                                            onClick={() => setTheme(p => ({ ...p, logo_size: preset.val }))}
-                                            className={`text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 transition-all ${ (theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)) === preset.val ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-sm' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700' }`}
-                                        >
-                                            {preset.label}
-                                        </button>
-                                    ))}
-                                </div>
+                            </div>
+                        </div>
 
-                                {/* Previsualización inmediata de tamaño */}
-                                <div className="mt-3 p-4 bg-slate-900/90 dark:bg-slate-950/90 border border-slate-800 rounded-xl flex items-center justify-center min-h-[140px] overflow-auto">
-                                    {theme.logo_url || logoFile ? (
+                        {/* Control de Tamaño de Logo */}
+                        <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tamaño / Altura de los Logos</label>
+                                <span className="text-xs font-black text-mindpath-primary bg-mindpath-primary/10 px-2.5 py-0.5 rounded-full font-mono">{theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} px</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                min="20" 
+                                max="240" 
+                                step="4"
+                                value={theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)} 
+                                onChange={e => setTheme(p => ({ ...p, logo_size: parseInt(e.target.value) }))}
+                                className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-mindpath-primary"
+                            />
+                            <div className="flex items-center justify-between gap-1 pt-1 overflow-x-auto pb-1">
+                                {[
+                                    { label: 'Normal (36px)', val: 36 },
+                                    { label: 'M (60px)', val: 60 },
+                                    { label: 'L (90px)', val: 90 },
+                                    { label: 'XL (120px)', val: 120 },
+                                    { label: '2XL (180px)', val: 180 },
+                                    { label: 'Doble Máx (240px)', val: 240 }
+                                ].map(preset => (
+                                    <button
+                                        key={preset.val}
+                                        type="button"
+                                        onClick={() => setTheme(p => ({ ...p, logo_size: preset.val }))}
+                                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 transition-all ${ (theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)) === preset.val ? 'bg-mindpath-primary text-white border-mindpath-primary shadow-sm' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700' }`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Dual Previsualización inmediata en vivo */}
+                            <div className="grid grid-cols-2 gap-3 mt-3">
+                                <div className="p-3 bg-white border border-gray-200 rounded-xl flex flex-col items-center justify-center min-h-[120px] text-center">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-2">Vista previa Modo Claro ☀️</p>
+                                    {lightPreviewSrc ? (
                                         <img 
-                                            src={logoFile ? URL.createObjectURL(logoFile) : (theme.logo_url.startsWith('http') ? theme.logo_url : `${BACKEND_URL}${theme.logo_url}`)} 
-                                            alt="Vista previa logo" 
+                                            src={lightPreviewSrc} 
+                                            alt="Preview claro" 
                                             style={{ height: `${theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)}px` }}
                                             className="w-auto object-contain transition-all max-w-full"
                                         />
                                     ) : (
-                                        <span className="text-xs text-slate-500 italic">Vista previa del tamaño aparecerá aquí al seleccionar un logo</span>
+                                        <span className="text-[10px] text-gray-400 italic">Sin logo</span>
+                                    )}
+                                </div>
+                                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex flex-col items-center justify-center min-h-[120px] text-center">
+                                    <p className="text-[10px] font-bold text-slate-500 mb-2">Vista previa Modo Oscuro 🌙</p>
+                                    {darkPreviewSrc ? (
+                                        <img 
+                                            src={darkPreviewSrc} 
+                                            alt="Preview oscuro" 
+                                            style={{ height: `${theme.logo_size || (theme.hide_sidebar_text ? 56 : 36)}px` }}
+                                            className={`w-auto object-contain transition-all max-w-full ${!theme.logo_dark_url && !logoDarkFile ? 'brightness-[2] saturate-150' : ''}`}
+                                        />
+                                    ) : (
+                                        <span className="text-[10px] text-slate-600 italic">Sin logo</span>
                                     )}
                                 </div>
                             </div>
+                        </div>
                             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-slate-700">
                                 <input 
                                     type="checkbox" 
@@ -226,7 +291,6 @@ const ThemingTab = ({
                                 💡 <strong>Recomendación de Diseño:</strong> Sube tu logo en formato <strong>PNG con fondo transparente</strong> y recortado al ras (sin márgenes o espacios vacíos grandes en los bordes). Esto permitirá que se adapte perfectamente al fondo del sistema y se visualice con el tamaño ideal tanto en la app como en tus <strong>facturas PDF e informes clínicos descargables</strong>.
                             </div>
                         </div>
-                    </div>
 
                     {/* CONFIGURACIÓN DE TASA DE CAMBIO BCV (Bs/$) */}
                     <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 border-l-4 border-l-emerald-500">

@@ -31,6 +31,7 @@ const loadGoogleFont = (fontName) => {
 const useSettingsStore = create((set) => ({
   clinicName: "MindPath Neuro",
   logoUrl: null,
+  logoDarkUrl: null,
   logoSize: 40,
   hideSidebarText: false,
   primaryColor: "#6D28D9",
@@ -101,6 +102,7 @@ const useSettingsStore = create((set) => ({
     set({
       clinicName: settings.clinic_name || "MindPath Neuro",
       logoUrl: settings.logo_url || null,
+      logoDarkUrl: settings.logo_dark_url || null,
       logoSize: Number(settings.logo_size) || 40,
       hideSidebarText: !!settings.hide_sidebar_text,
       primaryColor: settings.primary_color || "#6D28D9",

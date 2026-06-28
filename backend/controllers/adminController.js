@@ -423,6 +423,7 @@ exports.getSettings = async (req, res) => {
     return res.status(200).json({
       clinic_name: "MindPath Neuro",
       logo_url: null,
+      logo_dark_url: null,
       logo_size: 40,
       hide_sidebar_text: false,
       primary_color: "#6D28D9",
@@ -437,7 +438,7 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const { 
-        clinic_name, logo_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family,
+        clinic_name, logo_url, logo_dark_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family,
         smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode
     } = req.body;
 
@@ -456,11 +457,12 @@ exports.updateSettings = async (req, res) => {
     try {
         await db.query(
           `
-                INSERT INTO system_settings (id, clinic_name, logo_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO system_settings (id, clinic_name, logo_url, logo_dark_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     clinic_name   = VALUES(clinic_name),
                     logo_url      = VALUES(logo_url),
+                    logo_dark_url = VALUES(logo_dark_url),
                     logo_size     = VALUES(logo_size),
                     hide_sidebar_text = VALUES(hide_sidebar_text),
                     primary_color = VALUES(primary_color),
@@ -475,7 +477,7 @@ exports.updateSettings = async (req, res) => {
                     exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
             `,
           [
-              clinic_name, logo_url, validLogoSize, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
+              clinic_name, logo_url, logo_dark_url || null, validLogoSize, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
               smtp_email || null, encryptedSmtpPass, zego_app_id || null, encryptedZegoSecret,
               exchange_rate !== undefined ? exchange_rate : 36.50,
               exchange_rate_mode || 'auto',
@@ -483,7 +485,7 @@ exports.updateSettings = async (req, res) => {
           ],
         );
     } catch (sqlErr) {
-        // Fallback si la tabla aún no tiene las columnas zego o logo_size
+        // Fallback si la tabla aún no tiene las columnas zego o logo_dark_url
         await db.query(
           `
                 INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)

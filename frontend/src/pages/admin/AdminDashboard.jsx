@@ -97,13 +97,14 @@ const AdminDashboard = () => {
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true, clinics: true, studyTypes: true });
     const [sendingTestEmail, setSendingTestEmail] = useState(false);
-    const { clinicName, logoUrl, logoSize, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
+    const { clinicName, logoUrl, logoDarkUrl, logoSize, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode, applySettings } = useSettingsStore();
 
     // Theming
     const PRESET_FONTS = ['Inter','Roboto','Poppins','Outfit','Nunito','Lato','Open Sans','Montserrat','Raleway','system-ui'];
     const [theme, setTheme]         = useState({ 
         clinic_name: clinicName, 
         logo_url: logoUrl || '', 
+        logo_dark_url: logoDarkUrl || '',
         logo_size: logoSize || 40,
         hide_sidebar_text: hideSidebarText || false,
         primary_color: primaryColor, 
@@ -112,7 +113,8 @@ const AdminDashboard = () => {
         exchange_rate: exchangeRate,
         exchange_rate_mode: exchangeRateMode
     });
-    const [logoFile, setLogoFile]   = useState(null);
+    const [logoFile, setLogoFile]           = useState(null);
+    const [logoDarkFile, setLogoDarkFile]   = useState(null);
     const [savingTheme, setSavingTheme] = useState(false);
     const [syncingBcv, setSyncingBcv]   = useState(false);
     const [customFontName, setCustomFontName] = useState('');
@@ -247,6 +249,7 @@ const AdminDashboard = () => {
         setTheme({ 
             clinic_name: clinicName, 
             logo_url: logoUrl || '', 
+            logo_dark_url: logoDarkUrl || '',
             logo_size: logoSize || 40,
             hide_sidebar_text: hideSidebarText || false,
             primary_color: primaryColor, 
@@ -255,7 +258,7 @@ const AdminDashboard = () => {
             exchange_rate: exchangeRate,
             exchange_rate_mode: exchangeRateMode
         });
-    }, [clinicName, logoUrl, logoSize, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode]);
+    }, [clinicName, logoUrl, logoDarkUrl, logoSize, hideSidebarText, primaryColor, primaryHover, fontFamily, exchangeRate, exchangeRateMode]);
 
     const verifyDoctor = async (id) => {
         try { await api.put(`/admin/doctors/${id}/verify`); showToast('Doctor verificado.'); loadPending(); loadStats(); }
@@ -435,10 +438,10 @@ const AdminDashboard = () => {
         if (field === 'primary_hover') document.documentElement.style.setProperty('--color-primary-hover', value);
     };
 
-    const uploadLogo = async () => {
-        if (!logoFile) return theme.logo_url;
+    const uploadSingleLogo = async (fileToUpload, defaultUrl) => {
+        if (!fileToUpload) return defaultUrl;
         const form = new FormData();
-        form.append('logo', logoFile);
+        form.append('logo', fileToUpload);
         const res = await api.post('/admin/upload/logo', form, { headers: { 'Content-Type': 'multipart/form-data' } });
         return res.data.logo_url;
     };
@@ -446,15 +449,17 @@ const AdminDashboard = () => {
     const saveTheme = async () => {
         setSavingTheme(true);
         try {
-            const logo_url = await uploadLogo();
+            const logo_url = await uploadSingleLogo(logoFile, theme.logo_url);
+            const logo_dark_url = await uploadSingleLogo(logoDarkFile, theme.logo_dark_url);
             const finalFont = (isCustomFont || theme.font_family === '__custom__')
                 ? (customFontName.trim() || 'Inter')
                 : theme.font_family;
-            const payload = { ...theme, logo_url, font_family: finalFont };
+            const payload = { ...theme, logo_url, logo_dark_url, font_family: finalFont };
             await api.put('/admin/settings', payload);
             applySettings({ 
                 clinic_name: payload.clinic_name, 
                 logo_url: payload.logo_url, 
+                logo_dark_url: payload.logo_dark_url,
                 logo_size: payload.logo_size,
                 hide_sidebar_text: payload.hide_sidebar_text,
                 primary_color: payload.primary_color, 
@@ -702,6 +707,8 @@ const AdminDashboard = () => {
                     setTheme={setTheme}
                     logoFile={logoFile}
                     setLogoFile={setLogoFile}
+                    logoDarkFile={logoDarkFile}
+                    setLogoDarkFile={setLogoDarkFile}
                     customFontName={customFontName}
                     setCustomFontName={setCustomFontName}
                     onSave={saveTheme}

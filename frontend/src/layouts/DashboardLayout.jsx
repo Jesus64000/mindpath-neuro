@@ -61,7 +61,7 @@ const VerificationBanner = () => {
 
 const DashboardLayout = () => {
     const { user, logout, updateUser } = useAuthStore();
-    const { clinicName, logoUrl, logoSize, hideSidebarText } = useSettingsStore();
+    const { clinicName, logoUrl, logoDarkUrl, logoSize, hideSidebarText } = useSettingsStore();
     const location = useLocation();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -155,11 +155,17 @@ const DashboardLayout = () => {
                 </button>
 
                 <div className="flex flex-col items-center justify-center w-full">
-                    {logoUrl ? (
-                        <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
+                    {(logoUrl || logoDarkUrl) ? (
+                        <img 
+                            src={
+                                isDark && logoDarkUrl 
+                                    ? (logoDarkUrl.startsWith('http') ? logoDarkUrl : `${BACKEND_URL}${logoDarkUrl}`)
+                                    : (logoUrl ? (logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`) : '')
+                            }
                             alt="Logo" 
                             style={{ height: `${logoSize || (hideSidebarText ? 56 : 36)}px` }}
-                            className={`w-auto max-w-full object-contain mx-auto shrink-0 rounded-md transition-all ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
+                            className={`w-auto max-w-full object-contain mx-auto shrink-0 rounded-md transition-all ${isDark && !logoDarkUrl ? 'brightness-[2] saturate-150' : ''}`} 
+                        />
                     ) : (
                         <img src="/logo.png" alt="MindPath Logo"
                             style={{ height: '36px' }}
