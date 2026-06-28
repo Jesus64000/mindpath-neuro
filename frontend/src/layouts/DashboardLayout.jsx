@@ -147,29 +147,31 @@ const DashboardLayout = () => {
     // Sidebar Sidebar content reutilizable
     const renderSidebarContent = () => (
         <>
-            {/* Logo */}
-            <div className={`min-h-[64px] py-3 flex items-center justify-between px-5 border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
-                <div className="flex items-center truncate max-w-full">
-                {logoUrl ? (
+            {/* Logo y Nombre de Clínica Centrados */}
+            <div className={`relative py-5 px-4 flex flex-col items-center justify-center text-center border-b ${isDark ? 'border-[var(--border-color)]' : 'border-gray-100'}`}>
+                {/* Botón de cerrar para el sidebar móvil (esquina superior derecha) */}
+                <button onClick={() => setIsMobileOpen(false)} className="absolute top-3 right-3 md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                    <X size={20} />
+                </button>
+
+                <div className="flex flex-col items-center justify-center w-full">
+                    {logoUrl ? (
                         <img src={logoUrl.startsWith('http') ? logoUrl : `${BACKEND_URL}${logoUrl}`}
                             alt="Logo" 
                             style={{ height: `${logoSize || (hideSidebarText ? 56 : 36)}px` }}
-                            className={`w-auto max-w-[240px] object-contain mr-2 shrink-0 rounded-md transition-all ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
+                            className={`w-auto max-w-full object-contain mx-auto shrink-0 rounded-md transition-all ${isDark ? 'brightness-[2] saturate-150' : 'mix-blend-multiply'}`} />
                     ) : (
                         <img src="/logo.png" alt="MindPath Logo"
                             style={{ height: '36px' }}
-                            className="w-auto object-contain mr-2 shrink-0 rounded-md mix-blend-multiply" />
+                            className="w-auto object-contain mx-auto shrink-0 rounded-md mix-blend-multiply" />
                     )}
+
                     {!(hideSidebarText && logoUrl) && (
-                        <span className={`text-lg font-bold tracking-wide truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <span className={`mt-2.5 text-sm font-extrabold tracking-wide text-center leading-snug break-words max-w-full px-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             {clinicName}
                         </span>
                     )}
                 </div>
-                {/* Botón de cerrar para el sidebar móvil */}
-                <button onClick={() => setIsMobileOpen(false)} className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white">
-                    <X size={20} />
-                </button>
             </div>
 
             {/* Navegación */}
