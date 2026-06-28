@@ -58,7 +58,6 @@ exports.uploadPaymentProof = async (req, res) => {
         res.status(500).json({ message: 'Error interno al subir comprobante.' });
     }
 };
-const db = require('../config/db');
 
 // Resumen completo para el Dashboard del Doctor
 exports.getDoctorDashboardSummary = async (req, res) => {
