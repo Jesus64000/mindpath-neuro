@@ -14,12 +14,8 @@ const ThemingTab = ({
     onPreviewColor, 
     saving,
     onSyncBcv,
-    syncingBcv,
-    onSendTestEmail,
-    sendingTestEmail = false
+    syncingBcv
 }) => {
-    const [testEmailInput, setTestEmailInput] = useState('');
-    
     const isCustomFont = !PRESET_FONTS.includes(theme.font_family) && theme.font_family !== '__custom__';
 
     return (
