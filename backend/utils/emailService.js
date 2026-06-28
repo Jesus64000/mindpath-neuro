@@ -29,18 +29,29 @@ const getMailTransporter = async () => {
     }
 
     if (!smtp_email || !decryptedPassword) {
-        throw new Error('Configuración SMTP no encontrada. Por favor configúrala en el Panel de Administración (Sistema > Servidor de Correo).');
+        throw new Error('Configuración SMTP no encontrada. Por favor ingresa el correo y la Contraseña de Aplicación en el Panel de Administración (Integraciones & APIs).');
     }
 
+    // Limpiar espacios en blanco que Google agrega a las contraseñas de aplicación (ej: "abcd efgh ijkl mnop" -> "abcdefghijklmnop")
+    const cleanPassword = String(decryptedPassword).replace(/\s+/g, '');
+
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // SSL directo para máxima compatibilidad en Vercel
         auth: {
-            user: smtp_email,
-            pass: decryptedPassword
-        }
+            user: smtp_email.trim(),
+            pass: cleanPassword
+        },
+        tls: {
+            rejectUnauthorized: false
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
     });
 
-    return { transporter, smtp_email };
+    return { transporter, smtp_email: smtp_email.trim() };
 };
 
 /**
@@ -49,7 +60,8 @@ const getMailTransporter = async () => {
 const sendResetPasswordEmail = async (userEmail, userName, resetToken) => {
     try {
         const { transporter, smtp_email } = await getMailTransporter();
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        const frontendBase = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
+        const resetUrl = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${resetToken}`;
 
         const htmlContent = `
 <!DOCTYPE html>
