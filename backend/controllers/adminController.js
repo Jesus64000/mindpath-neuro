@@ -408,6 +408,13 @@ exports.getSettings = async (req, res) => {
       }
     }
 
+    if (settings.smtp_password) {
+        settings.smtp_password = '••••••••••••••••';
+    }
+    if (settings.zego_server_secret) {
+        settings.zego_server_secret = '••••••••••••••••';
+    }
+
     res.status(200).json(settings);
   } catch (error) {
     console.warn(
@@ -431,18 +438,23 @@ exports.updateSettings = async (req, res) => {
   try {
     const { 
         clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family,
-        smtp_email, smtp_password, exchange_rate, exchange_rate_mode
+        smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode
     } = req.body;
 
-    let encryptedPassword = null;
-    if (smtp_password) {
-        encryptedPassword = encrypt(smtp_password);
+    let encryptedSmtpPass = null;
+    if (smtp_password && smtp_password !== '••••••••••••••••') {
+        encryptedSmtpPass = encrypt(smtp_password);
+    }
+
+    let encryptedZegoSecret = null;
+    if (zego_server_secret && zego_server_secret !== '••••••••••••••••') {
+        encryptedZegoSecret = encrypt(zego_server_secret);
     }
 
     await db.query(
       `
-            INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 clinic_name   = VALUES(clinic_name),
                 logo_url      = VALUES(logo_url),
@@ -451,14 +463,16 @@ exports.updateSettings = async (req, res) => {
                 primary_hover = VALUES(primary_hover),
                 font_family   = VALUES(font_family),
                 smtp_email    = VALUES(smtp_email),
-                smtp_password = COALESCE(VALUES(smtp_password), smtp_password),
+                smtp_password = CASE WHEN VALUES(smtp_password) IS NOT NULL THEN VALUES(smtp_password) ELSE smtp_password END,
+                zego_app_id   = VALUES(zego_app_id),
+                zego_server_secret = CASE WHEN VALUES(zego_server_secret) IS NOT NULL THEN VALUES(zego_server_secret) ELSE zego_server_secret END,
                 exchange_rate = VALUES(exchange_rate),
                 exchange_rate_mode = VALUES(exchange_rate_mode),
                 exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
         `,
       [
           clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
-          smtp_email || null, encryptedPassword || null,
+          smtp_email || null, encryptedSmtpPass, zego_app_id || null, encryptedZegoSecret,
           exchange_rate !== undefined ? exchange_rate : 36.50,
           exchange_rate_mode || 'auto',
           exchange_rate_mode === 'manual' ? new Date() : null

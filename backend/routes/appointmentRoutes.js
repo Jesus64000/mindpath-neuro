@@ -20,6 +20,7 @@ router.get('/patient', authMiddleware, appointmentController.getPatientAppointme
 router.get('/doctor/:id/detail', authMiddleware, appointmentController.getAppointmentDetail);
 
 // Sprint 27: Sala de Espera Virtual
+router.get('/zego-config', authMiddleware, appointmentController.getZegoConfig);
 router.get('/:id/room-status', authMiddleware, appointmentController.getRoomStatus);
 router.patch('/:id/doctor-ready', authMiddleware, appointmentController.setDoctorReady);
 router.patch('/:id/doctor-not-ready', authMiddleware, appointmentController.setDoctorNotReady);

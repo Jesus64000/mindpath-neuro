@@ -182,68 +182,6 @@ const ThemingTab = ({
                         </div>
                     </div>
 
-                    {/* FASE 3: CONFIGURACIÓN SMTP */}
-                    <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 border-l-4 border-l-mindpath-primary">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-mindpath-primary/10 rounded-lg text-mindpath-primary">
-                                <Mail size={18} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-800 dark:text-white">Servidor de Correo (SMTP)</h3>
-                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">Correos del sistema, Verificación y Recuperación</p>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 tracking-widest text-slate-500">Email del Sistema (Gmail)</label>
-                                <input 
-                                    type="email"
-                                    value={theme.smtp_email || ''} 
-                                    onChange={e => setTheme(p => ({ ...p, smtp_email: e.target.value }))}
-                                    placeholder="ejemplo@gmail.com"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:border-slate-700 dark:text-white" 
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 tracking-widest text-slate-500">Contraseña de Aplicación</label>
-                                <input 
-                                    type="password"
-                                    value={theme.smtp_password || ''} 
-                                    onChange={e => setTheme(p => ({ ...p, smtp_password: e.target.value }))}
-                                    placeholder="•••• •••• •••• ••••"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:border-slate-700 dark:text-white" 
-                                />
-                                <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
-                                    Usa una <strong>Contraseña de Aplicación</strong> de Google. Por seguridad, este valor se guarda cifrado en el servidor.
-                                </p>
-                            </div>
-
-                            {/* Probar conexión de correo */}
-                            <div className="pt-3 border-t border-gray-100 dark:border-slate-800 space-y-2">
-                                <label className="block text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase">Probar envío de correo</label>
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="email"
-                                        value={testEmailInput}
-                                        onChange={e => setTestEmailInput(e.target.value)}
-                                        placeholder="Destinatario para la prueba..."
-                                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                                    />
-                                    <button
-                                        type="button"
-                                        disabled={sendingTestEmail}
-                                        onClick={() => onSendTestEmail && onSendTestEmail(testEmailInput)}
-                                        className="px-4 py-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white text-xs font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1 disabled:opacity-50"
-                                    >
-                                        {sendingTestEmail ? <RefreshCw size={14} className="animate-spin" /> : <Mail size={14} />}
-                                        {sendingTestEmail ? 'Enviando...' : 'Enviar Prueba'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* CONFIGURACIÓN DE TASA DE CAMBIO BCV (Bs/$) */}
                     <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-5 border-l-4 border-l-emerald-500">
                         <div className="flex items-center gap-3 mb-4">

@@ -188,8 +188,18 @@ const VideoRoom = () => {
     const myMeeting = async (element) => {
         if (!element || joinedRef.current) return;
 
-        const appID        = Number(import.meta.env.VITE_ZEGO_APP_ID);
-        const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
+        let appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
+        let serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
+
+        try {
+            const zegoRes = await api.get('/appointments/zego-config');
+            if (zegoRes.data?.appID && zegoRes.data?.serverSecret) {
+                appID = Number(zegoRes.data.appID);
+                serverSecret = zegoRes.data.serverSecret;
+            }
+        } catch (e) {
+            console.warn("Usando fallback de entorno para Zego:", e.message);
+        }
 
         if (!appID || isNaN(appID) || !serverSecret || serverSecret.includes('YOUR') || serverSecret.includes('_AQUI')) {
             console.error('Faltan credenciales válidas de ZegoCloud.');

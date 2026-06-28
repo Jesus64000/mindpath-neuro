@@ -22,6 +22,7 @@ import VerificationTab from '../../components/admin/tabs/VerificationTab';
 import CatalogsTab from '../../components/admin/tabs/CatalogsTab';
 import UsersTab from '../../components/admin/tabs/UsersTab';
 import ThemingTab from '../../components/admin/tabs/ThemingTab';
+import IntegrationsTab from '../../components/admin/tabs/IntegrationsTab';
 import AppointmentsTab from '../../components/admin/tabs/AppointmentsTab';
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ const AdminDashboard = () => {
         '👥 Usuarios',
         '📅 Citas',
         ...(isAdmin ? ['🎨 Personalización'] : []),
+        ...(isAdmin ? ['🔌 Integraciones & APIs'] : []),
     ];
     
     // Índices lógicos (invariantes)
@@ -59,6 +61,7 @@ const AdminDashboard = () => {
         users:        isAdmin ? 4 : 2,
         appointments: isAdmin ? 5 : 3,
         theming:      isAdmin ? 6 : -1,
+        integrations: isAdmin ? 7 : -1,
     };
 
     const [activeTab, setActiveTab]     = useState(TAB.verification);
@@ -703,6 +706,15 @@ const AdminDashboard = () => {
                     saving={savingTheme}
                     onSyncBcv={syncBcvRate}
                     syncingBcv={syncingBcv}
+                />
+            )}
+
+            {activeTab === TAB.integrations && isAdmin && (
+                <IntegrationsTab
+                    theme={theme}
+                    setTheme={setTheme}
+                    onSave={saveTheme}
+                    saving={savingTheme}
                     onSendTestEmail={handleSendTestEmail}
                     sendingTestEmail={sendingTestEmail}
                 />

@@ -232,11 +232,15 @@ export const ReportPDFDocument = ({ report, header }) => {
                 {header?.signature_picture && (
                     <View style={{ marginTop: 25, alignItems: 'center', justifyContent: 'center' }}>
                         <Image 
-                            src={header.signature_picture.startsWith('http') ? header.signature_picture : `${BACKEND_URL}${header.signature_picture}`} 
-                            style={{ width: 120, height: 50, objectFit: 'contain' }} 
+                            src={
+                                header.signature_picture.startsWith('http') || header.signature_picture.startsWith('data:')
+                                    ? header.signature_picture
+                                    : `${BACKEND_URL}${header.signature_picture.startsWith('/') ? '' : '/'}${header.signature_picture}`
+                            } 
+                            style={{ width: 140, height: 60, objectFit: 'contain' }} 
                         />
                         <View style={{ borderTopWidth: 1, borderTopColor: '#e5e7eb', width: 180, marginTop: 4, paddingTop: 4, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#111827' }}>Dr(a). {header.doctor_name}</Text>
+                            <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#111827' }}>Dr(a). {header.doctor_name || 'Especialista'}</Text>
                             <Text style={{ fontSize: 7, color: '#6b7280', marginTop: 1 }}>Firma Digitalizada</Text>
                         </View>
                     </View>

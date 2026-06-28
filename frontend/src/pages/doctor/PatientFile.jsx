@@ -588,8 +588,16 @@ const PatientFile = () => {
                                                                 }}
                                                                 header={{
                                                                     patient_name: info.full_name,
+                                                                    doctor_name: h.doctor_name,
+                                                                    specialty: h.specialty,
                                                                     appointment_date: h.appointment_date,
-                                                                    type: h.type
+                                                                    start_time: h.start_time,
+                                                                    type: h.type,
+                                                                    legal_verification_code: h.legal_verification_code,
+                                                                    signature_picture: h.signature_picture,
+                                                                    rif: h.rif || 'J-12345678-9',
+                                                                    clinic_name: h.clinic_name || 'Mindpath Neuro',
+                                                                    clinic_address: h.clinic_address
                                                                 }}
                                                             />
                                                         </div>

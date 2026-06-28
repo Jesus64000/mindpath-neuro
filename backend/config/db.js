@@ -174,6 +174,12 @@ pool.getConnection()
             await pool.query("ALTER TABLE clinics DROP INDEX name");
         } catch (e) {}
         try {
+            await pool.query("ALTER TABLE system_settings ADD COLUMN zego_app_id VARCHAR(100) DEFAULT NULL");
+        } catch (e) {}
+        try {
+            await pool.query("ALTER TABLE system_settings ADD COLUMN zego_server_secret VARCHAR(255) DEFAULT NULL");
+        } catch (e) {}
+        try {
             await pool.query("ALTER TABLE appointments ADD COLUMN clinic_id INT DEFAULT NULL AFTER doctor_ready");
         } catch (e) {}
 

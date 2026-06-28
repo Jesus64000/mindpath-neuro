@@ -47,6 +47,8 @@ const expectedColumns = {
         { name: 'font_family', definition: "VARCHAR(50) DEFAULT 'Inter' AFTER primary_color" },
         { name: 'smtp_email', definition: 'VARCHAR(255) DEFAULT NULL' },
         { name: 'smtp_password', definition: 'VARCHAR(255) DEFAULT NULL' },
+        { name: 'zego_app_id', definition: 'VARCHAR(100) DEFAULT NULL' },
+        { name: 'zego_server_secret', definition: 'VARCHAR(255) DEFAULT NULL' },
         { name: 'exchange_rate', definition: "DECIMAL(10,4) DEFAULT 36.50 AFTER smtp_password" },
         { name: 'exchange_rate_mode', definition: "ENUM('auto', 'manual') DEFAULT 'auto' AFTER exchange_rate" },
         { name: 'exchange_rate_updated_at', definition: "TIMESTAMP NULL DEFAULT NULL AFTER exchange_rate_mode" }

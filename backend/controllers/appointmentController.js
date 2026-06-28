@@ -1,3 +1,6 @@
+const db = require('../config/db');
+const { decrypt } = require('../utils/encryption');
+
 // Doctor verifica o rechaza comprobante de pago
 exports.verifyPaymentProof = async (req, res) => {
     try {
@@ -621,5 +624,33 @@ exports.cancelAppointmentByPatient = async (req, res) => {
     } catch (error) {
         console.error("Error al cancelar cita por el paciente:", error);
         res.status(500).json({ message: "Error interno al cancelar la cita." });
+    }
+};
+
+exports.getZegoConfig = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT zego_app_id, zego_server_secret FROM system_settings LIMIT 1');
+        let appID = null;
+        let serverSecret = null;
+
+        if (rows && rows[0]) {
+            appID = rows[0].zego_app_id;
+            if (rows[0].zego_server_secret) {
+                serverSecret = decrypt(rows[0].zego_server_secret) || rows[0].zego_server_secret;
+            }
+        }
+
+        if (!appID || !serverSecret) {
+            appID = process.env.VITE_ZEGO_APP_ID || process.env.ZEGO_APP_ID;
+            serverSecret = process.env.VITE_ZEGO_SERVER_SECRET || process.env.ZEGO_SERVER_SECRET;
+        }
+
+        res.status(200).json({
+            appID: appID ? Number(appID) : null,
+            serverSecret: serverSecret || null
+        });
+    } catch (error) {
+        console.error("Error en getZegoConfig:", error);
+        res.status(500).json({ message: "Error al obtener configuración de ZegoCloud." });
     }
 };

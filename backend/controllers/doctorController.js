@@ -203,16 +203,34 @@ exports.getPatientFile = async (req, res) => {
             SELECT 
                 a.id AS appointment_id,
                 a.appointment_date,
+                a.start_time,
                 a.type,
                 a.status,
+                a.legal_verification_code,
+                du.full_name  AS doctor_name,
+                d.specialty,
+                d.signature_picture,
+                d.rif,
                 r.motivo_sintomas,
                 r.antecedentes,
                 r.hallazgos,
                 r.diagnostico,
                 r.tratamiento,
                 r.estudios_observaciones,
-                r.private_notes
+                r.private_notes,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Mindpath Online'
+                    ELSE COALESCE(cl.name, d.clinic_name, 'Consultorio Presencial')
+                END AS clinic_name,
+                CASE 
+                    WHEN a.type = 'virtual' THEN 'Consultorio virtual disponible para telemedicina.'
+                    ELSE COALESCE(dc.custom_address, cl.default_address, d.clinic_address, 'Dirección no disponible')
+                END AS clinic_address
             FROM appointments a
+            JOIN doctors d       ON a.doctor_id = d.id
+            JOIN users du        ON d.user_id = du.id
+            LEFT JOIN clinics cl ON a.clinic_id = cl.id
+            LEFT JOIN doctor_clinics dc ON (a.doctor_id = dc.doctor_id AND a.clinic_id = dc.clinic_id)
             LEFT JOIN consultations c     ON a.id = c.appointment_id
             LEFT JOIN clinical_reports r  ON c.id = r.consultation_id
             WHERE a.patient_id = ? AND a.doctor_id = ? AND a.status = 'completed'
