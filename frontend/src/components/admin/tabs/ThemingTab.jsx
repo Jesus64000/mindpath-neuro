@@ -162,15 +162,17 @@ const ThemingTab = ({
                         </div>
 
                         {/* LOGO MODO CLARO */}
-                        <div className="p-4 bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700 rounded-2xl space-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg text-xs font-bold">☀️ Modo Claro</span>
-                                <span className="text-xs text-gray-400">Logo para fondos blancos y claros</span>
+                        <div className="p-4 bg-amber-500/5 dark:bg-slate-800/60 border border-amber-500/20 dark:border-slate-700 rounded-2xl space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-black uppercase tracking-wider">☀️ Logo Modo Claro</span>
+                                </div>
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">Fondos blancos y reportes</span>
                             </div>
-                            <div>
-                                <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-xl p-3 hover:border-mindpath-primary bg-white dark:bg-slate-800 transition-colors">
-                                    <Upload size={16} className="text-gray-400"/>
-                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{logoFile ? logoFile.name : 'Subir logo para modo claro (PNG transparente)'}</span>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer border border-amber-500/30 dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 hover:bg-amber-500/10 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-300 transition-all font-bold text-xs shadow-sm">
+                                    <Upload size={16} className="text-amber-500 shrink-0"/>
+                                    <span className="truncate">{logoFile ? logoFile.name : '📁 Subir Archivo Modo Claro'}</span>
                                     <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" className="hidden" onChange={e => {
                                         if (e.target.files[0]) setLogoFile(e.target.files[0]);
                                     }}/>
@@ -178,22 +180,24 @@ const ThemingTab = ({
                             </div>
                             <div>
                                 <input value={theme.logo_url} onChange={e => setTheme(p => ({ ...p, logo_url: e.target.value }))}
-                                    placeholder="O pegar URL externa (https://...)"
-                                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-mindpath-primary dark:bg-slate-800 dark:text-white" 
+                                    placeholder="O pegar URL externa para modo claro (https://...)"
+                                    className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-amber-500 dark:bg-slate-800 dark:text-white" 
                                 />
                             </div>
                         </div>
 
                         {/* LOGO MODO OSCURO */}
-                        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-xs font-bold">🌙 Modo Oscuro</span>
-                                <span className="text-xs text-slate-400">Logo para fondos oscuros y barra lateral</span>
+                        <div className="p-4 bg-indigo-500/5 dark:bg-slate-900/80 border border-indigo-500/20 dark:border-slate-800 rounded-2xl space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-wider">🌙 Logo Modo Oscuro</span>
+                                </div>
+                                <span className="text-[11px] text-gray-500 dark:text-slate-400">Fondos oscuros y barra lateral</span>
                             </div>
-                            <div>
-                                <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-slate-700 rounded-xl p-3 hover:border-indigo-400 bg-slate-900 transition-colors">
-                                    <Upload size={16} className="text-slate-400"/>
-                                    <span className="text-xs font-medium text-slate-300 truncate">{logoDarkFile ? logoDarkFile.name : (theme.logo_dark_url ? 'Modo oscuro configurado (Clic para cambiar)' : 'Subir logo exclusivo para modo oscuro')}</span>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer border border-indigo-500/30 dark:border-slate-700 rounded-xl p-3 bg-white dark:bg-slate-900 hover:bg-indigo-500/10 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-300 transition-all font-bold text-xs shadow-sm">
+                                    <Upload size={16} className="text-indigo-500 shrink-0"/>
+                                    <span className="truncate">{logoDarkFile ? logoDarkFile.name : (theme.logo_dark_url ? '📁 Cambiar Logo Modo Oscuro' : '📁 Subir Archivo Modo Oscuro')}</span>
                                     <input type="file" accept=".png,.jpg,.jpeg,.svg,.webp" className="hidden" onChange={e => {
                                         if (e.target.files[0]) setLogoDarkFile(e.target.files[0]);
                                     }}/>
@@ -202,7 +206,7 @@ const ThemingTab = ({
                             <div>
                                 <input value={theme.logo_dark_url || ''} onChange={e => setTheme(p => ({ ...p, logo_dark_url: e.target.value }))}
                                     placeholder="O pegar URL externa para modo oscuro (https://...)"
-                                    className="w-full border border-slate-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-400 bg-slate-900 text-white" 
+                                    className="w-full border border-gray-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500 dark:bg-slate-900 dark:text-white" 
                                 />
                             </div>
                         </div>
