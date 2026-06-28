@@ -451,33 +451,62 @@ exports.updateSettings = async (req, res) => {
         encryptedZegoSecret = encrypt(zego_server_secret);
     }
 
-    await db.query(
-      `
-            INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                clinic_name   = VALUES(clinic_name),
-                logo_url      = VALUES(logo_url),
-                hide_sidebar_text = VALUES(hide_sidebar_text),
-                primary_color = VALUES(primary_color),
-                primary_hover = VALUES(primary_hover),
-                font_family   = VALUES(font_family),
-                smtp_email    = VALUES(smtp_email),
-                smtp_password = CASE WHEN VALUES(smtp_password) IS NOT NULL THEN VALUES(smtp_password) ELSE smtp_password END,
-                zego_app_id   = VALUES(zego_app_id),
-                zego_server_secret = CASE WHEN VALUES(zego_server_secret) IS NOT NULL THEN VALUES(zego_server_secret) ELSE zego_server_secret END,
-                exchange_rate = VALUES(exchange_rate),
-                exchange_rate_mode = VALUES(exchange_rate_mode),
-                exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
-        `,
-      [
-          clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
-          smtp_email || null, encryptedSmtpPass, zego_app_id || null, encryptedZegoSecret,
-          exchange_rate !== undefined ? exchange_rate : 36.50,
-          exchange_rate_mode || 'auto',
-          exchange_rate_mode === 'manual' ? new Date() : null
-      ],
-    );
+    try {
+        await db.query(
+          `
+                INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    clinic_name   = VALUES(clinic_name),
+                    logo_url      = VALUES(logo_url),
+                    hide_sidebar_text = VALUES(hide_sidebar_text),
+                    primary_color = VALUES(primary_color),
+                    primary_hover = VALUES(primary_hover),
+                    font_family   = VALUES(font_family),
+                    smtp_email    = VALUES(smtp_email),
+                    smtp_password = CASE WHEN VALUES(smtp_password) IS NOT NULL THEN VALUES(smtp_password) ELSE smtp_password END,
+                    zego_app_id   = VALUES(zego_app_id),
+                    zego_server_secret = CASE WHEN VALUES(zego_server_secret) IS NOT NULL THEN VALUES(zego_server_secret) ELSE zego_server_secret END,
+                    exchange_rate = VALUES(exchange_rate),
+                    exchange_rate_mode = VALUES(exchange_rate_mode),
+                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
+            `,
+          [
+              clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
+              smtp_email || null, encryptedSmtpPass, zego_app_id || null, encryptedZegoSecret,
+              exchange_rate !== undefined ? exchange_rate : 36.50,
+              exchange_rate_mode || 'auto',
+              exchange_rate_mode === 'manual' ? new Date() : null
+          ],
+        );
+    } catch (sqlErr) {
+        // Fallback si la tabla aún no tiene las columnas zego
+        await db.query(
+          `
+                INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    clinic_name   = VALUES(clinic_name),
+                    logo_url      = VALUES(logo_url),
+                    hide_sidebar_text = VALUES(hide_sidebar_text),
+                    primary_color = VALUES(primary_color),
+                    primary_hover = VALUES(primary_hover),
+                    font_family   = VALUES(font_family),
+                    smtp_email    = VALUES(smtp_email),
+                    smtp_password = CASE WHEN VALUES(smtp_password) IS NOT NULL THEN VALUES(smtp_password) ELSE smtp_password END,
+                    exchange_rate = VALUES(exchange_rate),
+                    exchange_rate_mode = VALUES(exchange_rate_mode),
+                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
+            `,
+          [
+              clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
+              smtp_email || null, encryptedSmtpPass,
+              exchange_rate !== undefined ? exchange_rate : 36.50,
+              exchange_rate_mode || 'auto',
+              exchange_rate_mode === 'manual' ? new Date() : null
+          ],
+        );
+    }
     res.status(200).json({ message: "Configuración guardada exitosamente." });
   } catch (error) {
     console.error("Error en updateSettings:", error);
