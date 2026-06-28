@@ -29,6 +29,7 @@ import DoctorStats from './pages/doctor/DoctorStats';
 import DoctorPayments from './pages/doctor/DoctorPayments';
 import ResetPassword from './pages/auth/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import VerifyEmail from './pages/auth/VerifyEmail';
 import CompletarPerfil from './pages/auth/CompletarPerfil';
 import useSettingsStore from './store/useSettingsStore';
 
@@ -61,6 +62,7 @@ function App() {
         <Route path="/superadmin" element={<SuperAdminSetup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/completar-perfil" element={<CompletarPerfil />} />
 
         {/* Rutas Privadas envueltas en el Layout */}

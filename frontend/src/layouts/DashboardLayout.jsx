@@ -5,11 +5,59 @@ import useSettingsStore from '../store/useSettingsStore';
 import {
     LayoutDashboard, Calendar, Users, Settings, LogOut,
     BrainCircuit, Sun, Moon, ShieldCheck, FileText, BarChart3,
-    Menu, X, CreditCard
+    Menu, X, CreditCard, MailCheck, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import api from '../api/axiosConfig';
 import { BACKEND_URL } from '../api/constants';
+
+const VerificationBanner = () => {
+    const [sending, setSending] = useState(false);
+    const [sentStatus, setSentStatus] = useState(null); // 'success', 'error'
+
+    const handleResend = async () => {
+        setSending(true);
+        setSentStatus(null);
+        try {
+            await api.post('/auth/resend-verification');
+            setSentStatus('success');
+        } catch (err) {
+            setSentStatus('error');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 md:px-8 flex flex-col md:flex-row items-center justify-between gap-3 text-amber-900 dark:text-amber-200 text-xs md:text-sm font-medium animate-fadeIn">
+            <div className="flex items-center gap-3">
+                <span className="p-2 bg-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 shrink-0">
+                    <AlertTriangle size={18} />
+                </span>
+                <div>
+                    <strong className="font-black">Verificación requerida: </strong>
+                    <span>Por favor confirma tu dirección de correo electrónico para desbloquear la totalidad de las funciones de la plataforma.</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+                {sentStatus === 'success' ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                        <MailCheck size={16} /> ¡Correo enviado! Revisa tu bandeja.
+                    </span>
+                ) : (
+                    <button 
+                        onClick={handleResend}
+                        disabled={sending}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {sending ? <RefreshCw size={14} className="animate-spin" /> : <MailCheck size={14} />}
+                        {sending ? 'Enviando...' : 'Reenviar Correo'}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const DashboardLayout = () => {
     const { user, logout, updateUser } = useAuthStore();
@@ -228,6 +276,11 @@ const DashboardLayout = () => {
                         </div>
                     </div>
                 </header>
+
+                {/* Banner de Verificación de Correo si la cuenta no está verificada */}
+                {user && user.is_email_verified === false && (
+                    <VerificationBanner />
+                )}
 
                 {/* Área de pantallas responsiva (p-4 en móvil, p-8 en escritorio) */}
                 <div className={`flex-1 overflow-auto p-4 md:p-8 ${isDark ? 'bg-[var(--bg-main)]' : 'bg-gray-50'}`}>

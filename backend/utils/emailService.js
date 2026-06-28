@@ -562,10 +562,105 @@ const sendTestEmailService = async (targetEmail) => {
     return { success: true };
 };
 
+/**
+ * Envía un correo electrónico para verificar la dirección de correo del usuario recién registrado.
+ */
+const sendVerificationEmail = async (userEmail, userName, verificationToken) => {
+    try {
+        const { transporter, smtp_email } = await getMailTransporter();
+        const frontendBase = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
+        const verifyUrl = `${frontendBase.replace(/\/$/, '')}/verify-email?token=${verificationToken}`;
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verifica tu correo electrónico — Mindpath Neuro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4ff;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- CABECERA -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 50%,#7c3aed 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+              <div style="margin-bottom:16px;">
+                <span style="display:inline-block;background:rgba(255,255,255,0.2);padding:12px 20px;border-radius:50px;color:#ffffff;font-size:24px;">✉️</span>
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Mindpath Neuro</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Verificación de Cuenta</p>
+            </td>
+          </tr>
+
+          <!-- CUERPO PRINCIPAL -->
+          <tr>
+            <td style="background:#ffffff;padding:40px;border-left:1px solid #e8eaf6;border-right:1px solid #e8eaf6;">
+              <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:22px;font-weight:700;">¡Hola, ${userName}! 👋</h2>
+              <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
+                Gracias por registrarte en <strong style="color:#6366f1;">Mindpath Neuro</strong>. Para activar tu cuenta y desbloquear el acceso completo a la plataforma, por favor confirma tu dirección de correo electrónico haciendo clic en el botón a continuación.
+              </p>
+
+              <div style="height:3px;background:linear-gradient(90deg,#6366f1,#7c3aed,#a78bfa);border-radius:3px;margin-bottom:28px;"></div>
+
+              <!-- BOTÓN CTA -->
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${verifyUrl}"
+                   style="display:inline-block;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(99,102,241,0.40);">
+                  Verificar mi Correo Electrónico
+                </a>
+              </div>
+
+              <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0 0 8px;">¿El botón no funciona? Copia y pega este enlace en tu navegador:</p>
+              <p style="word-break:break-all;text-align:center;margin:0;">
+                <a href="${verifyUrl}" style="color:#6366f1;font-size:12px;text-decoration:underline;">${verifyUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-radius:0 0 20px 20px;border:1px solid #e8eaf6;border-top:none;padding:28px 40px;text-align:center;">
+              <p style="margin:0 0 6px;color:#94a3b8;font-size:12px;">
+                Este correo fue enviado automáticamente por Mindpath Neuro.
+              </p>
+              <p style="margin:0;color:#cbd5e1;font-size:11px;">
+                &copy; 2026 <strong>Mindpath Neuro Intelligent</strong> &nbsp;·&nbsp; Todos los derechos reservados
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `;
+
+        await transporter.sendMail({
+            from: `"Mindpath Neuro" <${smtp_email}>`,
+            to: userEmail,
+            subject: '✉️ Confirma tu correo electrónico — Mindpath Neuro',
+            html: htmlContent
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error en sendVerificationEmail:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     sendResetPasswordEmail,
     sendWelcomeEmail,
     sendDoctorApprovalEmail,
     sendDoctorRejectionEmail,
-    sendTestEmailService
+    sendTestEmailService,
+    sendVerificationEmail
 };

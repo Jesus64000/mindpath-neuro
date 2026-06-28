@@ -155,6 +155,8 @@ const initDbSchema = async () => {
         try { await pool.query("ALTER TABLE system_settings ADD COLUMN zego_app_id VARCHAR(100) DEFAULT NULL"); } catch (e) {}
         try { await pool.query("ALTER TABLE system_settings ADD COLUMN zego_server_secret VARCHAR(255) DEFAULT NULL"); } catch (e) {}
         try { await pool.query("ALTER TABLE appointments ADD COLUMN clinic_id INT DEFAULT NULL AFTER doctor_ready"); } catch (e) {}
+        try { await pool.query("ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN DEFAULT TRUE"); } catch (e) {}
+        try { await pool.query("ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) DEFAULT NULL"); } catch (e) {}
 
         try { await pool.query("ALTER TABLE doctor_schedules ADD CONSTRAINT fk_doctor_schedules_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL"); } catch (e) {}
         try { await pool.query("ALTER TABLE appointments ADD CONSTRAINT fk_appointments_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE SET NULL"); } catch (e) {}

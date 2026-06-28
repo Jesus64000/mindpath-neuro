@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../config/db');
-const { sendResetPasswordEmail, sendWelcomeEmail } = require('../utils/emailService');
+const { sendResetPasswordEmail, sendWelcomeEmail, sendVerificationEmail } = require('../utils/emailService');
 const { OAuth2Client } = require('google-auth-library');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -30,7 +30,8 @@ const buildTokenAndUser = async (user) => {
             full_name: user.full_name,
             role: user.role,
             email: user.email,
-            profile_picture: profilePicture
+            profile_picture: profilePicture,
+            is_email_verified: user.is_email_verified === 0 || user.is_email_verified === false ? false : true
         }
     };
 };
@@ -58,9 +59,10 @@ exports.register = async (req, res) => {
 
         try {
             // 4. Insertar en la tabla users
+            const verificationToken = crypto.randomBytes(32).toString('hex');
             const [userResult] = await connection.query(
-                'INSERT INTO users (email, password_hash, full_name, role, auth_provider) VALUES (?, ?, ?, ?, ?)',
-                [email, password_hash, full_name, role, 'local']
+                'INSERT INTO users (email, password_hash, full_name, role, auth_provider, is_email_verified, verification_token) VALUES (?, ?, ?, ?, ?, 0, ?)',
+                [email.trim(), password_hash, full_name.trim(), role, 'local', verificationToken]
             );
             const userId = userResult.insertId;
 
@@ -171,12 +173,15 @@ exports.register = async (req, res) => {
             await connection.commit();
             connection.release();
 
-            // Enviar correo de bienvenida de forma asíncrona sin bloquear la respuesta
-            sendWelcomeEmail(email, full_name, role).catch(err => {
+            // Enviar correo de verificación y bienvenida de forma asíncrona
+            sendVerificationEmail(email.trim(), full_name.trim(), verificationToken).catch(err => {
+                console.error('Error al enviar correo de verificación:', err);
+            });
+            sendWelcomeEmail(email.trim(), full_name.trim(), role).catch(err => {
                 console.error('Error al enviar correo de bienvenida:', err);
             });
 
-            res.status(201).json({ message: 'Usuario registrado exitosamente', userId });
+            res.status(201).json({ message: 'Usuario registrado exitosamente. Por favor verifica tu correo electrónico.', userId });
         } catch (error) {
             await connection.rollback();
             connection.release();
@@ -531,5 +536,73 @@ exports.resetPassword = async (req, res) => {
     } catch (error) {
         console.error('Error en resetPassword:', error);
         res.status(500).json({ message: 'Error al restablecer la contraseña.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// VERIFICACIÓN DE CORREO ELECTRÓNICO (Validar Token)
+// ─────────────────────────────────────────────────────────────
+exports.verifyEmail = async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).json({ message: 'Token de verificación requerido.' });
+    }
+
+    try {
+        const [users] = await db.query(
+            'SELECT id, full_name, email, is_email_verified FROM users WHERE verification_token = ?',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ message: 'El enlace de verificación es inválido o ya fue utilizado.' });
+        }
+
+        const user = users[0];
+
+        if (user.is_email_verified) {
+            return res.status(200).json({ message: 'Tu correo electrónico ya ha sido verificado anteriormente.' });
+        }
+
+        await db.query(
+            'UPDATE users SET is_email_verified = TRUE, verification_token = NULL WHERE id = ?',
+            [user.id]
+        );
+
+        res.status(200).json({ message: '¡Correo electrónico verificado con éxito! Ya tienes acceso completo a la plataforma.' });
+    } catch (error) {
+        console.error('Error en verifyEmail:', error);
+        res.status(500).json({ message: 'Error al verificar el correo electrónico.' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// REENVIAR CORREO DE VERIFICACIÓN
+// ─────────────────────────────────────────────────────────────
+exports.resendVerification = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [users] = await db.query('SELECT id, full_name, email, is_email_verified FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(440).json({ message: 'Usuario no encontrado.' });
+        }
+
+        const user = users[0];
+
+        if (user.is_email_verified) {
+            return res.status(400).json({ message: 'Tu cuenta ya se encuentra verificada.' });
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await db.query('UPDATE users SET verification_token = ? WHERE id = ?', [verificationToken, userId]);
+
+        await sendVerificationEmail(user.email.trim(), user.full_name, verificationToken);
+
+        res.status(200).json({ message: 'Se ha enviado un nuevo correo de verificación. Revisa tu bandeja de entrada.' });
+    } catch (error) {
+        console.error('Error en resendVerification:', error);
+        res.status(500).json({ message: 'Error al reenviar el correo de verificación: ' + (error.message || '') });
     }
 };

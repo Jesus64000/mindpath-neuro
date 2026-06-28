@@ -18,7 +18,9 @@ const expectedColumns = {
         { name: 'reset_token', definition: 'VARCHAR(255) DEFAULT NULL' },
         { name: 'reset_token_expires', definition: 'DATETIME DEFAULT NULL' },
         { name: 'google_id', definition: 'VARCHAR(255) DEFAULT NULL' },
-        { name: 'auth_provider', definition: "VARCHAR(50) DEFAULT 'local'" }
+        { name: 'auth_provider', definition: "VARCHAR(50) DEFAULT 'local'" },
+        { name: 'is_email_verified', definition: 'BOOLEAN DEFAULT TRUE' },
+        { name: 'verification_token', definition: 'VARCHAR(255) DEFAULT NULL' }
     ],
     patients: [
         { name: 'dni', definition: 'VARCHAR(50) AFTER user_id' },
