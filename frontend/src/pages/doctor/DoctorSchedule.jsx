@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus, AlertTriangle } from 'lucide-react';
-import DatePicker, { registerLocale } from "react-datepicker";
+import DatePicker, { registerLocale, setDefaultLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
 
 registerLocale("es", es);
+setDefaultLocale("es");
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
@@ -759,6 +760,31 @@ const DoctorSchedule = () => {
                                             inline 
                                             minDate={new Date()} 
                                             calendarClassName="mindpath-calendar shadow-md border-0 rounded-xl" 
+                                            renderCustomHeader={({ date, decreaseMonth, increaseMonth, prevMonthButtonDisabled, nextMonthButtonDisabled }) => (
+                                                <div className="flex items-center justify-between px-3 py-2 bg-slate-900/40 dark:bg-slate-900/80 rounded-xl mb-3 border border-slate-700/50">
+                                                    <span className="text-sm font-black text-gray-800 dark:text-white capitalize px-2">
+                                                        {date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                                                    </span>
+                                                    <div className="flex items-center gap-1">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={decreaseMonth} 
+                                                            disabled={prevMonthButtonDisabled}
+                                                            className="p-1.5 rounded-lg text-gray-500 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-30 transition-colors"
+                                                        >
+                                                            <ChevronLeft size={16} />
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={increaseMonth} 
+                                                            disabled={nextMonthButtonDisabled}
+                                                            className="p-1.5 rounded-lg text-gray-500 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-30 transition-colors"
+                                                        >
+                                                            <ChevronRight size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         />
                                     </div>
 
