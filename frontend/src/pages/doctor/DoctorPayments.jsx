@@ -36,6 +36,8 @@ const DoctorPayments = () => {
     const [modalityFilter, setModalityFilter] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [zoomImage, setZoomImage] = useState(null);
     const [zoomRef, setZoomRef] = useState('');
 
@@ -94,6 +96,14 @@ const DoctorPayments = () => {
 
         return matchesQuery && matchesStatus && matchesMethod && matchesModality && matchesDate;
     });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [query, statusFilter, methodFilter, modalityFilter, startDate, endDate]);
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedPayments = filtered.slice(startIndex, startIndex + itemsPerPage);
 
     const handleZoom = (proofUrl, ref) => {
         if (!proofUrl) return;
@@ -309,7 +319,7 @@ const DoctorPayments = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
-                                {filtered.map(p => {
+                                {paginatedPayments.map(p => {
                                     const st = paymentStatusConfig[p.payment_status] || paymentStatusConfig.pending;
                                     return (
                                         <tr key={p.appointment_id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition-colors">
@@ -402,6 +412,54 @@ const DoctorPayments = () => {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pie de Tabla con Paginación */}
+                    {filtered.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-slate-700/30 border-t border-gray-100 dark:border-white/10 text-xs text-gray-500 dark:text-slate-400 font-semibold">
+                            <div>
+                                Mostrando <span className="font-bold text-gray-800 dark:text-white">{startIndex + 1}</span> a <span className="font-bold text-gray-800 dark:text-white">{Math.min(startIndex + itemsPerPage, filtered.length)}</span> de <span className="font-bold text-gray-800 dark:text-white">{filtered.length}</span> cobros
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors font-bold"
+                                >
+                                    Anterior
+                                </button>
+                                <div className="flex items-center gap-1 px-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                                        .map((page, idx, arr) => {
+                                            const prev = arr[idx - 1];
+                                            const showEllipsis = prev && page - prev > 1;
+                                            return (
+                                                <div key={page} className="flex items-center">
+                                                    {showEllipsis && <span className="px-1 text-gray-400">...</span>}
+                                                    <button
+                                                        onClick={() => setCurrentPage(page)}
+                                                        className={`h-7 w-7 rounded-lg text-xs font-bold transition-all ${
+                                                            currentPage === page
+                                                                ? 'bg-mindpath-primary text-white shadow-sm'
+                                                                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700'
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors font-bold"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
