@@ -201,17 +201,17 @@ const DoctorPayments = () => {
                         <select
                             value={methodFilter}
                             onChange={(e) => setMethodFilter(e.target.value)}
-                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-100 cursor-pointer transition-colors"
                         >
-                            <option value="all">💳 Todos los métodos</option>
-                            <option value="pago_movil">📱 Pago Móvil</option>
-                            <option value="zelle">⚡ Zelle</option>
-                            <option value="in_person">🏢 Pago en Consultorio</option>
-                            <option value="efectivo">💵 Efectivo</option>
-                            <option value="transferencia">🏦 Transferencia Bancaria</option>
-                            <option value="platform">💻 Plataforma (Online)</option>
-                            <option value="paypal">🅿️ PayPal</option>
-                            <option value="card">💳 Tarjeta de Crédito</option>
+                            <option value="all" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">💳 Todos los métodos</option>
+                            <option value="pago_movil" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">📱 Pago Móvil</option>
+                            <option value="zelle" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">⚡ Zelle</option>
+                            <option value="in_person" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🏢 Pago en Consultorio</option>
+                            <option value="efectivo" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">💵 Efectivo</option>
+                            <option value="transferencia" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🏦 Transferencia Bancaria</option>
+                            <option value="platform" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">💻 Plataforma (Online)</option>
+                            <option value="paypal" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🅿️ PayPal</option>
+                            <option value="card" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">💳 Tarjeta de Crédito</option>
                         </select>
                     </div>
 
@@ -221,11 +221,11 @@ const DoctorPayments = () => {
                         <select
                             value={modalityFilter}
                             onChange={(e) => setModalityFilter(e.target.value)}
-                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-100 cursor-pointer transition-colors"
                         >
-                            <option value="all">🏥 Todas las modalidades</option>
-                            <option value="virtual">🎥 Virtual (Online)</option>
-                            <option value="presencial">🏢 Presencial</option>
+                            <option value="all" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🏥 Todas las modalidades</option>
+                            <option value="virtual" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🎥 Virtual (Online)</option>
+                            <option value="presencial" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">🏢 Presencial</option>
                         </select>
                     </div>
 
@@ -237,7 +237,8 @@ const DoctorPayments = () => {
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                                onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
+                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-100 cursor-pointer transition-colors [color-scheme:light] dark:[color-scheme:dark]"
                             />
                         </div>
                     </div>
@@ -250,7 +251,8 @@ const DoctorPayments = () => {
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                                onClick={(e) => { try { e.target.showPicker(); } catch(err) {} }}
+                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-100 cursor-pointer transition-colors [color-scheme:light] dark:[color-scheme:dark]"
                             />
                         </div>
                     </div>
