@@ -3,7 +3,7 @@ import api from '../../api/axiosConfig';
 import { BACKEND_URL } from '../../api/constants';
 import { 
     CreditCard, Search, Download, Eye, FileText, XCircle, 
-    AlertCircle, CheckCircle, Activity, Filter, RefreshCw
+    AlertCircle, CheckCircle, Activity, Filter, RefreshCw, Calendar, RotateCcw, X
 } from 'lucide-react';
 import Avatar from '../../components/ui/Avatar';
 
@@ -32,6 +32,10 @@ const DoctorPayments = () => {
     const [error, setError] = useState('');
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [methodFilter, setMethodFilter] = useState('all');
+    const [modalityFilter, setModalityFilter] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [zoomImage, setZoomImage] = useState(null);
     const [zoomRef, setZoomRef] = useState('');
 
@@ -60,14 +64,35 @@ const DoctorPayments = () => {
         return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
-    // Filtrado
+    const resetFilters = () => {
+        setQuery('');
+        setStatusFilter('all');
+        setMethodFilter('all');
+        setModalityFilter('all');
+        setStartDate('');
+        setEndDate('');
+    };
+
+    const hasActiveFilters = query || statusFilter !== 'all' || methodFilter !== 'all' || modalityFilter !== 'all' || startDate || endDate;
+
+    // Filtrado Avanzado
     const q = query.toLowerCase();
     const filtered = payments.filter(p => {
-        const matchesQuery = p.patient_name?.toLowerCase().includes(q) || 
+        const matchesQuery = !q || p.patient_name?.toLowerCase().includes(q) || 
                              p.invoice_number?.toLowerCase().includes(q) ||
                              (p.payment_reference && p.payment_reference.toLowerCase().includes(q));
         const matchesStatus = statusFilter === 'all' || p.payment_status === statusFilter;
-        return matchesQuery && matchesStatus;
+        const matchesMethod = methodFilter === 'all' || p.payment_method === methodFilter;
+        const matchesModality = modalityFilter === 'all' || p.appointment_type === modalityFilter;
+
+        let matchesDate = true;
+        if (p.appointment_date) {
+            const pDateStr = p.appointment_date.includes('T') ? p.appointment_date.split('T')[0] : p.appointment_date;
+            if (startDate && pDateStr < startDate) matchesDate = false;
+            if (endDate && pDateStr > endDate) matchesDate = false;
+        }
+
+        return matchesQuery && matchesStatus && matchesMethod && matchesModality && matchesDate;
     });
 
     const handleZoom = (proofUrl, ref) => {
@@ -139,20 +164,101 @@ const DoctorPayments = () => {
                 </div>
             </div>
 
-            {/* Filtros */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm">
-                <div className="flex items-center bg-gray-50 dark:bg-slate-700/40 border-none rounded-2xl px-4 py-2.5 w-full md:w-96 gap-2">
-                    <Search size={18} className="text-gray-400 dark:text-slate-500 shrink-0" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Buscar por paciente, factura o referencia..."
-                        className="outline-none text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 w-full"
-                    />
+            {/* Panel Avanzado de Filtros */}
+            <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm space-y-4">
+                {/* Primera Fila: Buscador y Botón Restablecer */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center bg-gray-50 dark:bg-slate-700/40 border border-gray-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 w-full md:w-96 gap-2">
+                        <Search size={18} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                        <input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Buscar por paciente, factura o referencia..."
+                            className="outline-none text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 w-full font-medium"
+                        />
+                        {query && (
+                            <button onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    {hasActiveFilters && (
+                        <button 
+                            onClick={resetFilters}
+                            className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 px-3.5 py-2 bg-red-50 dark:bg-red-950/30 rounded-xl transition-all border border-red-100 dark:border-red-900/30 self-end md:self-auto"
+                        >
+                            <RotateCcw size={14} /> Limpiar Filtros
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-                    <Filter size={16} className="text-gray-400 dark:text-slate-500 shrink-0 hidden sm:block" />
+                {/* Segunda Fila: Filtros Específicos (Método, Modalidad, Fechas desde/hasta) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-gray-100 dark:border-white/5">
+                    {/* Método de Pago */}
+                    <div>
+                        <label className="block text-[11px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">Tipo de Pago</label>
+                        <select
+                            value={methodFilter}
+                            onChange={(e) => setMethodFilter(e.target.value)}
+                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                        >
+                            <option value="all">💳 Todos los métodos</option>
+                            <option value="pago_movil">📱 Pago Móvil</option>
+                            <option value="zelle">⚡ Zelle</option>
+                            <option value="in_person">🏢 Pago en Consultorio</option>
+                            <option value="efectivo">💵 Efectivo</option>
+                            <option value="transferencia">🏦 Transferencia Bancaria</option>
+                            <option value="platform">💻 Plataforma (Online)</option>
+                            <option value="paypal">🅿️ PayPal</option>
+                            <option value="card">💳 Tarjeta de Crédito</option>
+                        </select>
+                    </div>
+
+                    {/* Modalidad de Consulta */}
+                    <div>
+                        <label className="block text-[11px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">Modalidad</label>
+                        <select
+                            value={modalityFilter}
+                            onChange={(e) => setModalityFilter(e.target.value)}
+                            className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                        >
+                            <option value="all">🏥 Todas las modalidades</option>
+                            <option value="virtual">🎥 Virtual (Online)</option>
+                            <option value="presencial">🏢 Presencial</option>
+                        </select>
+                    </div>
+
+                    {/* Fecha Desde */}
+                    <div>
+                        <label className="block text-[11px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">Fecha Desde</label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Fecha Hasta */}
+                    <div>
+                        <label className="block text-[11px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">Fecha Hasta</label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full p-2.5 text-xs font-bold bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl outline-none focus:border-mindpath-primary text-gray-700 dark:text-slate-200 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tercera Fila: Estado del Pago (Pills) */}
+                <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-gray-100 dark:border-white/5 scrollbar-none">
+                    <span className="text-xs font-bold text-gray-400 dark:text-slate-400 shrink-0 mr-1">Estado:</span>
                     {[
                         { val: 'all', label: 'Todos' },
                         { val: 'paid', label: 'Pagados' },
@@ -163,7 +269,7 @@ const DoctorPayments = () => {
                         <button
                             key={btn.val}
                             onClick={() => setStatusFilter(btn.val)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                                 statusFilter === btn.val
                                     ? 'bg-mindpath-primary border-mindpath-primary text-white shadow-sm'
                                     : 'bg-transparent border-gray-200 dark:border-white/10 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50'
