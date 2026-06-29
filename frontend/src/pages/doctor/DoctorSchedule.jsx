@@ -2,8 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Calendar as CalendarIcon, Clock, Video, MapPin, CheckCircle, XCircle, User, Activity, ChevronLeft, ChevronRight, FileText, Settings, Trash2, Plus, AlertTriangle } from 'lucide-react';
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { es } from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale("es", es);
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const getMonthStart = (date) => {
@@ -748,6 +751,7 @@ const DoctorSchedule = () => {
                                             Selecciona el rango en el calendario
                                         </label>
                                         <DatePicker
+                                            locale="es"
                                             selectsRange={true}
                                             startDate={startDate}
                                             endDate={endDate}
