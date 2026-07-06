@@ -512,7 +512,10 @@ const CompletarPerfil = () => {
 
                                                 {getCatalogKey(selectedCatalogName) === 'zelle' && (
                                                     <div className="space-y-2">
-                                                        <input type="email" value={paymentFields.zelle_email || ''} onChange={e => setPaymentFields(p => ({ ...p, zelle_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo Zelle" />
+                                                        <div>
+                                                            <input type="email" value={paymentFields.zelle_email || ''} onChange={e => setPaymentFields(p => ({ ...p, zelle_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo Zelle" />
+                                                            <EmailSuggestions value={paymentFields.zelle_email || ''} onChange={val => setPaymentFields(p => ({ ...p, zelle_email: val }))} compact />
+                                                        </div>
                                                         <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Titular" />
                                                     </div>
                                                 )}
@@ -520,14 +523,20 @@ const CompletarPerfil = () => {
                                                 {getCatalogKey(selectedCatalogName) === 'binance' && (
                                                     <div className="space-y-2">
                                                         <input type="text" value={paymentFields.binance_id || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_id: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Binance ID" />
-                                                        <input type="email" value={paymentFields.binance_email || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo" />
+                                                        <div>
+                                                            <input type="email" value={paymentFields.binance_email || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo" />
+                                                            <EmailSuggestions value={paymentFields.binance_email || ''} onChange={val => setPaymentFields(p => ({ ...p, binance_email: val }))} compact />
+                                                        </div>
                                                         <input type="text" value={paymentFields.binance_user || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_user: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Usuario / alias" />
                                                     </div>
                                                 )}
 
                                                 {getCatalogKey(selectedCatalogName) === 'paypal' && (
                                                     <div className="space-y-2">
-                                                        <input type="email" value={paymentFields.paypal_email || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo PayPal" />
+                                                        <div>
+                                                            <input type="email" value={paymentFields.paypal_email || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo PayPal" />
+                                                            <EmailSuggestions value={paymentFields.paypal_email || ''} onChange={val => setPaymentFields(p => ({ ...p, paypal_email: val }))} compact />
+                                                        </div>
                                                         <input type="text" value={paymentFields.paypal_link || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_link: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Enlace paypal.me" />
                                                     </div>
                                                 )}
@@ -707,6 +716,31 @@ const CompletarPerfil = () => {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const EmailSuggestions = ({ value, onChange, compact = false }) => {
+    if (!value || (value.includes('@') && !value.endsWith('@'))) return null;
+    return (
+        <div className="flex flex-wrap gap-1 mt-1 pl-1">
+            {['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com'].map(domain => (
+                <button
+                    key={domain}
+                    type="button"
+                    onClick={() => {
+                        const trimmed = value.trim();
+                        const cleanEmail = trimmed.endsWith('@') ? trimmed.slice(0, -1) : trimmed;
+                        onChange(cleanEmail + domain);
+                    }}
+                    className={compact 
+                        ? "px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 rounded transition-colors border border-gray-200 dark:border-slate-700"
+                        : "px-2 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
+                    }
+                >
+                    {domain}
+                </button>
+            ))}
         </div>
     );
 };

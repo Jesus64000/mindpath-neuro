@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Stethoscope, BadgeCheck, BrainCircuit, Phone, Calendar, AlertCircle, CheckCircle, Building2, ChevronDown, CreditCard, Globe, FileText } from 'lucide-react';
+import { Mail, Lock, User, Stethoscope, BadgeCheck, BrainCircuit, Phone, Calendar, AlertCircle, CheckCircle, Building2, ChevronDown, CreditCard, Globe, FileText, Eye, EyeOff } from 'lucide-react';
 import api from '../../api/axiosConfig';
 import useSettingsStore from '../../store/useSettingsStore';
 import { BACKEND_URL } from '../../api/constants';
@@ -27,6 +27,7 @@ const Register = () => {
     const [fullName,  setFullName]  = useState('');
     const [email,     setEmail]     = useState('');
     const [password,  setPassword]  = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [dniPrefix, setDniPrefix] = useState('V');
     const [dniBody,   setDniBody]   = useState('');
     const dni = dniBody ? `${dniPrefix}-${dniBody}` : '';
@@ -262,20 +263,7 @@ const Register = () => {
                                     className={inputClass}
                                     placeholder="correo@ejemplo.com" required />
                             </div>
-                            {email && !email.includes('@') && (
-                                <div className="flex flex-wrap gap-1 mt-1.5 pl-1">
-                                    {['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com'].map(domain => (
-                                        <button
-                                            key={domain}
-                                            type="button"
-                                            onClick={() => setEmail(email.trim() + domain)}
-                                            className="px-2 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
-                                        >
-                                            {domain}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <EmailSuggestions value={email} onChange={setEmail} />
                         </div>
 
                         {/* ── CAMPOS DOCTOR ── */}
@@ -513,26 +501,35 @@ const Register = () => {
                                                     )}
 
                                                     {getCatalogKey(selectedCatalogName) === 'zelle' && (
-                                                        <div className="space-y-2">
-                                                            <input type="email" value={paymentFields.zelle_email || ''} onChange={e => setPaymentFields(p => ({ ...p, zelle_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo Zelle" />
-                                                            <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Titular" />
-                                                        </div>
-                                                    )}
+                                                         <div className="space-y-2">
+                                                             <div>
+                                                                 <input type="email" value={paymentFields.zelle_email || ''} onChange={e => setPaymentFields(p => ({ ...p, zelle_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo Zelle" />
+                                                                 <EmailSuggestions value={paymentFields.zelle_email || ''} onChange={val => setPaymentFields(p => ({ ...p, zelle_email: val }))} compact />
+                                                             </div>
+                                                             <input type="text" value={paymentFields.account_holder || ''} onChange={e => setPaymentFields(p => ({ ...p, account_holder: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Titular" />
+                                                         </div>
+                                                     )}
 
-                                                    {getCatalogKey(selectedCatalogName) === 'binance' && (
-                                                        <div className="space-y-2">
-                                                            <input type="text" value={paymentFields.binance_id || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_id: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Binance ID" />
-                                                            <input type="email" value={paymentFields.binance_email || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo" />
-                                                            <input type="text" value={paymentFields.binance_user || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_user: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Usuario / alias" />
-                                                        </div>
-                                                    )}
+                                                     {getCatalogKey(selectedCatalogName) === 'binance' && (
+                                                         <div className="space-y-2">
+                                                             <input type="text" value={paymentFields.binance_id || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_id: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Binance ID" />
+                                                             <div>
+                                                                 <input type="email" value={paymentFields.binance_email || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo" />
+                                                                 <EmailSuggestions value={paymentFields.binance_email || ''} onChange={val => setPaymentFields(p => ({ ...p, binance_email: val }))} compact />
+                                                             </div>
+                                                             <input type="text" value={paymentFields.binance_user || ''} onChange={e => setPaymentFields(p => ({ ...p, binance_user: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Usuario / alias" />
+                                                         </div>
+                                                     )}
 
-                                                    {getCatalogKey(selectedCatalogName) === 'paypal' && (
-                                                        <div className="space-y-2">
-                                                            <input type="email" value={paymentFields.paypal_email || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo PayPal" />
-                                                            <input type="text" value={paymentFields.paypal_link || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_link: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Enlace paypal.me" />
-                                                        </div>
-                                                    )}
+                                                     {getCatalogKey(selectedCatalogName) === 'paypal' && (
+                                                         <div className="space-y-2">
+                                                             <div>
+                                                                 <input type="email" value={paymentFields.paypal_email || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_email: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Correo PayPal" />
+                                                                 <EmailSuggestions value={paymentFields.paypal_email || ''} onChange={val => setPaymentFields(p => ({ ...p, paypal_email: val }))} compact />
+                                                             </div>
+                                                             <input type="text" value={paymentFields.paypal_link || ''} onChange={e => setPaymentFields(p => ({ ...p, paypal_link: e.target.value }))} className="block w-full px-2 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg text-xs outline-none" placeholder="Enlace paypal.me" />
+                                                         </div>
+                                                     )}
 
                                                     {(getCatalogKey(selectedCatalogName) === 'pago movil' || getCatalogKey(selectedCatalogName) === 'pago móvil') && (
                                                         <div className="space-y-2">
@@ -675,9 +672,16 @@ const Register = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Contraseña</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Lock size={18} className="text-gray-400 dark:text-slate-500" /></div>
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                                    className={inputClass}
+                                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                                    className={`${inputClass} pr-10`}
                                     placeholder="Mínimo 6 caracteres" minLength={6} required />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400 focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                             <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">Mínimo 6 caracteres</p>
                         </div>
@@ -718,6 +722,31 @@ const Register = () => {
                     </p>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const EmailSuggestions = ({ value, onChange, compact = false }) => {
+    if (!value || (value.includes('@') && !value.endsWith('@'))) return null;
+    return (
+        <div className="flex flex-wrap gap-1 mt-1 pl-1">
+            {['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com'].map(domain => (
+                <button
+                    key={domain}
+                    type="button"
+                    onClick={() => {
+                        const trimmed = value.trim();
+                        const cleanEmail = trimmed.endsWith('@') ? trimmed.slice(0, -1) : trimmed;
+                        onChange(cleanEmail + domain);
+                    }}
+                    className={compact 
+                        ? "px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 rounded transition-colors border border-gray-200 dark:border-slate-700"
+                        : "px-2 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
+                    }
+                >
+                    {domain}
+                </button>
+            ))}
         </div>
     );
 };

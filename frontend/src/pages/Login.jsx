@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import useSettingsStore from '../store/useSettingsStore';
 import { BACKEND_URL } from '../api/constants';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const { login, loginWithGoogle, isLoading, error } = useAuthStore();
     const navigate = useNavigate();
@@ -109,6 +110,24 @@ const Login = () => {
                                     required
                                 />
                             </div>
+                            {email && (!email.includes('@') || email.endsWith('@')) && (
+                                <div className="flex flex-wrap gap-1 mt-1.5 pl-1">
+                                    {['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com'].map(domain => (
+                                        <button
+                                            key={domain}
+                                            type="button"
+                                            onClick={() => {
+                                                const trimmed = email.trim();
+                                                const cleanEmail = trimmed.endsWith('@') ? trimmed.slice(0, -1) : trimmed;
+                                                setEmail(cleanEmail + domain);
+                                            }}
+                                            className="px-2 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
+                                        >
+                                            {domain}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Input Contraseña */}
@@ -119,13 +138,20 @@ const Login = () => {
                                     <Lock size={18} className="text-gray-400 dark:text-slate-500" />
                                 </div>
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
+                                    className="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-mindpath-primary focus:border-transparent outline-none transition-all text-sm"
                                     placeholder="Ingresa tu contraseña"
                                     required
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400 focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">Mínimo 6 caracteres.</p>
                         </div>

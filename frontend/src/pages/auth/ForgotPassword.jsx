@@ -98,6 +98,7 @@ const ForgotPassword = () => {
                                             placeholder="tunombre@ejemplo.com"
                                         />
                                     </div>
+                                    <EmailSuggestions value={email} onChange={setEmail} />
                                 </div>
 
                                 <button 
@@ -128,6 +129,31 @@ const ForgotPassword = () => {
                 .animate-slideUp { animation: slideUp 0.3s ease-out; }
                 .animate-shake { animation: shake 0.4s ease-in-out; }
             `}</style>
+        </div>
+    );
+};
+
+const EmailSuggestions = ({ value, onChange, compact = false }) => {
+    if (!value || (value.includes('@') && !value.endsWith('@'))) return null;
+    return (
+        <div className="flex flex-wrap gap-1 mt-1.5 pl-1">
+            {['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com'].map(domain => (
+                <button
+                    key={domain}
+                    type="button"
+                    onClick={() => {
+                        const trimmed = value.trim();
+                        const cleanEmail = trimmed.endsWith('@') ? trimmed.slice(0, -1) : trimmed;
+                        onChange(cleanEmail + domain);
+                    }}
+                    className={compact 
+                        ? "px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 rounded transition-colors border border-gray-200 dark:border-slate-700"
+                        : "px-2 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-650 dark:text-slate-300 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
+                    }
+                >
+                    {domain}
+                </button>
+            ))}
         </div>
     );
 };
