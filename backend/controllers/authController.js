@@ -94,8 +94,8 @@ exports.register = async (req, res) => {
 
                 const [docResult] = await connection.query(
                     `INSERT INTO doctors
-                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee, is_verified)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
                     [
                         userId, specialty, phone || null, license_number, experience_years || null,
                         finalClinicName || null, finalClinicAddress || null, education || null, languages || null,
@@ -361,8 +361,8 @@ exports.googleComplete = async (req, res) => {
 
             const [docResult] = await connection.query(
                 `INSERT INTO doctors
-                (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, modality, rif, dni, consultation_fee)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, modality, rif, dni, consultation_fee, is_verified)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
                 [userId, specialty, phone || null, license_number, experience_years || null,
                  finalClinicName || null, finalClinicAddress || null, modality || 'ambas', rif || null, dni || null, consultation_fee]
             );
