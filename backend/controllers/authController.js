@@ -58,10 +58,10 @@ exports.register = async (req, res) => {
         await connection.beginTransaction();
 
         try {
-            // 4. Insertar en la tabla users (is_email_verified = 1 por defecto para facilitar registro manual)
+            // 4. Insertar en la tabla users
             const verificationToken = crypto.randomBytes(32).toString('hex');
             const [userResult] = await connection.query(
-                'INSERT INTO users (email, password_hash, full_name, role, auth_provider, is_email_verified, verification_token) VALUES (?, ?, ?, ?, ?, 1, ?)',
+                'INSERT INTO users (email, password_hash, full_name, role, auth_provider, is_email_verified, verification_token) VALUES (?, ?, ?, ?, ?, 0, ?)',
                 [email.trim(), password_hash, full_name.trim(), role, 'local', verificationToken]
             );
             const userId = userResult.insertId;
@@ -94,8 +94,8 @@ exports.register = async (req, res) => {
 
                 const [docResult] = await connection.query(
                     `INSERT INTO doctors
-                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee, is_verified)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+                    (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, education, languages, dni, modality, rif, title_picture, specialty_certificate, consultation_fee)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         userId, specialty, phone || null, license_number, experience_years || null,
                         finalClinicName || null, finalClinicAddress || null, education || null, languages || null,
@@ -361,8 +361,8 @@ exports.googleComplete = async (req, res) => {
 
             const [docResult] = await connection.query(
                 `INSERT INTO doctors
-                (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, modality, rif, dni, consultation_fee, is_verified)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+                (user_id, specialty, phone, license_number, experience_years, clinic_name, clinic_address, modality, rif, dni, consultation_fee)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [userId, specialty, phone || null, license_number, experience_years || null,
                  finalClinicName || null, finalClinicAddress || null, modality || 'ambas', rif || null, dni || null, consultation_fee]
             );

@@ -288,10 +288,10 @@ const DashboardLayout = () => {
                     </div>
                 </header>
 
-                {/* Banner de Verificación de Correo desactivado temporalmente */}
-                {/* {user && user.is_email_verified === false && (
+                {/* Banner de Verificación de Correo si la cuenta no está verificada */}
+                {user && user.is_email_verified === false && (
                     <VerificationBanner />
-                )} */}
+                )}
 
                 {/* Área de pantallas responsiva (p-4 en móvil, p-8 en escritorio) */}
                 <div className={`flex-1 overflow-auto p-4 md:p-8 ${isDark ? 'bg-[var(--bg-main)]' : 'bg-gray-50'}`}>
