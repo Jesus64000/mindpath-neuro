@@ -58,10 +58,10 @@ exports.register = async (req, res) => {
         await connection.beginTransaction();
 
         try {
-            // 4. Insertar en la tabla users
+            // 4. Insertar en la tabla users (is_email_verified = 1 por defecto para facilitar registro manual)
             const verificationToken = crypto.randomBytes(32).toString('hex');
             const [userResult] = await connection.query(
-                'INSERT INTO users (email, password_hash, full_name, role, auth_provider, is_email_verified, verification_token) VALUES (?, ?, ?, ?, ?, 0, ?)',
+                'INSERT INTO users (email, password_hash, full_name, role, auth_provider, is_email_verified, verification_token) VALUES (?, ?, ?, ?, ?, 1, ?)',
                 [email.trim(), password_hash, full_name.trim(), role, 'local', verificationToken]
             );
             const userId = userResult.insertId;
