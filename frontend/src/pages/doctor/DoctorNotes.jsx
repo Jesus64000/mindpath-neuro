@@ -317,7 +317,7 @@ const DoctorNotes = () => {
                                                     {pat.patient_name}
                                                 </span>
                                                 {pat.notes_updated_at ? (
-                                                    <span className="text-[9px] text-mindpath-primary dark:text-mindpath-light shrink-0 font-bold bg-mindpath-light/80 dark:bg-mindpath-primary/20 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[9px] text-mindpath-primary dark:text-violet-300 shrink-0 font-bold bg-mindpath-light/80 dark:bg-violet-950/40 px-2 py-0.5 rounded-full">
                                                         {formatDate(pat.notes_updated_at)}
                                                     </span>
                                                 ) : (
@@ -376,7 +376,7 @@ const DoctorNotes = () => {
 
                                 <Link
                                     to={`/doctor/patient/${selectedPatient.patient_id}`}
-                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-black bg-mindpath-light hover:bg-mindpath-light/80 text-mindpath-primary dark:bg-mindpath-primary/10 dark:hover:bg-mindpath-primary/20 rounded-xl transition self-start sm:self-auto"
+                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-black bg-mindpath-light hover:bg-mindpath-light/80 text-mindpath-primary dark:bg-mindpath-primary/10 dark:hover:bg-mindpath-primary/20 dark:text-violet-300 rounded-xl transition self-start sm:self-auto"
                                 >
                                     Ver Expediente Completo
                                     <ExternalLink size={13} />
@@ -558,12 +558,12 @@ const DoctorNotes = () => {
                                                     <div className="flex items-center gap-2">
                                                         {!isEditing && (
                                                             isExpanded ? (
-                                                                <ChevronUp size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                                                                <ChevronUp size={16} className="text-gray-400 dark:text-slate-300 shrink-0" />
                                                             ) : (
-                                                                <ChevronDown size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                                                                <ChevronDown size={16} className="text-gray-400 dark:text-slate-300 shrink-0" />
                                                             )
                                                         )}
-                                                        <span className="flex items-center gap-1.5 text-[10px] text-mindpath-primary dark:text-mindpath-light font-bold bg-mindpath-light/50 dark:bg-mindpath-primary/10 px-2.5 py-1 rounded-lg">
+                                                        <span className="flex items-center gap-1.5 text-[10px] text-mindpath-primary dark:text-violet-300 font-bold bg-mindpath-light/50 dark:bg-violet-950/40 px-2.5 py-1 rounded-lg">
                                                             <Clock size={10} />
                                                             {formatDateTime(note.updated_at)}
                                                         </span>
@@ -626,7 +626,7 @@ const DoctorNotes = () => {
                                                             {note.notes}
                                                         </p>
                                                     ) : (
-                                                        <p className="text-sm text-gray-500 dark:text-slate-400 truncate mt-1 cursor-pointer select-none" onClick={() => toggleNoteExpand(note.id)}>
+                                                        <p className="text-sm text-gray-500 dark:text-slate-300 truncate mt-1 cursor-pointer select-none" onClick={() => toggleNoteExpand(note.id)}>
                                                             {note.notes}
                                                         </p>
                                                     )
