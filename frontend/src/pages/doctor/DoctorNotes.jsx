@@ -219,10 +219,9 @@ const DoctorNotes = () => {
                                         }`}
                                     >
                                         <Avatar
-                                            src={pat.patient_picture ? `${BACKEND_URL}${pat.patient_picture}` : null}
-                                            name={pat.patient_name}
-                                            size={42}
-                                            className="shrink-0 rounded-xl"
+                                            fullName={pat.patient_name}
+                                            profilePictureUrl={pat.patient_picture}
+                                            size="10"
                                         />
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center justify-between gap-2">
@@ -257,10 +256,9 @@ const DoctorNotes = () => {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-white/5">
                                 <div className="flex items-center gap-3">
                                     <Avatar
-                                        src={selectedPatient.patient_picture ? `${BACKEND_URL}${selectedPatient.patient_picture}` : null}
-                                        name={selectedPatient.patient_name}
-                                        size={56}
-                                        className="rounded-2xl shrink-0"
+                                        fullName={selectedPatient.patient_name}
+                                        profilePictureUrl={selectedPatient.patient_picture}
+                                        size="14"
                                     />
                                     <div className="min-w-0">
                                         <h2 className="text-lg font-black text-gray-900 dark:text-white truncate">
