@@ -19,6 +19,14 @@ const MiniStars = ({ rating, count }) => {
     );
 };
 
+const formatDoctorName = (fullName) => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) return fullName;
+    if (parts.length === 3) return `${parts[0]} ${parts[1]}`;
+    return `${parts[0]} ${parts[2]}`;
+};
+
 const DoctorCard = ({ doctor }) => {
     const navigate = useNavigate();
 
@@ -35,7 +43,7 @@ const DoctorCard = ({ doctor }) => {
                 {/* Info Básica */}
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-mindpath-primary dark:group-hover:text-mindpath-primary transition-colors">
-                        Dr(a). {doctor.full_name.split(' ').slice(-1).join(' ')}
+                        Dr(a). {formatDoctorName(doctor.full_name)}
                     </h3>
                     <p className="text-sm font-medium text-mindpath-primary dark:text-mindpath-primary">{doctor.specialty}</p>
                     <MiniStars rating={doctor.avg_rating} count={doctor.rating_count} />

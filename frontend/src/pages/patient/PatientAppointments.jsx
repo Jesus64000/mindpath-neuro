@@ -9,6 +9,14 @@ import { BACKEND_URL } from '../../api/constants';
 import Avatar from '../../components/ui/Avatar';
 import UploadProofModal from '../../components/UploadProofModal';
 
+const formatDoctorName = (fullName) => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) return fullName;
+    if (parts.length === 3) return `${parts[0]} ${parts[1]}`;
+    return `${parts[0]} ${parts[2]}`;
+};
+
 // ── Componente de Valoración con Estrellas ────────────────────────────────────
 const StarRating = ({ value, onChange, readonly = false }) => (
     <div className="flex items-center gap-1">
@@ -252,7 +260,7 @@ const PatientAppointments = () => {
                                 <div className="flex items-center space-x-4 w-full md:w-1/3">
                                     <Avatar fullName={app.doctor_name} profilePictureUrl={app.profile_picture} size="16" />
                                     <div>
-                                        <h3 className="font-bold text-gray-900 dark:text-white">Dr(a). {app.doctor_name?.split(' ').slice(-1).join(' ')}</h3>
+                                        <h3 className="font-bold text-gray-900 dark:text-white">Dr(a). {formatDoctorName(app.doctor_name)}</h3>
                                         <p className="text-sm font-medium flex items-center text-mindpath-primary">
                                             <Stethoscope size={14} className="mr-1" /> {app.specialty}
                                         </p>
@@ -470,7 +478,7 @@ const PatientAppointments = () => {
                             </div>
                             <h3 className="text-xl font-black text-gray-900 dark:text-white">¿Cómo fue tu consulta?</h3>
                             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                                Con Dr(a). {ratingTarget.doctorName?.split(' ').slice(-1).join(' ')}
+                                Con Dr(a). {formatDoctorName(ratingTarget.doctorName)}
                             </p>
                         </div>
 
