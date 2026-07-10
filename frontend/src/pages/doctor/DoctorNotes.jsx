@@ -4,7 +4,8 @@ import api from '../../api/axiosConfig';
 import { BACKEND_URL } from '../../api/constants';
 import { 
     StickyNote, Search, ExternalLink, RefreshCw, AlertCircle, 
-    Check, Clock, User, Phone, Mail, Calendar, Plus, Edit3, Trash2, X
+    Check, Clock, User, Phone, Mail, Calendar, Plus, Edit3, Trash2, X,
+    ChevronDown, ChevronUp
 } from 'lucide-react';
 import Avatar from '../../components/ui/Avatar';
 
@@ -19,6 +20,7 @@ const DoctorNotes = () => {
     // Estado del historial de notas del paciente seleccionado
     const [patientNotes, setPatientNotes] = useState([]);
     const [loadingNotes, setLoadingNotes] = useState(false);
+    const [expandedNoteIds, setExpandedNoteIds] = useState({});
     
     // Estados para crear nueva nota
     const [newNoteText, setNewNoteText] = useState('');
@@ -33,6 +35,13 @@ const DoctorNotes = () => {
     const [datePreset, setDatePreset] = useState('all'); // 'all', 'today', 'week', 'month'
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
+
+    const toggleNoteExpand = (noteId) => {
+        setExpandedNoteIds(prev => ({
+            ...prev,
+            [noteId]: !prev[noteId]
+        }));
+    };
 
     const fetchAllNotes = async (selectFirst = false) => {
         setLoading(true);
@@ -58,7 +67,12 @@ const DoctorNotes = () => {
         setLoadingNotes(true);
         try {
             const res = await api.get(`/doctors/patient/${patientId}/notes`);
-            setPatientNotes(res.data.list || []);
+            const list = res.data.list || [];
+            setPatientNotes(list);
+            if (list.length > 0) {
+                // Expandir por defecto la primera nota (más reciente)
+                setExpandedNoteIds({ [list[0].id]: true });
+            }
         } catch (err) {
             console.error('Error al cargar historial de notas:', err);
         } finally {
@@ -87,6 +101,7 @@ const DoctorNotes = () => {
         setEditingNoteId(null);
         setEditingNoteText('');
         setSaveStatus('idle');
+        setExpandedNoteIds({});
         fetchPatientNotes(patient.patient_id);
     };
 
@@ -525,32 +540,53 @@ const DoctorNotes = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    filteredNotes.map((note) => {
+                                    filteredNotes.map((note, index) => {
                                         const isEditing = editingNoteId === note.id;
+                                        const isExpanded = expandedNoteIds[note.id] !== undefined
+                                            ? expandedNoteIds[note.id]
+                                            : (index === 0);
                                         return (
                                             <div 
                                                 key={note.id}
                                                 className="bg-gray-50/50 dark:bg-slate-700/10 border border-gray-100 dark:border-white/5 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:shadow-sm"
                                             >
-                                                {/* Header de la Nota */}
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span className="flex items-center gap-1.5 text-[10px] text-mindpath-primary dark:text-mindpath-light font-bold bg-mindpath-light/50 dark:bg-mindpath-primary/10 px-2.5 py-1 rounded-lg">
-                                                        <Clock size={10} />
-                                                        {formatDateTime(note.updated_at)}
-                                                    </span>
+                                                {/* Header de la Nota (Clickable para colapsar/expandir) */}
+                                                <div 
+                                                    onClick={() => !isEditing && toggleNoteExpand(note.id)}
+                                                    className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-pointer select-none' : ''}`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        {!isEditing && (
+                                                            isExpanded ? (
+                                                                <ChevronUp size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                                                            ) : (
+                                                                <ChevronDown size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+                                                            )
+                                                        )}
+                                                        <span className="flex items-center gap-1.5 text-[10px] text-mindpath-primary dark:text-mindpath-light font-bold bg-mindpath-light/50 dark:bg-mindpath-primary/10 px-2.5 py-1 rounded-lg">
+                                                            <Clock size={10} />
+                                                            {formatDateTime(note.updated_at)}
+                                                        </span>
+                                                    </div>
 
                                                     {/* Acciones */}
                                                     {!isEditing && (
                                                         <div className="flex items-center gap-1">
                                                             <button
-                                                                onClick={() => handleStartEdit(note)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Evitar colapsar al hacer clic
+                                                                    handleStartEdit(note);
+                                                                }}
                                                                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition"
                                                                 title="Editar nota"
                                                             >
                                                                 <Edit3 size={12} />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Evitar colapsar al hacer clic
+                                                                    handleDeleteNote(note.id);
+                                                                }}
                                                                 className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-gray-400 hover:text-red-500 transition"
                                                                 title="Eliminar nota"
                                                             >
@@ -585,9 +621,15 @@ const DoctorNotes = () => {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <p className="whitespace-pre-line text-sm text-gray-700 dark:text-slate-200 leading-relaxed font-sans">
-                                                        {note.notes}
-                                                    </p>
+                                                    isExpanded ? (
+                                                        <p className="whitespace-pre-line text-sm text-gray-700 dark:text-slate-200 leading-relaxed font-sans mt-1">
+                                                            {note.notes}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-sm text-gray-500 dark:text-slate-400 truncate mt-1 cursor-pointer select-none" onClick={() => toggleNoteExpand(note.id)}>
+                                                            {note.notes}
+                                                        </p>
+                                                    )
                                                 )}
                                             </div>
                                         );
