@@ -4,7 +4,7 @@ import api from '../../api/axiosConfig';
 import { BACKEND_URL } from '../../api/constants';
 import { 
     StickyNote, Search, ExternalLink, RefreshCw, AlertCircle, 
-    Check, Clock, User, Phone, Mail, Calendar
+    Check, Clock, User, Phone, Mail, Calendar, Plus, Edit3, Trash2, X
 } from 'lucide-react';
 import Avatar from '../../components/ui/Avatar';
 
@@ -16,10 +16,23 @@ const DoctorNotes = () => {
     const [selectedPatientId, setSelectedPatientId] = useState(null);
     const [selectedPatient, setSelectedPatient] = useState(null);
     
-    // Estado del editor
-    const [editorNotes, setEditorNotes] = useState('');
+    // Estado del historial de notas del paciente seleccionado
+    const [patientNotes, setPatientNotes] = useState([]);
+    const [loadingNotes, setLoadingNotes] = useState(false);
+    
+    // Estados para crear nueva nota
+    const [newNoteText, setNewNoteText] = useState('');
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
-    const notesTimeoutRef = useRef(null);
+    
+    // Estados para editar notas existentes
+    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [editingNoteText, setEditingNoteText] = useState('');
+
+    // Estados para filtros
+    const [filterText, setFilterText] = useState('');
+    const [datePreset, setDatePreset] = useState('all'); // 'all', 'today', 'week', 'month'
+    const [filterDateFrom, setFilterDateFrom] = useState('');
+    const [filterDateTo, setFilterDateTo] = useState('');
 
     const fetchAllNotes = async (selectFirst = false) => {
         setLoading(true);
@@ -31,13 +44,25 @@ const DoctorNotes = () => {
                 const first = res.data[0];
                 setSelectedPatientId(first.patient_id);
                 setSelectedPatient(first);
-                setEditorNotes(first.notes || '');
+                fetchPatientNotes(first.patient_id);
             }
         } catch (err) {
             console.error('Error al cargar notas rápidas:', err);
             setError('No se pudieron cargar las notas rápidas.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPatientNotes = async (patientId) => {
+        setLoadingNotes(true);
+        try {
+            const res = await api.get(`/doctors/patient/${patientId}/notes`);
+            setPatientNotes(res.data.list || []);
+        } catch (err) {
+            console.error('Error al cargar historial de notas:', err);
+        } finally {
+            setLoadingNotes(false);
         }
     };
 
@@ -56,60 +81,80 @@ const DoctorNotes = () => {
     }, [selectedPatientId, patients]);
 
     const handleSelectPatient = (patient) => {
-        // Guardar cualquier nota pendiente si se cambia de paciente rápidamente
-        if (notesTimeoutRef.current) {
-            clearTimeout(notesTimeoutRef.current);
-            // Guardar inmediatamente la nota anterior
-            saveNotesImmediately(selectedPatientId, editorNotes);
-        }
-
         setSelectedPatientId(patient.patient_id);
         setSelectedPatient(patient);
-        setEditorNotes(patient.notes || '');
+        setNewNoteText('');
+        setEditingNoteId(null);
+        setEditingNoteText('');
         setSaveStatus('idle');
+        fetchPatientNotes(patient.patient_id);
     };
 
-    const saveNotesImmediately = async (pId, text) => {
+    const handleAddNote = async () => {
+        if (!newNoteText.trim()) return;
+        setSaveStatus('saving');
         try {
-            await api.put(`/doctors/patient/${pId}/notes`, { notes: text });
-            // Actualizar la lista localmente
-            setPatients(prev => prev.map(p => 
-                p.patient_id === pId ? { ...p, notes: text, notes_updated_at: new Date().toISOString() } : p
-            ));
+            await api.post(`/doctors/patient/${selectedPatientId}/notes/new`, { notes: newNoteText });
+            setNewNoteText('');
+            setSaveStatus('saved');
+            
+            // Recargar notas y listado principal para actualizar la vista previa de la izquierda
+            await fetchPatientNotes(selectedPatientId);
+            await fetchAllNotes(false);
+            
+            setTimeout(() => {
+                setSaveStatus('idle');
+            }, 3000);
         } catch (err) {
-            console.error('Error al guardar notas de forma inmediata:', err);
+            console.error('Error al guardar nueva nota:', err);
+            setSaveStatus('error');
         }
     };
 
-    const handleNotesChange = (e) => {
-        const text = e.target.value;
-        setEditorNotes(text);
-        setSaveStatus('saving');
+    const handleStartEdit = (note) => {
+        setEditingNoteId(note.id);
+        setEditingNoteText(note.notes);
+    };
 
-        if (notesTimeoutRef.current) clearTimeout(notesTimeoutRef.current);
+    const handleCancelEdit = () => {
+        setEditingNoteId(null);
+        setEditingNoteText('');
+    };
 
-        notesTimeoutRef.current = setTimeout(async () => {
-            try {
-                await api.put(`/doctors/patient/${selectedPatientId}/notes`, { notes: text });
-                setSaveStatus('saved');
-                
-                // Actualizar la lista local
-                setPatients(prev => prev.map(p => 
-                    p.patient_id === selectedPatientId 
-                        ? { ...p, notes: text, notes_updated_at: new Date().toISOString() } 
-                        : p
-                ));
+    const handleSaveEdit = async (noteId) => {
+        if (!editingNoteText.trim()) return;
+        try {
+            await api.put(`/doctors/notes/${noteId}`, { notes: editingNoteText });
+            setEditingNoteId(null);
+            setEditingNoteText('');
+            
+            // Actualizar localmente la nota en la lista
+            setPatientNotes(prev => prev.map(n => 
+                n.id === noteId ? { ...n, notes: editingNoteText, updated_at: new Date().toISOString() } : n
+            ));
+            
+            // Recargar listado principal para actualizar la vista previa
+            await fetchAllNotes(false);
+        } catch (err) {
+            console.error('Error al editar nota:', err);
+            alert('No se pudo guardar la edición de la nota.');
+        }
+    };
 
-                // Restablecer el estado a idle después de 3 segundos
-                setTimeout(() => {
-                    setSaveStatus(prev => prev === 'saved' ? 'idle' : prev);
-                }, 3000);
-
-            } catch (err) {
-                console.error('Error al guardar notas:', err);
-                setSaveStatus('error');
-            }
-        }, 1000);
+    const handleDeleteNote = async (noteId) => {
+        if (!confirm('¿Estás seguro de que deseas eliminar esta observación del historial?')) return;
+        try {
+            await api.delete(`/doctors/notes/${noteId}`);
+            
+            // Actualizar localmente
+            setPatientNotes(prev => prev.filter(n => n.id !== noteId));
+            
+            // Recargar listado principal para la vista previa
+            await fetchAllNotes(false);
+        } catch (err) {
+            console.error('Error al eliminar nota:', err);
+            alert('No se pudo eliminar la nota.');
+        }
     };
 
     const formatDate = (dateStr) => {
@@ -125,25 +170,53 @@ const DoctorNotes = () => {
         return d.toLocaleDateString('es-ES', {
             day: 'numeric',
             month: 'short',
+            year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         });
     };
 
-    // Limpieza al desmontar
-    useEffect(() => {
-        return () => {
-            if (notesTimeoutRef.current) {
-                clearTimeout(notesTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    // Filtrar la lista por la barra de búsqueda
+    // Filtrar la lista de pacientes por la barra de búsqueda
     const filteredPatients = patients.filter(p => 
         p.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         p.patient_email.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Filtrar las observaciones (notas) del paciente seleccionado
+    const filteredNotes = patientNotes.filter(note => {
+        // 1. Filtro por buscador de texto
+        if (filterText && !note.notes.toLowerCase().includes(filterText.toLowerCase())) {
+            return false;
+        }
+        
+        const noteDate = new Date(note.updated_at);
+        
+        // 2. Filtro por presets de fecha
+        if (datePreset === 'today') {
+            const today = new Date();
+            if (noteDate.toDateString() !== today.toDateString()) return false;
+        } else if (datePreset === 'week') {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            if (noteDate < oneWeekAgo) return false;
+        } else if (datePreset === 'month') {
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            if (noteDate < oneMonthAgo) return false;
+        }
+        
+        // 3. Filtro por rangos de fecha personalizados (Desde/Hasta)
+        if (filterDateFrom) {
+            const fromDate = new Date(`${filterDateFrom}T00:00:00`);
+            if (noteDate < fromDate) return false;
+        }
+        if (filterDateTo) {
+            const toDate = new Date(`${filterDateTo}T23:59:59`);
+            if (noteDate > toDate) return false;
+        }
+        
+        return true;
+    });
 
     return (
         <div className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-6 animate-fadeIn">
@@ -154,7 +227,7 @@ const DoctorNotes = () => {
                         <StickyNote className="text-mindpath-primary" size={28} /> Notas Rápidas
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                        Consulta y edita las observaciones privadas de tus pacientes desde un solo panel.
+                        Gestiona el historial de observaciones privadas e independientes de tus pacientes.
                     </p>
                 </div>
                 
@@ -194,7 +267,7 @@ const DoctorNotes = () => {
                     </div>
 
                     {/* Listado */}
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[700px] overflow-y-auto pr-1">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                 <RefreshCw size={32} className="animate-spin text-mindpath-primary mb-3" />
@@ -228,16 +301,20 @@ const DoctorNotes = () => {
                                                 <span className="font-extrabold text-sm text-gray-900 dark:text-white truncate">
                                                     {pat.patient_name}
                                                 </span>
-                                                {pat.last_visit && (
-                                                    <span className="text-[10px] text-gray-400 dark:text-slate-500 shrink-0 font-medium">
-                                                        {formatDate(pat.last_visit)}
+                                                {pat.notes_updated_at ? (
+                                                    <span className="text-[9px] text-mindpath-primary dark:text-mindpath-light shrink-0 font-bold bg-mindpath-light/80 dark:bg-mindpath-primary/20 px-2 py-0.5 rounded-full">
+                                                        {formatDate(pat.notes_updated_at)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[9px] text-gray-400 dark:text-slate-600 shrink-0 font-medium">
+                                                        Sin notas
                                                     </span>
                                                 )}
                                             </div>
                                             
-                                            {/* Vista previa de la nota */}
+                                            {/* Vista previa de la última nota */}
                                             <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-1">
-                                                {pat.notes ? pat.notes : <span className="italic text-gray-300 dark:text-slate-600">Sin notas aún...</span>}
+                                                {pat.notes ? pat.notes : <span className="italic text-gray-300 dark:text-slate-600">Sin notas registradas...</span>}
                                             </p>
                                         </div>
                                     </button>
@@ -247,10 +324,10 @@ const DoctorNotes = () => {
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: Editor de Notas */}
-                <div className="lg:col-span-8 bg-white dark:bg-slate-800 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm p-6 min-h-[500px] flex flex-col">
+                {/* COLUMNA DERECHA: Editor y Bitácora de Observaciones */}
+                <div className="lg:col-span-8 bg-white dark:bg-slate-800 rounded-[2rem] border border-gray-100 dark:border-white/10 shadow-sm p-6 min-h-[600px] flex flex-col gap-6">
                     {selectedPatient ? (
-                        <div className="flex-1 flex flex-col space-y-6">
+                        <div className="flex-1 flex flex-col gap-6">
                             
                             {/* Cabecera del Paciente Seleccionado */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-white/5">
@@ -284,21 +361,20 @@ const DoctorNotes = () => {
 
                                 <Link
                                     to={`/doctor/patient/${selectedPatient.patient_id}`}
-                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-black bg-mindpath-light hover:bg-mindpath-light/80 text-mindpath-primary dark:bg-mindpath-primary/10 dark:hover:bg-mindpath-primary/20 rounded-xl transition"
+                                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-black bg-mindpath-light hover:bg-mindpath-light/80 text-mindpath-primary dark:bg-mindpath-primary/10 dark:hover:bg-mindpath-primary/20 rounded-xl transition self-start sm:self-auto"
                                 >
                                     Ver Expediente Completo
                                     <ExternalLink size={13} />
                                 </Link>
                             </div>
 
-                            {/* Editor de Notas */}
-                            <div className="flex-1 flex flex-col space-y-3">
+                            {/* Creador de Nueva Observación */}
+                            <div className="bg-gray-50/50 dark:bg-slate-700/20 border border-gray-100 dark:border-white/5 p-4 rounded-3xl space-y-3">
                                 <div className="flex items-center justify-between gap-3">
-                                    <h3 className="font-extrabold text-sm text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                                        <StickyNote size={16} className="text-mindpath-primary" /> Observaciones del Paciente
+                                    <h3 className="font-extrabold text-sm text-gray-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Plus size={16} className="text-mindpath-primary" /> Agregar Nueva Observación
                                     </h3>
                                     
-                                    {/* Indicadores de guardado */}
                                     <div className="text-xs font-bold transition-all duration-300">
                                         {saveStatus === 'saving' && (
                                             <span className="flex items-center gap-1.5 text-gray-400 dark:text-slate-500">
@@ -307,7 +383,7 @@ const DoctorNotes = () => {
                                         )}
                                         {saveStatus === 'saved' && (
                                             <span className="flex items-center gap-1.5 text-green-500">
-                                                <Check size={13} /> Guardado con éxito
+                                                <Check size={13} /> Agregada al historial
                                             </span>
                                         )}
                                         {saveStatus === 'error' && (
@@ -315,20 +391,208 @@ const DoctorNotes = () => {
                                                 <AlertCircle size={13} /> Error al guardar
                                             </span>
                                         )}
-                                        {saveStatus === 'idle' && selectedPatient.notes_updated_at && (
-                                            <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-slate-500 font-normal">
-                                                <Clock size={11} /> Act. el {formatDateTime(selectedPatient.notes_updated_at)}
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
 
                                 <textarea
-                                    value={editorNotes}
-                                    onChange={handleNotesChange}
-                                    placeholder="Escribe aquí observaciones privadas, ideas sobre diagnóstico, dosis de medicamentos o recordatorios personales sobre este paciente. Estas notas son 100% privadas y solo tú tienes acceso a ellas."
-                                    className="w-full flex-1 min-h-[300px] resize-none rounded-2xl bg-gray-50/50 dark:bg-slate-700/30 border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 p-4 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mindpath-primary/50 transition-all font-sans leading-relaxed"
+                                    value={newNoteText}
+                                    onChange={(e) => setNewNoteText(e.target.value)}
+                                    placeholder="Escribe aquí una observación privada (diagnósticos, pautas de dosis, detalles personales, etc.) para agregarla a la bitácora..."
+                                    className="w-full h-24 resize-none rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/5 text-sm text-gray-800 dark:text-slate-200 p-3 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mindpath-primary/50 transition-all font-sans"
                                 />
+
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={handleAddNote}
+                                        disabled={!newNoteText.trim() || saveStatus === 'saving'}
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-black bg-mindpath-primary hover:bg-mindpath-primary/95 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-sm"
+                                    >
+                                        <Plus size={14} /> Agregar a la Bitácora
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Barra de Filtros del Historial */}
+                            <div className="border-t border-b border-gray-100 dark:border-white/5 py-4 space-y-3">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                    <h4 className="font-extrabold text-sm text-gray-800 dark:text-white">
+                                        Bitácora de Observaciones ({filteredNotes.length})
+                                    </h4>
+                                    
+                                    {/* Presets de Fecha */}
+                                    <div className="flex flex-wrap items-center gap-1 bg-gray-50 dark:bg-slate-700/50 p-1 rounded-xl self-start">
+                                        {[
+                                            { id: 'all', label: 'Todos' },
+                                            { id: 'today', label: 'Hoy' },
+                                            { id: 'week', label: 'Esta Semana' },
+                                            { id: 'month', label: 'Este Mes' }
+                                        ].map(preset => (
+                                            <button
+                                                key={preset.id}
+                                                onClick={() => setDatePreset(preset.id)}
+                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                                    datePreset === preset.id
+                                                        ? 'bg-white dark:bg-slate-800 text-mindpath-primary dark:text-white shadow-sm'
+                                                        : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                                }`}
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {/* Buscador en notas */}
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-slate-500 pointer-events-none">
+                                            <Search size={14} />
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar en observaciones..."
+                                            value={filterText}
+                                            onChange={(e) => setFilterText(e.target.value)}
+                                            className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-white/5 rounded-xl text-xs placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-mindpath-primary/50 transition-all"
+                                        />
+                                        {filterText && (
+                                            <button 
+                                                onClick={() => setFilterText('')}
+                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Rango de Fecha: Desde */}
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-slate-500 pointer-events-none text-xs font-bold">
+                                            Desde:
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={filterDateFrom}
+                                            onChange={(e) => {
+                                                setFilterDateFrom(e.target.value);
+                                                setDatePreset('all'); // Desactivar preset si se usa rango
+                                            }}
+                                            className="w-full pl-14 pr-3 py-2 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-white/5 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-mindpath-primary/50 transition-all"
+                                        />
+                                    </div>
+
+                                    {/* Rango de Fecha: Hasta */}
+                                    <div className="relative">
+                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-slate-500 pointer-events-none text-xs font-bold">
+                                            Hasta:
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={filterDateTo}
+                                            onChange={(e) => {
+                                                setFilterDateTo(e.target.value);
+                                                setDatePreset('all');
+                                            }}
+                                            className="w-full pl-14 pr-3 py-2 bg-gray-50 dark:bg-slate-700/30 border border-gray-100 dark:border-white/5 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-mindpath-primary/50 transition-all"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Historial de Notas (Timeline) */}
+                            <div className="flex-1 space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                                {loadingNotes ? (
+                                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                        <RefreshCw size={24} className="animate-spin text-mindpath-primary mb-2" />
+                                        <span className="text-xs font-medium">Cargando historial...</span>
+                                    </div>
+                                ) : filteredNotes.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <StickyNote size={32} className="mx-auto mb-2 opacity-30" />
+                                        <p className="text-xs">No se encontraron observaciones registradas.</p>
+                                        {(filterText || filterDateFrom || filterDateTo || datePreset !== 'all') && (
+                                            <button 
+                                                onClick={() => {
+                                                    setFilterText('');
+                                                    setDatePreset('all');
+                                                    setFilterDateFrom('');
+                                                    setFilterDateTo('');
+                                                }}
+                                                className="text-xs text-mindpath-primary dark:text-mindpath-light font-bold underline mt-2 hover:opacity-80"
+                                            >
+                                                Limpiar filtros
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    filteredNotes.map((note) => {
+                                        const isEditing = editingNoteId === note.id;
+                                        return (
+                                            <div 
+                                                key={note.id}
+                                                className="bg-gray-50/50 dark:bg-slate-700/10 border border-gray-100 dark:border-white/5 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:shadow-sm"
+                                            >
+                                                {/* Header de la Nota */}
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <span className="flex items-center gap-1.5 text-[10px] text-mindpath-primary dark:text-mindpath-light font-bold bg-mindpath-light/50 dark:bg-mindpath-primary/10 px-2.5 py-1 rounded-lg">
+                                                        <Clock size={10} />
+                                                        {formatDateTime(note.updated_at)}
+                                                    </span>
+
+                                                    {/* Acciones */}
+                                                    {!isEditing && (
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={() => handleStartEdit(note)}
+                                                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition"
+                                                                title="Editar nota"
+                                                            >
+                                                                <Edit3 size={12} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteNote(note.id)}
+                                                                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-gray-400 hover:text-red-500 transition"
+                                                                title="Eliminar nota"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Contenido de la Nota */}
+                                                {isEditing ? (
+                                                    <div className="space-y-2">
+                                                        <textarea
+                                                            value={editingNoteText}
+                                                            onChange={(e) => setEditingNoteText(e.target.value)}
+                                                            className="w-full h-20 resize-none rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 p-3 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-mindpath-primary/50 transition-all font-sans"
+                                                        />
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <button
+                                                                onClick={handleCancelEdit}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
+                                                            >
+                                                                <X size={11} /> Cancelar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleSaveEdit(note.id)}
+                                                                disabled={!editingNoteText.trim()}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-black bg-mindpath-primary text-white disabled:opacity-50 rounded-lg transition"
+                                                            >
+                                                                <Check size={11} /> Guardar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="whitespace-pre-line text-sm text-gray-700 dark:text-slate-200 leading-relaxed font-sans">
+                                                        {note.notes}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
 
                         </div>
@@ -341,7 +605,7 @@ const DoctorNotes = () => {
                                 Sin paciente seleccionado
                             </h3>
                             <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5 max-w-sm">
-                                Selecciona un paciente de la lista lateral para visualizar sus datos y gestionar sus notas rápidas en tiempo real.
+                                Selecciona un paciente de la lista lateral para visualizar sus datos y gestionar sus observaciones históricas en tiempo real.
                             </p>
                         </div>
                     )}

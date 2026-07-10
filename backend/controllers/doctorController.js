@@ -606,10 +606,14 @@ exports.getPatientNotes = async (req, res) => {
         const doctorId = doctorRows[0].id;
 
         const [rows] = await db.query(
-            'SELECT notes, updated_at FROM doctor_patient_notes WHERE doctor_id = ? AND patient_id = ?',
+            'SELECT id, notes, updated_at FROM doctor_patient_notes WHERE doctor_id = ? AND patient_id = ? ORDER BY updated_at DESC',
             [doctorId, patientId]
         );
-        res.status(200).json({ notes: rows[0]?.notes || '', updatedAt: rows[0]?.updated_at || null });
+        res.status(200).json({ 
+            notes: rows[0]?.notes || '', 
+            updatedAt: rows[0]?.updated_at || null,
+            list: rows
+        });
     } catch (error) {
         console.error('Error en getPatientNotes:', error);
         res.status(500).json({ message: 'Error interno.' });
@@ -617,6 +621,7 @@ exports.getPatientNotes = async (req, res) => {
 };
 
 // PUT /api/doctors/patient/:patientId/notes
+// (Usado por el auto-guardado de la ficha del paciente. Agrupa notas por día)
 exports.savePatientNotes = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -627,16 +632,121 @@ exports.savePatientNotes = async (req, res) => {
         if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
         const doctorId = doctorRows[0].id;
 
-        await db.query(
-            `INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes)
-             VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE notes = VALUES(notes)`,
-            [doctorId, patientId, notes]
+        // Verificar si ya existe una nota creada hoy para este paciente y doctor
+        const [todayNotes] = await db.query(
+            `SELECT id FROM doctor_patient_notes 
+             WHERE doctor_id = ? AND patient_id = ? AND DATE(updated_at) = CURDATE()
+             ORDER BY updated_at DESC LIMIT 1`,
+            [doctorId, patientId]
         );
+
+        if (todayNotes.length > 0) {
+            // Actualizar la nota de hoy
+            await db.query(
+                'UPDATE doctor_patient_notes SET notes = ? WHERE id = ?',
+                [notes, todayNotes[0].id]
+            );
+        } else {
+            // Crear una nueva nota
+            await db.query(
+                'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes) VALUES (?, ?, ?)',
+                [doctorId, patientId, notes]
+            );
+        }
         res.status(200).json({ message: 'Notas guardadas.' });
     } catch (error) {
         console.error('Error en savePatientNotes:', error);
         res.status(500).json({ message: 'Error interno.' });
+    }
+};
+
+// POST /api/doctors/patient/:patientId/notes/new
+// (Crea una nota directamente en el historial)
+exports.createPatientNote = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { patientId } = req.params;
+        const { notes } = req.body;
+
+        if (!notes || !notes.trim()) {
+            return res.status(400).json({ message: 'La nota no puede estar vacía.' });
+        }
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes) VALUES (?, ?, ?)',
+            [doctorId, patientId, notes]
+        );
+
+        res.status(201).json({ 
+            message: 'Nota agregada con éxito.',
+            noteId: result.insertId
+        });
+    } catch (error) {
+        console.error('Error en createPatientNote:', error);
+        res.status(500).json({ message: 'Error interno al agregar nota.' });
+    }
+};
+
+// PUT /api/doctors/notes/:noteId
+// (Edita una nota específica por ID)
+exports.updatePatientNoteById = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { noteId } = req.params;
+        const { notes } = req.body;
+
+        if (!notes || !notes.trim()) {
+            return res.status(400).json({ message: 'La nota no puede estar vacía.' });
+        }
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'UPDATE doctor_patient_notes SET notes = ? WHERE id = ? AND doctor_id = ?',
+            [notes, noteId, doctorId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Nota no encontrada o no autorizada.' });
+        }
+
+        res.status(200).json({ message: 'Nota actualizada con éxito.' });
+    } catch (error) {
+        console.error('Error en updatePatientNoteById:', error);
+        res.status(500).json({ message: 'Error interno al editar la nota.' });
+    }
+};
+
+// DELETE /api/doctors/notes/:noteId
+// (Elimina una nota específica por ID)
+exports.deletePatientNoteById = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { noteId } = req.params;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        const [result] = await db.query(
+            'DELETE FROM doctor_patient_notes WHERE id = ? AND doctor_id = ?',
+            [noteId, doctorId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Nota no encontrada o no autorizada.' });
+        }
+
+        res.status(200).json({ message: 'Nota eliminada con éxito.' });
+    } catch (error) {
+        console.error('Error en deletePatientNoteById:', error);
+        res.status(500).json({ message: 'Error interno al eliminar la nota.' });
     }
 };
 
@@ -649,7 +759,7 @@ exports.getAllPatientNotes = async (req, res) => {
         if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
         const doctorId = doctorRows[0].id;
 
-        // Obtener todos los pacientes que han tenido consultas con el doctor y sus notas rápidas (si existen)
+        // Obtener todos los pacientes que han tenido consultas con el doctor y su nota más reciente de forma optimizada
         const [patients] = await db.query(`
             SELECT DISTINCT p.id as patient_id, u.full_name as patient_name, u.email as patient_email, 
                             p.phone as patient_phone, p.profile_picture as patient_picture,
@@ -658,10 +768,17 @@ exports.getAllPatientNotes = async (req, res) => {
             FROM patients p
             JOIN users u ON p.user_id = u.id
             JOIN appointments a ON a.patient_id = p.id
-            LEFT JOIN doctor_patient_notes n ON n.patient_id = p.id AND n.doctor_id = ?
+            LEFT JOIN (
+                SELECT n1.* FROM doctor_patient_notes n1
+                JOIN (
+                    SELECT MAX(id) as max_id FROM doctor_patient_notes 
+                    WHERE doctor_id = ? 
+                    GROUP BY patient_id
+                ) n2 ON n1.id = n2.max_id
+            ) n ON n.patient_id = p.id
             WHERE a.doctor_id = ?
             ORDER BY n.updated_at DESC, u.full_name ASC
-        `, [doctorId, doctorId, doctorId]);
+        `, [doctorId, doctorId, doctorId, doctorId]);
 
         res.status(200).json(patients);
     } catch (error) {

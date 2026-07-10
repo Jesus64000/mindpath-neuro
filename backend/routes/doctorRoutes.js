@@ -14,6 +14,9 @@ router.get('/patient/:patientId', authMiddleware, doctorController.getPatientFil
 router.get('/notes/all', authMiddleware, doctorController.getAllPatientNotes);
 router.get('/patient/:patientId/notes', authMiddleware, doctorController.getPatientNotes);
 router.put('/patient/:patientId/notes', authMiddleware, doctorController.savePatientNotes);
+router.post('/patient/:patientId/notes/new', authMiddleware, doctorController.createPatientNote);
+router.put('/notes/:noteId', authMiddleware, doctorController.updatePatientNoteById);
+router.delete('/notes/:noteId', authMiddleware, doctorController.deletePatientNoteById);
 
 // Configuración de horarios del doctor
 router.post('/update-schedule', authMiddleware, doctorController.updateSchedule);
