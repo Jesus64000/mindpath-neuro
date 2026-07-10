@@ -28,5 +28,8 @@ router.patch('/:id/doctor-not-ready', authMiddleware, appointmentController.setD
 // Endpoint para subir comprobante de pago (PDF/imagen) a una cita
 router.post('/:id/payment-proof', authMiddleware, appointmentController.uploadPaymentProof);
 
+// Trigger de recordatorios automáticos de citas
+router.post('/send-reminders', appointmentController.runReminderCron);
+
 module.exports = router;
 

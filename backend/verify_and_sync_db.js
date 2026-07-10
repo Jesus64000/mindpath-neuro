@@ -69,7 +69,9 @@ const expectedColumns = {
         { name: 'payment_collected_at', definition: 'DATETIME DEFAULT NULL AFTER payment_proof_url' },
         { name: 'legal_verification_code', definition: 'VARCHAR(100) DEFAULT NULL AFTER payment_collected_at' },
         { name: 'legal_verification_hash', definition: 'VARCHAR(128) DEFAULT NULL AFTER legal_verification_code' },
-        { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER doctor_ready' }
+        { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER doctor_ready' },
+        { name: 'reminder_1day_sent', definition: 'BOOLEAN DEFAULT FALSE AFTER clinic_id' },
+        { name: 'reminder_today_sent', definition: 'BOOLEAN DEFAULT FALSE AFTER reminder_1day_sent' }
     ],
     payment_method_catalog: [
         { name: 'template_key', definition: 'VARCHAR(50) DEFAULT NULL AFTER description' },

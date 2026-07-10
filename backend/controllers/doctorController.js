@@ -640,6 +640,36 @@ exports.savePatientNotes = async (req, res) => {
     }
 };
 
+// GET /api/doctors/notes/all
+exports.getAllPatientNotes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
+        if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
+        const doctorId = doctorRows[0].id;
+
+        // Obtener todos los pacientes que han tenido consultas con el doctor y sus notas rápidas (si existen)
+        const [patients] = await db.query(`
+            SELECT DISTINCT p.id as patient_id, u.full_name as patient_name, u.email as patient_email, 
+                            p.phone as patient_phone, p.profile_picture as patient_picture,
+                            n.notes, n.updated_at as notes_updated_at,
+                            (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id AND doctor_id = ?) as last_visit
+            FROM patients p
+            JOIN users u ON p.user_id = u.id
+            JOIN appointments a ON a.patient_id = p.id
+            LEFT JOIN doctor_patient_notes n ON n.patient_id = p.id AND n.doctor_id = ?
+            WHERE a.doctor_id = ?
+            ORDER BY n.updated_at DESC, u.full_name ASC
+        `, [doctorId, doctorId, doctorId]);
+
+        res.status(200).json(patients);
+    } catch (error) {
+        console.error('Error en getAllPatientNotes:', error);
+        res.status(500).json({ message: 'Error interno al obtener notas rápidas.' });
+    }
+};
+
 // ── Sprint 27: Estadísticas Personales del Doctor ────────────────────────────
 
 // GET /api/doctors/my-stats

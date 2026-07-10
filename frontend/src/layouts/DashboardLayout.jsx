@@ -5,7 +5,7 @@ import useSettingsStore from '../store/useSettingsStore';
 import {
     LayoutDashboard, Calendar, Users, Settings, LogOut,
     BrainCircuit, Sun, Moon, ShieldCheck, FileText, BarChart3,
-    Menu, X, CreditCard, MailCheck, AlertTriangle, RefreshCw
+    Menu, X, CreditCard, MailCheck, AlertTriangle, RefreshCw, StickyNote
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import api from '../api/axiosConfig';
@@ -111,6 +111,7 @@ const DashboardLayout = () => {
             { name: 'Panel',          path: '/doctor/dashboard',        icon: LayoutDashboard },
             { name: 'Pacientes',      path: '/doctor/patients',          icon: Users },
             { name: 'Agenda',         path: '/doctor/schedule',          icon: Calendar },
+            { name: 'Notas Rápidas',  path: '/doctor/notes',             icon: StickyNote },
             { name: 'Estadísticas',   path: '/doctor/stats',             icon: BarChart3 },
             { name: 'Pagos',          path: '/doctor/payments',          icon: CreditCard },
             { name: 'Perfil',         path: '/doctor/profile-settings',  icon: Settings },

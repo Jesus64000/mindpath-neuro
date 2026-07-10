@@ -656,11 +656,258 @@ const sendVerificationEmail = async (userEmail, userName, verificationToken) => 
     }
 };
 
+/**
+ * Envía un correo de confirmación de cita al paciente.
+ */
+const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt) => {
+    try {
+        const { transporter, smtp_email } = await getMailTransporter();
+        const frontendUrl = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
+        
+        const dateFormatted = new Date(`${appt.appointment_date}T12:00:00`).toLocaleDateString('es-ES', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        
+        const timeFormatted = appt.start_time.substring(0, 5);
+        const modalityLabel = appt.type === 'virtual' ? 'Consulta Virtual (Telemedicina)' : 'Consulta Presencial';
+        const locationDetails = appt.type === 'virtual' 
+            ? 'Sala de consulta virtual en nuestra plataforma. El enlace estará disponible en tu panel de paciente.' 
+            : `${appt.clinic_name || 'Consultorio Médico'} - ${appt.clinic_address || appt.custom_clinic_address || 'Dirección no especificada'}`;
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cita Agendada con Éxito</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4ff;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- CABECERA -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 50%,#7c3aed 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+              <div style="margin-bottom:16px;">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="12" fill="rgba(255,255,255,0.15)"/>
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="white" opacity="0.9"/>
+                </svg>
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Mindpath Neuro</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Cita Agendada con Éxito</p>
+            </td>
+          </tr>
+          <!-- CUERPO PRINCIPAL -->
+          <tr>
+            <td style="background:#ffffff;padding:40px;border-left:1px solid #e8eaf6;border-right:1px solid #e8eaf6;">
+              <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:22px;font-weight:700;">¡Hola, ${patientName}! 👋</h2>
+              <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
+                Queremos confirmarte que tu cita médica ha sido agendada de forma exitosa en nuestra plataforma. A continuación encontrarás los detalles de tu consulta:
+              </p>
+              <div style="height:3px;background:linear-gradient(90deg,#6366f1,#7c3aed,#a78bfa);border-radius:3px;margin-bottom:28px;"></div>
+              
+              <!-- DETALLES -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#334155;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">👨‍⚕️ Especialista:</td>
+                  <td width="65%" style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">Dr(a). ${appt.doctor_name} <span style="font-size:12px;color:#64748b;font-weight:normal;">(${appt.doctor_specialty})</span></td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">📅 Fecha:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;text-transform:capitalize;">${dateFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">⏰ Hora:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">${timeFormatted} (Hora de Caracas)</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">💻 Modalidad:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${modalityLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">📍 Lugar:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#475569;">${locationDetails}</td>
+                </tr>
+              </table>
+
+              <!-- BOTÓN CTA -->
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${frontendUrl}/patient/appointments"
+                   style="display:inline-block;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(99,102,241,0.40);">
+                  Ver mis Citas
+                </a>
+              </div>
+            </td>
+          </tr>
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-radius:0 0 20px 20px;border:1px solid #e8eaf6;border-top:none;padding:28px 40px;text-align:center;">
+              <p style="margin:0 0 6px;color:#94a3b8;font-size:12px;">
+                Este correo fue enviado automáticamente por Mindpath Neuro.
+              </p>
+              <p style="margin:0;color:#cbd5e1;font-size:11px;">
+                &copy; 2026 <strong>Mindpath Neuro Intelligent</strong> &nbsp;·&nbsp; Todos los derechos reservados
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `;
+
+        await transporter.sendMail({
+            from: `"Mindpath Neuro" <${smtp_email}>`,
+            to: patientEmail,
+            subject: '📅 Cita Agendada con Éxito — Mindpath Neuro',
+            html: htmlContent
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error en sendAppointmentConfirmationEmail:', error);
+        throw error;
+    }
+};
+
+/**
+ * Envía un recordatorio de cita al paciente (Falta 1 día / Hoy).
+ */
+const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, type) => {
+    try {
+        const { transporter, smtp_email } = await getMailTransporter();
+        const frontendUrl = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
+        
+        const dateFormatted = new Date(`${appt.appointment_date}T12:00:00`).toLocaleDateString('es-ES', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        
+        const timeFormatted = appt.start_time.substring(0, 5);
+        const modalityLabel = appt.type === 'virtual' ? 'Consulta Virtual (Telemedicina)' : 'Consulta Presencial';
+        const locationDetails = appt.type === 'virtual' 
+            ? 'Sala de consulta virtual en nuestra plataforma. El enlace estará disponible en tu panel de paciente.' 
+            : `${appt.clinic_name || 'Consultorio Médico'} - ${appt.clinic_address || appt.custom_clinic_address || 'Dirección no especificada'}`;
+
+        const isToday = type === 'today';
+        const titleText = isToday ? '¡Tu cita es Hoy!' : 'Recordatorio de Cita Médica';
+        const bannerSubtitle = isToday ? 'Hoy es tu cita médica' : 'Falta 1 día para tu cita';
+        const introText = isToday 
+            ? `Te recordamos que **hoy** tienes una cita programada en la plataforma.`
+            : `Te recordamos que tu cita médica está programada para **mañana**.`;
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${titleText}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4ff;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- CABECERA -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#e11d48 0%,#be123c 50%,#881337 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+              <div style="margin-bottom:16px;">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="12" fill="rgba(255,255,255,0.15)"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="white" opacity="0.9"/>
+                </svg>
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Mindpath Neuro</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">${bannerSubtitle}</p>
+            </td>
+          </tr>
+          <!-- CUERPO PRINCIPAL -->
+          <tr>
+            <td style="background:#ffffff;padding:40px;border-left:1px solid #e8eaf6;border-right:1px solid #e8eaf6;">
+              <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:22px;font-weight:700;">¡Hola, ${patientName}! 👋</h2>
+              <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
+                ${introText} A continuación te recordamos los detalles de tu consulta:
+              </p>
+              <div style="height:3px;background:linear-gradient(90deg,#e11d48,#be123c,#881337);border-radius:3px;margin-bottom:28px;"></div>
+              
+              <!-- DETALLES -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#334155;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">👨‍⚕️ Especialista:</td>
+                  <td width="65%" style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">Dr(a). ${appt.doctor_name} <span style="font-size:12px;color:#64748b;font-weight:normal;">(${appt.doctor_specialty})</span></td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">📅 Fecha:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;text-transform:capitalize;">${dateFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">⏰ Hora:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${timeFormatted} (Hora de Caracas)</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">💻 Modalidad:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${modalityLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">📍 Lugar:</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#475569;">${locationDetails}</td>
+                </tr>
+              </table>
+
+              <!-- BOTÓN CTA -->
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${frontendUrl}/patient/appointments"
+                   style="display:inline-block;background:linear-gradient(135deg,#e11d48,#be123c);color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(225,29,72,0.40);">
+                  Acceder a la Cita
+                </a>
+              </div>
+            </td>
+          </tr>
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-radius:0 0 20px 20px;border:1px solid #e8eaf6;border-top:none;padding:28px 40px;text-align:center;">
+              <p style="margin:0 0 6px;color:#94a3b8;font-size:12px;">
+                Este correo fue enviado automáticamente por Mindpath Neuro.
+              </p>
+              <p style="margin:0;color:#cbd5e1;font-size:11px;">
+                &copy; 2026 <strong>Mindpath Neuro Intelligent</strong> &nbsp;·&nbsp; Todos los derechos reservados
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `;
+
+        await transporter.sendMail({
+            from: `"Mindpath Neuro" <${smtp_email}>`,
+            to: patientEmail,
+            subject: `🔔 Recordatorio: ${isToday ? 'Hoy' : 'Mañana'} es tu cita — Mindpath Neuro`,
+            html: htmlContent
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error en sendAppointmentReminderEmail:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     sendResetPasswordEmail,
     sendWelcomeEmail,
     sendDoctorApprovalEmail,
     sendDoctorRejectionEmail,
     sendTestEmailService,
-    sendVerificationEmail
+    sendVerificationEmail,
+    sendAppointmentConfirmationEmail,
+    sendAppointmentReminderEmail
 };

@@ -27,6 +27,7 @@ import SuperAdminSetup from './pages/admin/SuperAdminSetup';
 import MyHistory from './pages/patient/MyHistory';
 import DoctorStats from './pages/doctor/DoctorStats';
 import DoctorPayments from './pages/doctor/DoctorPayments';
+import DoctorNotes from './pages/doctor/DoctorNotes';
 import ResetPassword from './pages/auth/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
@@ -87,6 +88,7 @@ function App() {
               <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
               <Route path="/doctor/stats" element={<DoctorStats />} />
               <Route path="/doctor/payments" element={<DoctorPayments />} />
+              <Route path="/doctor/notes" element={<DoctorNotes />} />
             </Route>
 
 

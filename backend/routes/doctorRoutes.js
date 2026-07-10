@@ -11,6 +11,7 @@ router.get('/my-patients', authMiddleware, doctorController.getMyPatients);
 router.get('/patient/:patientId', authMiddleware, doctorController.getPatientFile);
 
 // Sprint 27: Notas rápidas por paciente
+router.get('/notes/all', authMiddleware, doctorController.getAllPatientNotes);
 router.get('/patient/:patientId/notes', authMiddleware, doctorController.getPatientNotes);
 router.put('/patient/:patientId/notes', authMiddleware, doctorController.savePatientNotes);
 

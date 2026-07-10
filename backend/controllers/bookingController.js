@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendAppointmentConfirmationEmail } = require('../utils/emailService');
 
 const DAYS_BY_INDEX = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -345,9 +346,39 @@ exports.bookAppointment = async (req, res) => {
             console.error('Error al limpiar citas anteriores del paciente:', cleanupError.message);
         }
 
+        // Enviar email de confirmación (No bloqueante)
+        const appointmentId = result.insertId;
+        (async () => {
+            try {
+                const [apptRows] = await db.query(`
+                    SELECT 
+                        a.id, a.appointment_date, a.start_time, a.type,
+                        p_u.email AS patient_email, p_u.full_name AS patient_name,
+                        d_u.full_name AS doctor_name, d.specialty AS doctor_specialty,
+                        c.name AS clinic_name, c.default_address AS clinic_address,
+                        dc.custom_address AS custom_clinic_address
+                    FROM appointments a
+                    JOIN patients p ON a.patient_id = p.id
+                    JOIN users p_u ON p.user_id = p_u.id
+                    JOIN doctors d ON a.doctor_id = d.id
+                    JOIN users d_u ON d.user_id = d_u.id
+                    LEFT JOIN clinics c ON a.clinic_id = c.id
+                    LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
+                    WHERE a.id = ?
+                `, [appointmentId]);
+
+                if (apptRows.length > 0) {
+                    const appt = apptRows[0];
+                    await sendAppointmentConfirmationEmail(appt.patient_email, appt.patient_name, appt);
+                }
+            } catch (emailErr) {
+                console.error('Error al enviar correo de confirmación de cita:', emailErr.message);
+            }
+        })();
+
         res.status(201).json({
             message: 'Cita agendada con éxito.',
-            appointment_id: result.insertId,
+            appointment_id: appointmentId,
             quote,
         });
     } catch (error) {
