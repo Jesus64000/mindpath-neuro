@@ -36,6 +36,12 @@ const DoctorNotes = () => {
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
 
+    // Categorías de Notas
+    const [categories, setCategories] = useState([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    const [editingCategoryId, setEditingCategoryId] = useState(null);
+    const [filterCategoryId, setFilterCategoryId] = useState(null);
+
     const toggleNoteExpand = (noteId) => {
         setExpandedNoteIds(prev => ({
             ...prev,
@@ -80,8 +86,24 @@ const DoctorNotes = () => {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const res = await api.get('/doctors/note-categories');
+            setCategories(res.data || []);
+            const generalCat = res.data.find(c => c.name.toLowerCase() === 'general');
+            if (generalCat) {
+                setSelectedCategoryId(generalCat.id);
+            } else if (res.data.length > 0) {
+                setSelectedCategoryId(res.data[0].id);
+            }
+        } catch (err) {
+            console.error('Error al cargar categorías de notas:', err);
+        }
+    };
+
     useEffect(() => {
         fetchAllNotes(true);
+        fetchCategories();
     }, []);
 
     // Sincronizar el paciente seleccionado si la lista cambia
@@ -102,6 +124,13 @@ const DoctorNotes = () => {
         setEditingNoteText('');
         setSaveStatus('idle');
         setExpandedNoteIds({});
+        setFilterCategoryId(null);
+        const generalCat = categories.find(c => c.name.toLowerCase() === 'general');
+        if (generalCat) {
+            setSelectedCategoryId(generalCat.id);
+        } else if (categories.length > 0) {
+            setSelectedCategoryId(categories[0].id);
+        }
         fetchPatientNotes(patient.patient_id);
     };
 
@@ -109,7 +138,10 @@ const DoctorNotes = () => {
         if (!newNoteText.trim()) return;
         setSaveStatus('saving');
         try {
-            await api.post(`/doctors/patient/${selectedPatientId}/notes/new`, { notes: newNoteText });
+            await api.post(`/doctors/patient/${selectedPatientId}/notes/new`, { 
+                notes: newNoteText,
+                category_id: selectedCategoryId
+            });
             setNewNoteText('');
             setSaveStatus('saved');
             
@@ -129,26 +161,27 @@ const DoctorNotes = () => {
     const handleStartEdit = (note) => {
         setEditingNoteId(note.id);
         setEditingNoteText(note.notes);
+        setEditingCategoryId(note.category_id);
     };
 
     const handleCancelEdit = () => {
         setEditingNoteId(null);
         setEditingNoteText('');
+        setEditingCategoryId(null);
     };
 
     const handleSaveEdit = async (noteId) => {
         if (!editingNoteText.trim()) return;
         try {
-            await api.put(`/doctors/notes/${noteId}`, { notes: editingNoteText });
+            await api.put(`/doctors/notes/${noteId}`, { 
+                notes: editingNoteText,
+                category_id: editingCategoryId
+            });
             setEditingNoteId(null);
             setEditingNoteText('');
             
-            // Actualizar localmente la nota en la lista
-            setPatientNotes(prev => prev.map(n => 
-                n.id === noteId ? { ...n, notes: editingNoteText, updated_at: new Date().toISOString() } : n
-            ));
-            
-            // Recargar listado principal para actualizar la vista previa
+            // Recargar notas y listado principal
+            await fetchPatientNotes(selectedPatientId);
             await fetchAllNotes(false);
         } catch (err) {
             console.error('Error al editar nota:', err);
@@ -228,6 +261,11 @@ const DoctorNotes = () => {
         if (filterDateTo) {
             const toDate = new Date(`${filterDateTo}T23:59:59`);
             if (noteDate > toDate) return false;
+        }
+
+        // 4. Filtro por categoría
+        if (filterCategoryId && note.category_id !== filterCategoryId) {
+            return false;
         }
         
         return true;
@@ -416,6 +454,35 @@ const DoctorNotes = () => {
                                     className="w-full h-24 resize-none rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-white/5 text-sm text-gray-800 dark:text-slate-200 p-3 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mindpath-primary/50 transition-all font-sans"
                                 />
 
+                                {/* Selector de Categorías (Sin emoticones) */}
+                                {categories.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                        <span className="text-xs font-bold text-gray-400 dark:text-slate-500 mr-1.5">Categoría:</span>
+                                        {categories.map((cat) => {
+                                            const isSelected = selectedCategoryId === cat.id;
+                                            return (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedCategoryId(cat.id)}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all select-none ${
+                                                        isSelected 
+                                                            ? 'shadow-sm' 
+                                                            : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-500 dark:text-slate-400'
+                                                    }`}
+                                                    style={isSelected ? {
+                                                        borderColor: cat.color,
+                                                        backgroundColor: `${cat.color}15`,
+                                                        color: cat.color
+                                                    } : {}}
+                                                >
+                                                    {cat.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
                                 <div className="flex justify-end">
                                     <button
                                         onClick={handleAddNote}
@@ -456,6 +523,46 @@ const DoctorNotes = () => {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Filtros por Categoría */}
+                                {categories.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-gray-100/50 dark:border-white/5">
+                                        <span className="text-xs font-bold text-gray-400 dark:text-slate-500 mr-1.5">Filtrar por:</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFilterCategoryId(null)}
+                                            className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all ${
+                                                filterCategoryId === null
+                                                    ? 'bg-mindpath-primary/10 border-mindpath-primary/30 text-mindpath-primary dark:text-violet-300'
+                                                    : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-500 dark:text-slate-400'
+                                            }`}
+                                        >
+                                            Todos
+                                        </button>
+                                        {categories.map((cat) => {
+                                            const isSelected = filterCategoryId === cat.id;
+                                            return (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setFilterCategoryId(cat.id)}
+                                                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all select-none ${
+                                                        isSelected 
+                                                            ? 'shadow-sm font-extrabold' 
+                                                            : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-500 dark:text-slate-400'
+                                                    }`}
+                                                    style={isSelected ? {
+                                                        borderColor: cat.color,
+                                                        backgroundColor: `${cat.color}15`,
+                                                        color: cat.color
+                                                    } : {}}
+                                                >
+                                                    {cat.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {/* Buscador en notas */}
@@ -525,13 +632,14 @@ const DoctorNotes = () => {
                                     <div className="text-center py-12 text-gray-400">
                                         <StickyNote size={32} className="mx-auto mb-2 opacity-30" />
                                         <p className="text-xs">No se encontraron observaciones registradas.</p>
-                                        {(filterText || filterDateFrom || filterDateTo || datePreset !== 'all') && (
+                                        {(filterText || filterDateFrom || filterDateTo || datePreset !== 'all' || filterCategoryId !== null) && (
                                             <button 
                                                 onClick={() => {
                                                     setFilterText('');
                                                     setDatePreset('all');
                                                     setFilterDateFrom('');
                                                     setFilterDateTo('');
+                                                    setFilterCategoryId(null);
                                                 }}
                                                 className="text-xs text-mindpath-primary dark:text-mindpath-light font-bold underline mt-2 hover:opacity-80"
                                             >
@@ -548,14 +656,15 @@ const DoctorNotes = () => {
                                         return (
                                             <div 
                                                 key={note.id}
-                                                className="bg-gray-50/50 dark:bg-slate-700/10 border border-gray-100 dark:border-white/5 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:shadow-sm"
+                                                className="bg-gray-50/50 dark:bg-slate-700/10 border border-gray-100 dark:border-white/5 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:shadow-sm border-l-4"
+                                                style={{ borderLeftColor: note.category_color || '#64748B' }}
                                             >
                                                 {/* Header de la Nota (Clickable para colapsar/expandir) */}
                                                 <div 
                                                     onClick={() => !isEditing && toggleNoteExpand(note.id)}
                                                     className={`flex items-center justify-between gap-3 ${!isEditing ? 'cursor-pointer select-none' : ''}`}
                                                 >
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         {!isEditing && (
                                                             isExpanded ? (
                                                                 <ChevronUp size={16} className="text-gray-400 dark:text-slate-300 shrink-0" />
@@ -567,6 +676,17 @@ const DoctorNotes = () => {
                                                             <Clock size={10} />
                                                             {formatDateTime(note.updated_at)}
                                                         </span>
+                                                        {note.category_name && (
+                                                            <span 
+                                                                className="text-[9px] font-bold px-2 py-0.5 rounded-md"
+                                                                style={{
+                                                                    backgroundColor: `${note.category_color}15`,
+                                                                    color: note.category_color
+                                                                }}
+                                                            >
+                                                                {note.category_name}
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* Acciones */}
@@ -604,6 +724,36 @@ const DoctorNotes = () => {
                                                             onChange={(e) => setEditingNoteText(e.target.value)}
                                                             className="w-full h-20 resize-none rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 text-sm text-gray-800 dark:text-slate-200 p-3 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-mindpath-primary/50 transition-all font-sans"
                                                         />
+                                                        
+                                                        {/* Selector de Categorías en Edición */}
+                                                        {categories.length > 0 && (
+                                                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mr-1">Categoría:</span>
+                                                                {categories.map((cat) => {
+                                                                    const isSelected = editingCategoryId === cat.id;
+                                                                    return (
+                                                                        <button
+                                                                            key={cat.id}
+                                                                            type="button"
+                                                                            onClick={() => setEditingCategoryId(cat.id)}
+                                                                            className={`px-2 py-1 text-[10px] font-bold rounded-md border transition-all select-none ${
+                                                                                isSelected 
+                                                                                    ? 'shadow-xs' 
+                                                                                    : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-500 dark:text-slate-400'
+                                                                            }`}
+                                                                            style={isSelected ? {
+                                                                                borderColor: cat.color,
+                                                                                backgroundColor: `${cat.color}15`,
+                                                                                color: cat.color
+                                                                            } : {}}
+                                                                        >
+                                                                            {cat.name}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
                                                         <div className="flex items-center justify-end gap-1.5">
                                                             <button
                                                                 onClick={handleCancelEdit}
@@ -636,7 +786,6 @@ const DoctorNotes = () => {
                                     })
                                 )}
                             </div>
-
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center py-20 text-gray-400">

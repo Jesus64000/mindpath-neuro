@@ -55,6 +55,19 @@ const CatalogsTab = ({
     onCreateStudyType,
     onUpdateStudyType,
     onDeleteStudyType,
+
+    // Categorías de Notas
+    noteCategories = [],
+    noteCategoriesLoading = false,
+    newNoteCategoryName = '',
+    setNewNoteCategoryName,
+    newNoteCategoryColor = '#64748B',
+    setNewNoteCategoryColor,
+    editNoteCategory = null,
+    setEditNoteCategory,
+    onCreateNoteCategory,
+    onUpdateNoteCategory,
+    onDeleteNoteCategory,
 }) => {
     return (
         <div className="space-y-8 animate-fadeIn">
@@ -377,6 +390,84 @@ const CatalogsTab = ({
                     </div>
                 </div>
             )}
+
+            {/* 5. SECCIÓN CATEGORÍAS DE OBSERVACIONES */}
+            <div className="space-y-4 border-t border-gray-100 dark:border-[var(--border-color)] pt-8">
+                <h2 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    📂 Gestión de Categorías de Observaciones
+                </h2>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                        value={newNoteCategoryName} 
+                        onChange={e => setNewNoteCategoryName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && onCreateNoteCategory()}
+                        placeholder="Nueva categoría (ej: Medicamentos)..."
+                        className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mindpath-primary dark:bg-[var(--bg-card)] dark:border-[var(--border-color)] dark:text-white" 
+                    />
+                    <div className="flex items-center gap-2 border border-gray-200 dark:border-[var(--border-color)] rounded-xl px-3 py-3 bg-white dark:bg-[var(--bg-card)]">
+                        <span className="text-xs text-gray-400">Color:</span>
+                        <input 
+                            type="color"
+                            value={newNoteCategoryColor}
+                            onChange={e => setNewNoteCategoryColor(e.target.value)}
+                            className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                        />
+                    </div>
+                    <button onClick={onCreateNoteCategory} className="flex items-center gap-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold px-5 py-3 rounded-xl transition-colors text-sm justify-center">
+                        <Plus size={16}/> Agregar
+                    </button>
+                </div>
+
+                <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] overflow-hidden">
+                    {noteCategoriesLoading ? (
+                        <p className="p-6 text-gray-400 animate-pulse">Cargando categorías...</p>
+                    ) : noteCategories.length === 0 ? (
+                        <p className="p-6 text-gray-400 text-center">Sin categorías registradas. Agrega la primera arriba.</p>
+                    ) : (
+                        noteCategories.map((c, i) => (
+                            <div key={c.id} className={`flex items-center px-5 py-4 gap-3 ${i !== 0 ? 'border-t border-gray-50 dark:border-[var(--border-color)]' : ''}`}>
+                                {editNoteCategory?.id === c.id ? (
+                                    <>
+                                        <input 
+                                            value={editNoteCategory.name} 
+                                            onChange={e => setEditNoteCategory(p => ({ ...p, name: e.target.value }))}
+                                            className="flex-1 border border-mindpath-primary rounded-lg px-3 py-1.5 text-sm focus:outline-none dark:bg-slate-700 dark:text-white" 
+                                        />
+                                        <div className="flex items-center gap-2 border border-gray-200 dark:border-slate-600 rounded-lg px-2 py-0.5 bg-white dark:bg-slate-700">
+                                            <input 
+                                                type="color"
+                                                value={editNoteCategory.color}
+                                                onChange={e => setEditNoteCategory(p => ({ ...p, color: e.target.value }))}
+                                                className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                                            />
+                                        </div>
+                                        <button onClick={onUpdateNoteCategory} className="text-green-600 hover:text-green-700 font-bold text-sm px-3 py-1.5 rounded-lg hover:bg-green-50">Guardar</button>
+                                        <button onClick={() => setEditNoteCategory(null)} className="text-gray-400 hover:text-gray-600 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50">Cancelar</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: c.color }} />
+                                        <span className="flex-1 text-gray-800 dark:text-white text-sm font-medium">{c.name}</span>
+                                        <button 
+                                            onClick={() => setEditNoteCategory({ id: c.id, name: c.name, color: c.color })}
+                                            className="text-mindpath-primary hover:bg-mindpath-light p-2 rounded-lg transition-colors"
+                                        >
+                                            <Pencil size={15}/>
+                                        </button>
+                                        <button 
+                                            onClick={() => onDeleteNoteCategory(c.id)}
+                                            className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 size={15}/>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

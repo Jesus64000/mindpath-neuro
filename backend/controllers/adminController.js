@@ -313,6 +313,72 @@ exports.deleteSpecialty = async (req, res) => {
   }
 };
 
+// ── Note Categories CRUD (para el Administrador) ───────────────────────
+exports.getNoteCategories = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM note_categories ORDER BY name ASC"
+    );
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error en getNoteCategories:", error);
+    res.status(500).json({ message: "Error al cargar las categorías de observaciones." });
+  }
+};
+
+exports.createNoteCategory = async (req, res) => {
+  try {
+    const { name, color } = req.body;
+    if (!name?.trim())
+      return res.status(400).json({ message: "El nombre es requerido." });
+    
+    const hexColor = color?.trim() || '#64748B';
+    const [result] = await db.query(
+      "INSERT INTO note_categories (name, color) VALUES (?, ?)",
+      [name.trim(), hexColor]
+    );
+    res.status(201).json({ id: result.insertId, name: name.trim(), color: hexColor });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "La categoría ya existe." });
+    res.status(500).json({ message: "Error al crear la categoría." });
+  }
+};
+
+exports.updateNoteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, color } = req.body;
+    if (!name?.trim())
+      return res.status(400).json({ message: "El nombre es requerido." });
+
+    const hexColor = color?.trim() || '#64748B';
+    const [result] = await db.query(
+      "UPDATE note_categories SET name = ?, color = ? WHERE id = ?",
+      [name.trim(), hexColor, id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Categoría no encontrada." });
+    res.status(200).json({ id: Number(id), name: name.trim(), color: hexColor });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY")
+      return res.status(409).json({ message: "Una categoría con ese nombre ya existe." });
+    res.status(500).json({ message: "Error al actualizar la categoría." });
+  }
+};
+
+exports.deleteNoteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.query("DELETE FROM note_categories WHERE id = ?", [id]);
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Categoría no encontrada." });
+    res.status(200).json({ message: "Categoría eliminada." });
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar la categoría." });
+  }
+};
+
 // ── Helper para tasa de cambio de Bolívares (VES / BCV) con múltiples APIs ──────
 const performBcvSyncInternal = async () => {
     try {

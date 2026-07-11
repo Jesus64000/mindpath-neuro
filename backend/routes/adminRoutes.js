@@ -52,6 +52,11 @@ router.post('/specialties',       authMiddleware, isStaff, adminController.creat
 router.put('/specialties/:id',    authMiddleware, isStaff, adminController.updateSpecialty);
 router.delete('/specialties/:id', authMiddleware, isStaff, adminController.deleteSpecialty);
 
+router.get('/note-categories',        authMiddleware, isStaff, adminController.getNoteCategories);
+router.post('/note-categories',       authMiddleware, isStaff, adminController.createNoteCategory);
+router.put('/note-categories/:id',    authMiddleware, isStaff, adminController.updateNoteCategory);
+router.delete('/note-categories/:id', authMiddleware, isStaff, adminController.deleteNoteCategory);
+
 router.get('/payment-methods',        authMiddleware, isSuperAdmin, adminController.getPaymentMethodCatalog);
 router.post('/payment-methods',       authMiddleware, isSuperAdmin, adminController.createPaymentMethodCatalog);
 router.put('/payment-methods/:id',    authMiddleware, isSuperAdmin, adminController.updatePaymentMethodCatalog);

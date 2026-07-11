@@ -606,7 +606,11 @@ exports.getPatientNotes = async (req, res) => {
         const doctorId = doctorRows[0].id;
 
         const [rows] = await db.query(
-            'SELECT id, notes, updated_at FROM doctor_patient_notes WHERE doctor_id = ? AND patient_id = ? ORDER BY updated_at DESC',
+            `SELECT n.id, n.notes, n.updated_at, n.category_id, c.name as category_name, c.color as category_color 
+             FROM doctor_patient_notes n
+             LEFT JOIN note_categories c ON n.category_id = c.id
+             WHERE n.doctor_id = ? AND n.patient_id = ? 
+             ORDER BY n.updated_at DESC`,
             [doctorId, patientId]
         );
         res.status(200).json({ 
@@ -626,7 +630,7 @@ exports.savePatientNotes = async (req, res) => {
     try {
         const userId = req.user.id;
         const { patientId } = req.params;
-        const { notes } = req.body;
+        const { notes, category_id } = req.body;
 
         const [doctorRows] = await db.query('SELECT id FROM doctors WHERE user_id = ?', [userId]);
         if (doctorRows.length === 0) return res.status(403).json({ message: 'Perfil no encontrado.' });
@@ -643,14 +647,14 @@ exports.savePatientNotes = async (req, res) => {
         if (todayNotes.length > 0) {
             // Actualizar la nota de hoy
             await db.query(
-                'UPDATE doctor_patient_notes SET notes = ? WHERE id = ?',
-                [notes, todayNotes[0].id]
+                'UPDATE doctor_patient_notes SET notes = ?, category_id = ? WHERE id = ?',
+                [notes, category_id || null, todayNotes[0].id]
             );
         } else {
             // Crear una nueva nota
             await db.query(
-                'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes) VALUES (?, ?, ?)',
-                [doctorId, patientId, notes]
+                'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes, category_id) VALUES (?, ?, ?, ?)',
+                [doctorId, patientId, notes, category_id || null]
             );
         }
         res.status(200).json({ message: 'Notas guardadas.' });
@@ -666,7 +670,7 @@ exports.createPatientNote = async (req, res) => {
     try {
         const userId = req.user.id;
         const { patientId } = req.params;
-        const { notes } = req.body;
+        const { notes, category_id } = req.body;
 
         if (!notes || !notes.trim()) {
             return res.status(400).json({ message: 'La nota no puede estar vacía.' });
@@ -677,8 +681,8 @@ exports.createPatientNote = async (req, res) => {
         const doctorId = doctorRows[0].id;
 
         const [result] = await db.query(
-            'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes) VALUES (?, ?, ?)',
-            [doctorId, patientId, notes]
+            'INSERT INTO doctor_patient_notes (doctor_id, patient_id, notes, category_id) VALUES (?, ?, ?, ?)',
+            [doctorId, patientId, notes, category_id || null]
         );
 
         res.status(201).json({ 
@@ -697,7 +701,7 @@ exports.updatePatientNoteById = async (req, res) => {
     try {
         const userId = req.user.id;
         const { noteId } = req.params;
-        const { notes } = req.body;
+        const { notes, category_id } = req.body;
 
         if (!notes || !notes.trim()) {
             return res.status(400).json({ message: 'La nota no puede estar vacía.' });
@@ -708,8 +712,8 @@ exports.updatePatientNoteById = async (req, res) => {
         const doctorId = doctorRows[0].id;
 
         const [result] = await db.query(
-            'UPDATE doctor_patient_notes SET notes = ? WHERE id = ? AND doctor_id = ?',
-            [notes, noteId, doctorId]
+            'UPDATE doctor_patient_notes SET notes = ?, category_id = ? WHERE id = ? AND doctor_id = ?',
+            [notes, category_id || null, noteId, doctorId]
         );
 
         if (result.affectedRows === 0) {
@@ -764,6 +768,7 @@ exports.getAllPatientNotes = async (req, res) => {
             SELECT DISTINCT p.id as patient_id, u.full_name as patient_name, u.email as patient_email, 
                             p.phone as patient_phone, p.profile_picture as patient_picture,
                             n.notes, n.updated_at as notes_updated_at,
+                            n.category_id, cat.name as category_name, cat.color as category_color,
                             (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id AND doctor_id = ?) as last_visit
             FROM patients p
             JOIN users u ON p.user_id = u.id
@@ -776,14 +781,26 @@ exports.getAllPatientNotes = async (req, res) => {
                     GROUP BY patient_id
                 ) n2 ON n1.id = n2.max_id
             ) n ON n.patient_id = p.id
+            LEFT JOIN note_categories cat ON n.category_id = cat.id
             WHERE a.doctor_id = ?
             ORDER BY n.updated_at DESC, u.full_name ASC
-        `, [doctorId, doctorId, doctorId, doctorId]);
+        `, [doctorId, doctorId, doctorId]);
 
         res.status(200).json(patients);
     } catch (error) {
         console.error('Error en getAllPatientNotes:', error);
         res.status(500).json({ message: 'Error interno al obtener notas rápidas.' });
+    }
+};
+
+// GET /api/doctors/note-categories
+exports.getNoteCategoriesForDoctors = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM note_categories ORDER BY name ASC');
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error en getNoteCategoriesForDoctors:', error);
+        res.status(500).json({ message: 'Error al obtener categorías.' });
     }
 };
 

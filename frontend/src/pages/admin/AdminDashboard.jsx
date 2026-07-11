@@ -94,6 +94,13 @@ const AdminDashboard = () => {
     const [newStudyTypeName, setNewStudyTypeName] = useState('');
     const [editStudyType, setEditStudyType] = useState(null);
 
+    // Categorías de Notas
+    const [noteCategories, setNoteCategories] = useState([]);
+    const [noteCategoriesLoading, setNoteCategoriesLoading] = useState(false);
+    const [newNoteCategoryName, setNewNoteCategoryName] = useState('');
+    const [newNoteCategoryColor, setNewNoteCategoryColor] = useState('#64748B');
+    const [editNoteCategory, setEditNoteCategory] = useState(null);
+
     const [toast, setToast]             = useState(null);
     const [loading, setLoading]         = useState({ stats: true, pending: true, spe: true, users: true, staff: true, clinics: true, studyTypes: true });
     const [sendingTestEmail, setSendingTestEmail] = useState(false);
@@ -234,6 +241,18 @@ const AdminDashboard = () => {
         finally { setLoading(p => ({ ...p, studyTypes: false })); }
     }, [studyTypesPage]);
 
+    const loadNoteCategories = useCallback(async () => {
+        setNoteCategoriesLoading(true);
+        try {
+            const res = await api.get('/admin/note-categories');
+            setNoteCategories(res.data || []);
+        } catch (e) {
+            setNoteCategories([]);
+        } finally {
+            setNoteCategoriesLoading(false);
+        }
+    }, []);
+
     const loadPendingPrivateClinics = useCallback(async () => {
         try {
             const res = await api.get('/admin/private-clinics/pending');
@@ -242,8 +261,8 @@ const AdminDashboard = () => {
     }, []);
 
     useEffect(() => {
-        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog(); loadClinicsAdmin(); loadStudyTypesAdmin(); loadPendingPrivateClinics();
-    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog, loadClinicsAdmin, loadStudyTypesAdmin, loadPendingPrivateClinics]);
+        loadStats(); loadPending(); loadSpecialties(); loadUsers(); loadStaff(); loadPaymentCatalog(); loadClinicsAdmin(); loadStudyTypesAdmin(); loadPendingPrivateClinics(); loadNoteCategories();
+    }, [loadStats, loadPending, loadSpecialties, loadUsers, loadStaff, loadPaymentCatalog, loadClinicsAdmin, loadStudyTypesAdmin, loadPendingPrivateClinics, loadNoteCategories]);
 
     useEffect(() => {
         setTheme({ 
@@ -335,6 +354,49 @@ const AdminDashboard = () => {
         if (!confirm('Eliminar esta especialidad?')) return;
         try { await api.delete(`/admin/specialties/${id}`); setSpecialties(p => p.filter(s => s.id !== id)); showToast('Especialidad eliminada.'); }
         catch (e) { showToast(e.response?.data?.message || 'Error.', 'error'); }
+    };
+
+    // CRUD Categorías de Notas
+    const createNoteCategory = async () => {
+        if (!newNoteCategoryName.trim()) return;
+        try {
+            const res = await api.post('/admin/note-categories', {
+                name: newNoteCategoryName.trim(),
+                color: newNoteCategoryColor
+            });
+            setNoteCategories(p => [...p, res.data]);
+            setNewNoteCategoryName('');
+            setNewNoteCategoryColor('#64748B');
+            showToast('Categoría de nota creada.');
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al crear la categoría.', 'error');
+        }
+    };
+
+    const updateNoteCategory = async () => {
+        if (!editNoteCategory?.id || !editNoteCategory.name.trim()) return;
+        try {
+            const res = await api.put(`/admin/note-categories/${editNoteCategory.id}`, {
+                name: editNoteCategory.name.trim(),
+                color: editNoteCategory.color
+            });
+            setNoteCategories(p => p.map(c => c.id === editNoteCategory.id ? res.data : c));
+            setEditNoteCategory(null);
+            showToast('Categoría de nota actualizada.');
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al actualizar la categoría.', 'error');
+        }
+    };
+
+    const deleteNoteCategory = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar esta categoría? Las observaciones asociadas quedarán sin categoría.')) return;
+        try {
+            await api.delete(`/admin/note-categories/${id}`);
+            setNoteCategories(p => p.filter(c => c.id !== id));
+            showToast('Categoría de nota eliminada.');
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Error al eliminar la categoría.', 'error');
+        }
     };
 
     // CRUD Clínicas
@@ -654,6 +716,19 @@ const AdminDashboard = () => {
                     onCreateStudyType={createStudyType}
                     onUpdateStudyType={updateStudyType}
                     onDeleteStudyType={deleteStudyType}
+
+                    // Categorías de Notas
+                    noteCategories={noteCategories}
+                    noteCategoriesLoading={noteCategoriesLoading}
+                    newNoteCategoryName={newNoteCategoryName}
+                    setNewNoteCategoryName={setNewNoteCategoryName}
+                    newNoteCategoryColor={newNoteCategoryColor}
+                    setNewNoteCategoryColor={setNewNoteCategoryColor}
+                    editNoteCategory={editNoteCategory}
+                    setEditNoteCategory={setEditNoteCategory}
+                    onCreateNoteCategory={createNoteCategory}
+                    onUpdateNoteCategory={updateNoteCategory}
+                    onDeleteNoteCategory={deleteNoteCategory}
                 />
             )}
 
