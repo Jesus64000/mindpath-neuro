@@ -681,8 +681,13 @@ exports.runReminderCron = async (req, res) => {
     const { sendAppointmentReminderEmail } = require('../utils/emailService');
 
     try {
-        console.log('--- Iniciando tarea de envío de recordatorios (1h 30m) ---');
-        let totalSent90Min = 0;
+        const [settings] = await db.query('SELECT appointment_reminder_offset_minutes FROM system_settings LIMIT 1');
+        const offsetMins = (settings && settings[0] && settings[0].appointment_reminder_offset_minutes !== undefined)
+            ? Number(settings[0].appointment_reminder_offset_minutes)
+            : 90;
+
+        console.log(`--- Iniciando tarea de envío de recordatorios (Antelación configurada: ${offsetMins} min) ---`);
+        let totalSentReminders = 0;
 
         const getCaracasTime = () => {
             const now = new Date();
@@ -706,7 +711,7 @@ exports.runReminderCron = async (req, res) => {
         const todayStr = getCaracasTodayStr();
         const caracasNow = getCaracasTime();
 
-        // Citas programadas para hoy y mañana que no tengan enviado el recordatorio de 90 min
+        // Citas programadas para hoy y mañana que no tengan enviado el recordatorio de 90 min / configurable
         const [appts] = await db.query(`
             SELECT 
                 a.id, a.appointment_date, a.start_time, a.type,
@@ -744,22 +749,22 @@ exports.runReminderCron = async (req, res) => {
             const diffMs = apptDateTime - caracasNow;
             const diffMins = diffMs / 60000;
 
-            // Si faltan entre 0 y 95 minutos (coincide con la ventana de recordatorio de 1h 30m)
-            if (diffMins > 0 && diffMins <= 95) {
+            // Si faltan entre 0 y el offset configurado + 5 minutos
+            if (diffMins > 0 && diffMins <= (offsetMins + 5)) {
                 try {
-                    await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, '90min');
+                    await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, 'reminder_offset');
                     await db.query('UPDATE appointments SET reminder_90min_sent = 1 WHERE id = ?', [appt.id]);
-                    totalSent90Min++;
+                    totalSentReminders++;
                 } catch (err) {
-                    console.error(`Error enviando recordatorio de 90 min para cita ${appt.id}:`, err.message);
+                    console.error(`Error enviando recordatorio para cita ${appt.id}:`, err.message);
                 }
             }
         }
 
-        console.log(`--- Tarea finalizada. Recordatorios de 90 min enviados: ${totalSent90Min} ---`);
+        console.log(`--- Tarea finalizada. Recordatorios de ${offsetMins} min enviados: ${totalSentReminders} ---`);
         res.status(200).json({
             ok: true,
-            sent_90min: totalSent90Min
+            sent_reminders: totalSentReminders
         });
     } catch (error) {
         console.error('Error en runReminderCron:', error);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Video, ShieldCheck, Save, RefreshCw, Lock, CheckCircle } from 'lucide-react';
+import { Mail, Video, ShieldCheck, Save, RefreshCw, Lock, CheckCircle, Clock } from 'lucide-react';
 
 const IntegrationsTab = ({ 
     theme, 
@@ -111,6 +111,34 @@ const IntegrationsTab = ({
                                     {sendingTestEmail ? <RefreshCw size={14} className="animate-spin" /> : <Mail size={14} />}
                                     {sendingTestEmail ? 'Enviando...' : 'Enviar Prueba'}
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Recordatorio de Cita */}
+                        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700/60">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2.5 bg-mindpath-primary/10 rounded-2xl text-mindpath-primary">
+                                    <Clock size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-base text-gray-900 dark:text-white">Recordatorio de Citas</h3>
+                                    <p className="text-xs text-gray-400 font-medium">Antelación para el correo de recordatorio</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
+                                    Antelación de Notificación
+                                </label>
+                                <select 
+                                    value={theme.appointment_reminder_offset_minutes ?? 90} 
+                                    onChange={e => setTheme(p => ({ ...p, appointment_reminder_offset_minutes: Number(e.target.value) }))}
+                                    className="w-full p-3.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-mindpath-primary outline-none"
+                                >
+                                    <option value={90}>1 hora y 30 minutos (90 minutos)</option>
+                                    <option value={60}>1 hora (60 minutos)</option>
+                                    <option value={30}>30 minutos (30 minutos)</option>
+                                    <option value={3}>3 minutos (3 minutos)</option>
+                                </select>
                             </div>
                         </div>
                     </div>

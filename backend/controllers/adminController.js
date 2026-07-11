@@ -505,7 +505,8 @@ exports.updateSettings = async (req, res) => {
   try {
     const { 
         clinic_name, logo_url, logo_dark_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family,
-        smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode
+        smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode,
+        appointment_reminder_offset_minutes
     } = req.body;
 
     let encryptedSmtpPass = null;
@@ -519,12 +520,13 @@ exports.updateSettings = async (req, res) => {
     }
 
     const validLogoSize = Number(logo_size) || 40;
+    const validOffset = appointment_reminder_offset_minutes !== undefined ? Number(appointment_reminder_offset_minutes) : 90;
 
     try {
         await db.query(
           `
-                INSERT INTO system_settings (id, clinic_name, logo_url, logo_dark_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO system_settings (id, clinic_name, logo_url, logo_dark_url, logo_size, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, zego_app_id, zego_server_secret, exchange_rate, exchange_rate_mode, exchange_rate_updated_at, appointment_reminder_offset_minutes)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     clinic_name   = VALUES(clinic_name),
                     logo_url      = VALUES(logo_url),
@@ -540,22 +542,24 @@ exports.updateSettings = async (req, res) => {
                     zego_server_secret = CASE WHEN VALUES(zego_server_secret) IS NOT NULL THEN VALUES(zego_server_secret) ELSE zego_server_secret END,
                     exchange_rate = VALUES(exchange_rate),
                     exchange_rate_mode = VALUES(exchange_rate_mode),
-                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
+                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END,
+                    appointment_reminder_offset_minutes = VALUES(appointment_reminder_offset_minutes)
             `,
           [
               clinic_name, logo_url, logo_dark_url || null, validLogoSize, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
               smtp_email || null, encryptedSmtpPass, zego_app_id || null, encryptedZegoSecret,
               exchange_rate !== undefined ? exchange_rate : 36.50,
               exchange_rate_mode || 'auto',
-              exchange_rate_mode === 'manual' ? new Date() : null
+              exchange_rate_mode === 'manual' ? new Date() : null,
+              validOffset
           ],
         );
     } catch (sqlErr) {
         // Fallback si la tabla aún no tiene las columnas zego o logo_dark_url
         await db.query(
           `
-                INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO system_settings (id, clinic_name, logo_url, hide_sidebar_text, primary_color, primary_hover, font_family, smtp_email, smtp_password, exchange_rate, exchange_rate_mode, exchange_rate_updated_at, appointment_reminder_offset_minutes)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     clinic_name   = VALUES(clinic_name),
                     logo_url      = VALUES(logo_url),
@@ -567,14 +571,16 @@ exports.updateSettings = async (req, res) => {
                     smtp_password = CASE WHEN VALUES(smtp_password) IS NOT NULL THEN VALUES(smtp_password) ELSE smtp_password END,
                     exchange_rate = VALUES(exchange_rate),
                     exchange_rate_mode = VALUES(exchange_rate_mode),
-                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END
+                    exchange_rate_updated_at = CASE WHEN VALUES(exchange_rate_mode) = 'manual' THEN CURRENT_TIMESTAMP ELSE exchange_rate_updated_at END,
+                    appointment_reminder_offset_minutes = VALUES(appointment_reminder_offset_minutes)
             `,
           [
               clinic_name, logo_url, hide_sidebar_text ? 1 : 0, primary_color, primary_hover, font_family || 'Inter',
               smtp_email || null, encryptedSmtpPass,
               exchange_rate !== undefined ? exchange_rate : 36.50,
               exchange_rate_mode || 'auto',
-              exchange_rate_mode === 'manual' ? new Date() : null
+              exchange_rate_mode === 'manual' ? new Date() : null,
+              validOffset
           ],
         );
     }
