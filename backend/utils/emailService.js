@@ -656,6 +656,17 @@ const sendVerificationEmail = async (userEmail, userName, verificationToken) => 
     }
 };
 
+const getCaracasTime = () => {
+    const now = new Date();
+    try {
+        const caracasString = now.toLocaleString('en-US', { timeZone: 'America/Caracas' });
+        return new Date(caracasString);
+    } catch (e) {
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        return new Date(utc - (3600000 * 4));
+    }
+};
+
 /**
  * Envía un correo de confirmación de cita al paciente.
  */
@@ -674,6 +685,35 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
             ? 'Sala de consulta virtual en nuestra plataforma. El enlace estará disponible en tu panel de paciente.' 
             : `${appt.clinic_name || 'Consultorio Médico'} - ${appt.clinic_address || appt.custom_clinic_address || 'Dirección no especificada'}`;
 
+        // Obtener el tiempo restante en Caracas
+        const caracasNow = getCaracasTime();
+        const datePart = appt.appointment_date;
+        let dateStr = "";
+        if (datePart instanceof Date) {
+            const year = datePart.getFullYear();
+            const month = String(datePart.getMonth() + 1).padStart(2, '0');
+            const day = String(datePart.getDate()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}`;
+        } else {
+            dateStr = String(datePart).substring(0, 10);
+        }
+        const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
+        const diffMs = apptDateTime - caracasNow;
+        let countdownText = "";
+        if (diffMs > 0) {
+            const diffSecs = Math.floor(diffMs / 1000);
+            const hours = Math.floor(diffSecs / 3600);
+            const minutes = Math.floor((diffSecs % 3600) / 60);
+            const seconds = diffSecs % 60;
+            countdownText = `${hours} horas, ${minutes} minutos y ${seconds} segundos`;
+        } else {
+            countdownText = "0 horas, 0 minutos y 0 segundos (la consulta ya ha comenzado)";
+        }
+
+        const feeFormatted = appt.consultation_fee_snapshot ? `$${appt.consultation_fee_snapshot}` : 'Por definir';
+        const paymentMethodLabel = appt.payment_method || 'Por definir';
+        const paymentStatusLabel = appt.payment_status === 'paid' ? 'Pagado' : appt.payment_status === 'verified' ? 'Verificado' : 'Pendiente de Pago';
+
         const htmlContent = `
 <!DOCTYPE html>
 <html lang="es">
@@ -686,10 +726,10 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.05);border-radius:20px;overflow:hidden;">
           <!-- CABECERA -->
           <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 50%,#7c3aed 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+            <td style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 50%,#7c3aed 100%);padding:40px 40px 35px;text-align:center;">
               <div style="margin-bottom:16px;">
                 <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="12" fill="rgba(255,255,255,0.15)"/>
@@ -697,7 +737,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
                 </svg>
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Mindpath Neuro</h1>
-              <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Cita Agendada con Éxito</p>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Confirmación de Consulta Médica</p>
             </td>
           </tr>
           <!-- CUERPO PRINCIPAL -->
@@ -705,31 +745,88 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
             <td style="background:#ffffff;padding:40px;border-left:1px solid #e8eaf6;border-right:1px solid #e8eaf6;">
               <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:22px;font-weight:700;">¡Hola, ${patientName}! 👋</h2>
               <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
-                Queremos confirmarte que tu cita médica ha sido agendada de forma exitosa en nuestra plataforma. A continuación encontrarás los detalles de tu consulta:
+                Queremos confirmarte que tu consulta médica ha sido agendada con éxito. A continuación encontrarás todos los detalles del servicio y el paciente:
               </p>
-              <div style="height:3px;background:linear-gradient(90deg,#6366f1,#7c3aed,#a78bfa);border-radius:3px;margin-bottom:28px;"></div>
               
-              <!-- DETALLES -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#334155;line-height:1.5;">
+              <!-- CONTADOR DE TIEMPO RESTANTE -->
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #10b981;border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:center;">
+                <p style="margin:0;color:#14532d;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;">⏰ Tiempo restante para la consulta</p>
+                <p style="margin:6px 0 0;color:#047857;font-size:20px;font-weight:800;font-family:monospace;letter-spacing:0.5px;">${countdownText}</p>
+                <p style="margin:6px 0 0;color:#065f46;font-size:10px;font-style:italic;">(Calculado en el momento del envío. Para ver el contador en tiempo real, ingresa a tu portal.)</p>
+              </div>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
+              
+              <!-- DATOS DEL PACIENTE -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">📋 Datos del Paciente</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;font-size:14px;color:#475569;line-height:1.5;">
                 <tr>
-                  <td width="35%" style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">👨‍⚕️ Especialista:</td>
-                  <td width="65%" style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">Dr(a). ${appt.doctor_name} <span style="font-size:12px;color:#64748b;font-weight:normal;">(${appt.doctor_specialty})</span></td>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#4f46e5;">Nombre:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">${patientName}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">📅 Fecha:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;text-transform:capitalize;">${dateFormatted}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Correo:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${patientEmail}</td>
+                </tr>
+                ${appt.patient_phone ? `
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Teléfono:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${appt.patient_phone}</td>
+                </tr>
+                ` : ''}
+              </table>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
+
+              <!-- DATOS DEL DOCTOR & CONSULTA -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👨‍⚕️ Especialista & Cita</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;font-size:14px;color:#475569;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#4f46e5;">Médico:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">Dr. ${appt.doctor_name}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">⏰ Hora:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">${timeFormatted} (Hora de Caracas)</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Especialidad:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${appt.doctor_specialty}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">💻 Modalidad:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${modalityLabel}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Fecha:</td>
+                  <td style="padding:6px 0;color:#1e293b;text-transform:capitalize;">${dateFormatted}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#4f46e5;border-bottom:1px solid #f1f5f9;">📍 Lugar:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#475569;">${locationDetails}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Hora:</td>
+                  <td style="padding:6px 0;color:#1e293b;font-weight:600;">${timeFormatted} (Hora de Caracas)</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Modalidad:</td>
+                  <td style="padding:6px 0;font-weight:600;color:#1e293b;">${modalityLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Lugar / Acceso:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${locationDetails}</td>
+                </tr>
+              </table>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
+
+              <!-- DATOS DE PAGO -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">💳 Información de Pago</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#475569;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#4f46e5;">Monto Tarifa:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">${feeFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Método de Pago:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${paymentMethodLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#4f46e5;">Estado del Pago:</td>
+                  <td style="padding:6px 0;color:#1e293b;">
+                    <span style="font-weight:bold;color:${appt.payment_status === 'paid' || appt.payment_status === 'verified' ? '#10b981' : '#f59e0b'};">
+                      ${paymentStatusLabel}
+                    </span>
+                  </td>
                 </tr>
               </table>
 
@@ -737,7 +834,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
               <div style="text-align:center;margin:32px 0;">
                 <a href="${frontendUrl}/patient/appointments"
                    style="display:inline-block;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(99,102,241,0.40);">
-                  Ver mis Citas
+                  Ver mis Citas en el Portal
                 </a>
               </div>
             </td>
@@ -764,7 +861,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
         await transporter.sendMail({
             from: `"Mindpath Neuro" <${smtp_email}>`,
             to: patientEmail,
-            subject: '📅 Cita Agendada con Éxito — Mindpath Neuro',
+            subject: '📅 Confirmación de Consulta Médica — Mindpath Neuro',
             html: htmlContent
         });
 
@@ -776,7 +873,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
 };
 
 /**
- * Envía un recordatorio de cita al paciente (Falta 1 día / Hoy).
+ * Envía un recordatorio de cita al paciente (Falta 1 día / Hoy / 90min).
  */
 const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, type) => {
     try {
@@ -793,12 +890,62 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
             ? 'Sala de consulta virtual en nuestra plataforma. El enlace estará disponible en tu panel de paciente.' 
             : `${appt.clinic_name || 'Consultorio Médico'} - ${appt.clinic_address || appt.custom_clinic_address || 'Dirección no especificada'}`;
 
+        const is90Min = type === '90min';
         const isToday = type === 'today';
-        const titleText = isToday ? '¡Tu cita es Hoy!' : 'Recordatorio de Cita Médica';
-        const bannerSubtitle = isToday ? 'Hoy es tu cita médica' : 'Falta 1 día para tu cita';
-        const introText = isToday 
-            ? `Te recordamos que **hoy** tienes una cita programada en la plataforma.`
-            : `Te recordamos que tu cita médica está programada para **mañana**.`;
+        const is1Day = type === '1day';
+
+        let titleText = 'Recordatorio de Cita Médica';
+        let bannerSubtitle = 'Recordatorio de Cita';
+        let introText = `Te recordamos tu cita programada.`;
+        let themeGradient = 'linear-gradient(135deg,#e11d48 0%,#be123c 50%,#881337 100%)';
+        let buttonTheme = 'linear-gradient(135deg,#e11d48,#be123c)';
+        let buttonShadow = 'rgba(225,29,72,0.40)';
+
+        // Obtener el tiempo restante en Caracas
+        const caracasNow = getCaracasTime();
+        const datePart = appt.appointment_date;
+        let dateStr = "";
+        if (datePart instanceof Date) {
+            const year = datePart.getFullYear();
+            const month = String(datePart.getMonth() + 1).padStart(2, '0');
+            const day = String(datePart.getDate()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}`;
+        } else {
+            dateStr = String(datePart).substring(0, 10);
+        }
+        const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
+        const diffMs = apptDateTime - caracasNow;
+        let countdownText = "";
+        if (diffMs > 0) {
+            const diffSecs = Math.floor(diffMs / 1000);
+            const hours = Math.floor(diffSecs / 3600);
+            const minutes = Math.floor((diffSecs % 3600) / 60);
+            const seconds = diffSecs % 60;
+            countdownText = `${hours} horas, ${minutes} minutos y ${seconds} segundos`;
+        } else {
+            countdownText = "1 hora y 30 minutos";
+        }
+
+        if (is90Min) {
+            titleText = '⏰ ¡Tu consulta inicia pronto!';
+            bannerSubtitle = 'Inicia en 1 Hora y 30 Minutos';
+            introText = `Te recordamos que tu consulta médica con el especialista está programada para iniciar en **1 hora y 30 minutos**.`;
+            themeGradient = 'linear-gradient(135deg,#059669 0%,#047857 50%,#064e3b 100%)'; // Emerald Green
+            buttonTheme = 'linear-gradient(135deg,#059669,#047857)';
+            buttonShadow = 'rgba(4,120,87,0.40)';
+        } else if (isToday) {
+            titleText = '🔔 ¡Tu cita es Hoy!';
+            bannerSubtitle = 'Hoy es tu cita médica';
+            introText = `Te recordamos que **hoy** tienes una cita médica programada en la plataforma.`;
+        } else if (is1Day) {
+            titleText = '📅 Recordatorio de Cita Médica';
+            bannerSubtitle = 'Falta 1 día para tu cita';
+            introText = `Te recordamos que tu cita médica está programada para **mañana**.`;
+        }
+
+        const feeFormatted = appt.consultation_fee_snapshot ? `$${appt.consultation_fee_snapshot}` : 'Por definir';
+        const paymentMethodLabel = appt.payment_method || 'Por definir';
+        const paymentStatusLabel = appt.payment_status === 'paid' ? 'Pagado' : appt.payment_status === 'verified' ? 'Verificado' : 'Pendiente de Pago';
 
         const htmlContent = `
 <!DOCTYPE html>
@@ -812,10 +959,10 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.05);border-radius:20px;overflow:hidden;">
           <!-- CABECERA -->
           <tr>
-            <td style="background:linear-gradient(135deg,#e11d48 0%,#be123c 50%,#881337 100%);border-radius:20px 20px 0 0;padding:40px 40px 35px;text-align:center;">
+            <td style="background:${themeGradient};padding:40px 40px 35px;text-align:center;">
               <div style="margin-bottom:16px;">
                 <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="12" fill="rgba(255,255,255,0.15)"/>
@@ -833,36 +980,89 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
               <p style="margin:0 0 24px;color:#64748b;font-size:15px;line-height:1.6;">
                 ${introText} A continuación te recordamos los detalles de tu consulta:
               </p>
-              <div style="height:3px;background:linear-gradient(90deg,#e11d48,#be123c,#881337);border-radius:3px;margin-bottom:28px;"></div>
+
+              <!-- CONTADOR DE TIEMPO RESTANTE -->
+              <div style="background:#fff7ed;border:1px solid #ffedd5;border-left:4px solid #f97316;border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:center;">
+                <p style="margin:0;color:#7c2d12;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;">⏰ Tiempo restante para iniciar</p>
+                <p style="margin:6px 0 0;color:#c2410c;font-size:20px;font-weight:800;font-family:monospace;letter-spacing:0.5px;">${countdownText}</p>
+                <p style="margin:6px 0 0;color:#9a3412;font-size:10px;font-style:italic;">(Calculado en el momento del envío. Para ver el contador en tiempo real, ingresa a tu portal.)</p>
+              </div>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
               
-              <!-- DETALLES -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#334155;line-height:1.5;">
+              <!-- DATOS DEL PACIENTE -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">📋 Datos del Paciente</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;font-size:14px;color:#475569;line-height:1.5;">
                 <tr>
-                  <td width="35%" style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">👨‍⚕️ Especialista:</td>
-                  <td width="65%" style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">Dr(a). ${appt.doctor_name} <span style="font-size:12px;color:#64748b;font-weight:normal;">(${appt.doctor_specialty})</span></td>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#be123c;">Nombre:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">${patientName}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">📅 Fecha:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;text-transform:capitalize;">${dateFormatted}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">Correo:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${patientEmail}</td>
+                </tr>
+                ${appt.patient_phone ? `
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">Teléfono:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${appt.patient_phone}</td>
+                </tr>
+                ` : ''}
+              </table>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
+
+              <!-- DETALLES DE LA CONSULTA -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👨‍⚕️ Detalles de la Consulta</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;font-size:14px;color:#475569;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#be123c;">👨‍⚕️ Especialista:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">Dr. ${appt.doctor_name} <span style="font-size:12px;color:#64748b;font-weight:normal;">(${appt.doctor_specialty})</span></td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">⏰ Hora:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${timeFormatted} (Hora de Caracas)</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">📅 Fecha:</td>
+                  <td style="padding:6px 0;color:#1e293b;text-transform:capitalize;">${dateFormatted}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">💻 Modalidad:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${modalityLabel}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">⏰ Hora:</td>
+                  <td style="padding:6px 0;color:#1e293b;font-weight:600;">${timeFormatted} (Hora de Caracas)</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 0;font-weight:bold;color:#be123c;border-bottom:1px solid #f1f5f9;">📍 Lugar:</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#475569;">${locationDetails}</td>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">💻 Modalidad:</td>
+                  <td style="padding:6px 0;font-weight:600;color:#1e293b;">${modalityLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">📍 Lugar:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${locationDetails}</td>
+                </tr>
+              </table>
+
+              <div style="height:2px;background:#f1f5f9;margin-bottom:24px;"></div>
+
+              <!-- INFORMACIÓN DE PAGO -->
+              <h3 style="margin:0 0 12px;color:#1e1b4b;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">💳 Información de Pago</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;font-size:14px;color:#475569;line-height:1.5;">
+                <tr>
+                  <td width="35%" style="padding:6px 0;font-weight:bold;color:#be123c;">Monto Tarifa:</td>
+                  <td width="65%" style="padding:6px 0;font-weight:600;color:#1e293b;">${feeFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">Método de Pago:</td>
+                  <td style="padding:6px 0;color:#1e293b;">${paymentMethodLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:bold;color:#be123c;">Estado del Pago:</td>
+                  <td style="padding:6px 0;color:#1e293b;">
+                    <span style="font-weight:bold;color:${appt.payment_status === 'paid' || appt.payment_status === 'verified' ? '#10b981' : '#f59e0b'};">
+                      ${paymentStatusLabel}
+                    </span>
+                  </td>
                 </tr>
               </table>
 
               <!-- BOTÓN CTA -->
               <div style="text-align:center;margin:32px 0;">
                 <a href="${frontendUrl}/patient/appointments"
-                   style="display:inline-block;background:linear-gradient(135deg,#e11d48,#be123c);color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px rgba(225,29,72,0.40);">
+                   style="display:inline-block;background:${buttonTheme};color:#ffffff;text-decoration:none;padding:18px 48px;border-radius:14px;font-size:15px;font-weight:800;letter-spacing:0.5px;box-shadow:0 8px 24px ${buttonShadow};">
                   Acceder a la Cita
                 </a>
               </div>
@@ -890,7 +1090,7 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
         await transporter.sendMail({
             from: `"Mindpath Neuro" <${smtp_email}>`,
             to: patientEmail,
-            subject: `🔔 Recordatorio: ${isToday ? 'Hoy' : 'Mañana'} es tu cita — Mindpath Neuro`,
+            subject: `🔔 Recordatorio: ${is90Min ? 'Tu cita inicia en 1h 30m' : isToday ? 'Hoy es tu cita' : 'Mañana es tu cita'} — Mindpath Neuro`,
             html: htmlContent
         });
 

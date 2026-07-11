@@ -354,9 +354,11 @@ exports.bookAppointment = async (req, res) => {
                     SELECT 
                         a.id, a.appointment_date, a.start_time, a.type,
                         p_u.email AS patient_email, p_u.full_name AS patient_name,
+                        p_u.phone AS patient_phone,
                         d_u.full_name AS doctor_name, d.specialty AS doctor_specialty,
                         c.name AS clinic_name, c.default_address AS clinic_address,
-                        dc.custom_address AS custom_clinic_address
+                        dc.custom_address AS custom_clinic_address,
+                        a.consultation_fee_snapshot, a.payment_method, a.payment_status
                     FROM appointments a
                     JOIN patients p ON a.patient_id = p.id
                     JOIN users p_u ON p.user_id = p_u.id

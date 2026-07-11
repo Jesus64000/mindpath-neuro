@@ -678,22 +678,44 @@ exports.runReminderCron = async (req, res) => {
     if (process.env.CRON_SECRET && cronToken !== expectedToken) {
         return res.status(401).json({ message: 'No autorizado' });
     }
-
     const { sendAppointmentReminderEmail } = require('../utils/emailService');
 
     try {
-        console.log('--- Iniciando tarea de envío de recordatorios ---');
-        let totalSent1Day = 0;
-        let totalSentToday = 0;
+        console.log('--- Iniciando tarea de envío de recordatorios (1h 30m) ---');
+        let totalSent90Min = 0;
 
-        // 1. Citas programadas para mañana (1 día antes)
-        const [tomorrowAppts] = await db.query(`
+        const getCaracasTime = () => {
+            const now = new Date();
+            try {
+                const caracasString = now.toLocaleString('en-US', { timeZone: 'America/Caracas' });
+                return new Date(caracasString);
+            } catch (e) {
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+                return new Date(utc - (3600000 * 4));
+            }
+        };
+
+        const getCaracasTodayStr = () => {
+            const caracasNow = getCaracasTime();
+            const year = caracasNow.getFullYear();
+            const month = String(caracasNow.getMonth() + 1).padStart(2, '0');
+            const day = String(caracasNow.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const todayStr = getCaracasTodayStr();
+        const caracasNow = getCaracasTime();
+
+        // Citas programadas para hoy y mañana que no tengan enviado el recordatorio de 90 min
+        const [appts] = await db.query(`
             SELECT 
                 a.id, a.appointment_date, a.start_time, a.type,
                 p_u.email AS patient_email, p_u.full_name AS patient_name,
+                p_u.phone AS patient_phone,
                 d_u.full_name AS doctor_name, d.specialty AS doctor_specialty,
                 c.name AS clinic_name, c.default_address AS clinic_address,
-                dc.custom_address AS custom_clinic_address
+                dc.custom_address AS custom_clinic_address,
+                a.consultation_fee_snapshot, a.payment_method, a.payment_status
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
             JOIN users p_u ON p.user_id = p_u.id
@@ -702,55 +724,42 @@ exports.runReminderCron = async (req, res) => {
             LEFT JOIN clinics c ON a.clinic_id = c.id
             LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
             WHERE a.status IN ('confirmed', 'scheduled', 'pending')
-              AND a.appointment_date = CURDATE() + INTERVAL 1 DAY
-              AND a.reminder_1day_sent = 0
-        `);
+              AND a.reminder_90min_sent = 0
+              AND a.appointment_date BETWEEN ? AND (? + INTERVAL 1 DAY)
+        `, [todayStr, todayStr]);
 
-        for (const appt of tomorrowAppts) {
-            try {
-                await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, '1day');
-                await db.query('UPDATE appointments SET reminder_1day_sent = 1 WHERE id = ?', [appt.id]);
-                totalSent1Day++;
-            } catch (err) {
-                console.error(`Error enviando recordatorio de 1 día para cita ${appt.id}:`, err.message);
+        for (const appt of appts) {
+            const datePart = appt.appointment_date;
+            let dateStr = "";
+            if (datePart instanceof Date) {
+                const year = datePart.getFullYear();
+                const month = String(datePart.getMonth() + 1).padStart(2, '0');
+                const day = String(datePart.getDate()).padStart(2, '0');
+                dateStr = `${year}-${month}-${day}`;
+            } else {
+                dateStr = String(datePart).substring(0, 10);
+            }
+            
+            const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
+            const diffMs = apptDateTime - caracasNow;
+            const diffMins = diffMs / 60000;
+
+            // Si faltan entre 0 y 95 minutos (coincide con la ventana de recordatorio de 1h 30m)
+            if (diffMins > 0 && diffMins <= 95) {
+                try {
+                    await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, '90min');
+                    await db.query('UPDATE appointments SET reminder_90min_sent = 1 WHERE id = ?', [appt.id]);
+                    totalSent90Min++;
+                } catch (err) {
+                    console.error(`Error enviando recordatorio de 90 min para cita ${appt.id}:`, err.message);
+                }
             }
         }
 
-        // 2. Citas programadas para hoy (mismo día)
-        const [todayAppts] = await db.query(`
-            SELECT 
-                a.id, a.appointment_date, a.start_time, a.type,
-                p_u.email AS patient_email, p_u.full_name AS patient_name,
-                d_u.full_name AS doctor_name, d.specialty AS doctor_specialty,
-                c.name AS clinic_name, c.default_address AS clinic_address,
-                dc.custom_address AS custom_clinic_address
-            FROM appointments a
-            JOIN patients p ON a.patient_id = p.id
-            JOIN users p_u ON p.user_id = p_u.id
-            JOIN doctors d ON a.doctor_id = d.id
-            JOIN users d_u ON d.user_id = d_u.id
-            LEFT JOIN clinics c ON a.clinic_id = c.id
-            LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
-            WHERE a.status IN ('confirmed', 'scheduled', 'pending')
-              AND a.appointment_date = CURDATE()
-              AND a.reminder_today_sent = 0
-        `);
-
-        for (const appt of todayAppts) {
-            try {
-                await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, 'today');
-                await db.query('UPDATE appointments SET reminder_today_sent = 1 WHERE id = ?', [appt.id]);
-                totalSentToday++;
-            } catch (err) {
-                console.error(`Error enviando recordatorio de hoy para cita ${appt.id}:`, err.message);
-            }
-        }
-
-        console.log(`--- Tarea finalizada. Enviados 1 día: ${totalSent1Day}, Hoy: ${totalSentToday} ---`);
+        console.log(`--- Tarea finalizada. Recordatorios de 90 min enviados: ${totalSent90Min} ---`);
         res.status(200).json({
             ok: true,
-            sent_1day: totalSent1Day,
-            sent_today: totalSentToday
+            sent_90min: totalSent90Min
         });
     } catch (error) {
         console.error('Error en runReminderCron:', error);
