@@ -688,6 +688,28 @@ const getSystemBranding = async () => {
         reminder_offset: 90
     };
 };
+const formatDateToEs = (appointmentDate) => {
+    let dateObj;
+    if (appointmentDate instanceof Date) {
+        // Extraer componentes locales para evitar desfases UTC
+        const year = appointmentDate.getFullYear();
+        const month = appointmentDate.getMonth();
+        const day = appointmentDate.getDate();
+        dateObj = new Date(year, month, day, 12, 0, 0);
+    } else {
+        const dateStr = String(appointmentDate).substring(0, 10);
+        dateObj = new Date(`${dateStr}T12:00:00`);
+    }
+    
+    // Si sigue siendo inválida por alguna razón, fallback al valor original
+    if (isNaN(dateObj.getTime())) {
+        return String(appointmentDate);
+    }
+
+    return dateObj.toLocaleDateString('es-ES', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+};
 
 /**
  * Envía un correo de confirmación de cita al paciente.
@@ -698,9 +720,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
         const frontendUrl = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
         const branding = await getSystemBranding();
         
-        const dateFormatted = new Date(`${appt.appointment_date}T12:00:00`).toLocaleDateString('es-ES', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
+        const dateFormatted = formatDateToEs(appt.appointment_date);
         
         const timeFormatted = appt.start_time.substring(0, 5);
         const modalityLabel = appt.type === 'virtual' ? 'Consulta Virtual (Telemedicina)' : 'Consulta Presencial';
@@ -904,9 +924,7 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
         const frontendUrl = process.env.FRONTEND_URL || 'https://mindpath-neuro.vercel.app';
         const branding = await getSystemBranding();
         
-        const dateFormatted = new Date(`${appt.appointment_date}T12:00:00`).toLocaleDateString('es-ES', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
+        const dateFormatted = formatDateToEs(appt.appointment_date);
         
         const timeFormatted = appt.start_time.substring(0, 5);
         const modalityLabel = appt.type === 'virtual' ? 'Consulta Virtual (Telemedicina)' : 'Consulta Presencial';
