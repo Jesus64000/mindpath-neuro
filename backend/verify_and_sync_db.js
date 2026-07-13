@@ -56,7 +56,7 @@ const expectedColumns = {
         { name: 'exchange_rate_updated_at', definition: "TIMESTAMP NULL DEFAULT NULL AFTER exchange_rate_mode" },
         { name: 'logo_size', definition: "INT DEFAULT 40" },
         { name: 'logo_dark_url', definition: "VARCHAR(255) DEFAULT NULL" },
-        { name: 'appointment_reminder_offset_minutes', definition: "INT DEFAULT 90 AFTER logo_dark_url" }
+        { name: 'appointment_reminder_offset_minutes', definition: "INT DEFAULT 30 AFTER logo_dark_url" }
     ],
     doctor_schedules: [
         { name: 'clinic_id', definition: 'INT DEFAULT NULL AFTER slot_duration' }

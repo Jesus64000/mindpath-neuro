@@ -520,7 +520,7 @@ exports.updateSettings = async (req, res) => {
     }
 
     const validLogoSize = Number(logo_size) || 40;
-    const validOffset = appointment_reminder_offset_minutes !== undefined ? Number(appointment_reminder_offset_minutes) : 90;
+    const validOffset = appointment_reminder_offset_minutes !== undefined ? Number(appointment_reminder_offset_minutes) : 30;
 
     try {
         await db.query(

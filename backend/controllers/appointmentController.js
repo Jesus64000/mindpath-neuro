@@ -684,7 +684,7 @@ exports.runReminderCron = async (req, res) => {
         const [settings] = await db.query('SELECT appointment_reminder_offset_minutes FROM system_settings LIMIT 1');
         const offsetMins = (settings && settings[0] && settings[0].appointment_reminder_offset_minutes !== undefined)
             ? Number(settings[0].appointment_reminder_offset_minutes)
-            : 90;
+            : 30;
 
         console.log(`--- Iniciando tarea de envío de recordatorios (Antelación configurada: ${offsetMins} min) ---`);
         let totalSentReminders = 0;

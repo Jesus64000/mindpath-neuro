@@ -675,7 +675,7 @@ const getSystemBranding = async () => {
                 clinic_name: rows[0].clinic_name || 'Mindpath Neuro',
                 primary_color: rows[0].primary_color || '#6D28D9',
                 primary_hover: rows[0].primary_hover || '#5B21B6',
-                reminder_offset: rows[0].appointment_reminder_offset_minutes !== undefined ? rows[0].appointment_reminder_offset_minutes : 90
+                reminder_offset: rows[0].appointment_reminder_offset_minutes !== undefined ? rows[0].appointment_reminder_offset_minutes : 30
             };
         }
     } catch (e) {
@@ -685,7 +685,7 @@ const getSystemBranding = async () => {
         clinic_name: 'Mindpath Neuro',
         primary_color: '#6D28D9',
         primary_hover: '#5B21B6',
-        reminder_offset: 90
+        reminder_offset: 30
     };
 };
 const formatDateToEs = (appointmentDate) => {

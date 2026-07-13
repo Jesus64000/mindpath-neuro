@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar as CalendarIcon, Filter, Video, Users, RefreshCw, Search } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, Video, Users, RefreshCw, Search, Clock, Save } from 'lucide-react';
 import api from '../../../api/axiosConfig';
 import CustomSelect from '../shared/CustomSelect';
 import Pagination from '../shared/Pagination';
 
-const AppointmentsTab = () => {
+const AppointmentsTab = ({ theme, setTheme, onSave, saving }) => {
     const [appointments, setAppointments] = useState([]);
     const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -184,6 +184,46 @@ const AppointmentsTab = () => {
 
             {/* Paginación */}
             <Pagination pagination={pagination} onPageChange={setPage} />
+
+            {/* CONFIGURACIÓN DE RECORDATORIOS (ADMIN ONLY) */}
+            {theme && setTheme && (
+                <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-gray-100 dark:border-[var(--border-color)] p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mt-6">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-mindpath-primary/10 rounded-2xl text-mindpath-primary shrink-0 animate-pulse">
+                            <Clock size={24} />
+                        </div>
+                        <div>
+                            <h3 className="font-black text-base text-gray-900 dark:text-white">Recordatorio Automático de Citas</h3>
+                            <p className="text-xs text-gray-400 dark:text-slate-400 mt-1 leading-relaxed">
+                                Configura la antelación para el envío automático de notificaciones por correo electrónico a tus pacientes.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                        <select 
+                            value={theme.appointment_reminder_offset_minutes ?? 30} 
+                            onChange={e => setTheme(p => ({ ...p, appointment_reminder_offset_minutes: Number(e.target.value) }))}
+                            className="p-3.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-mindpath-primary outline-none min-w-[240px]"
+                        >
+                            <option value={90}>1 hora y 30 minutos (90 minutos)</option>
+                            <option value={60}>1 hora (60 minutos)</option>
+                            <option value={30}>30 minutos (30 minutos)</option>
+                            <option value={3}>3 minutos (3 minutos)</option>
+                        </select>
+                        
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={onSave}
+                            className="px-5 py-3.5 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-bold rounded-xl shadow-md hover:shadow-none transition-all flex items-center gap-1.5 text-xs whitespace-nowrap disabled:opacity-50 active:scale-95"
+                        >
+                            {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                            {saving ? 'Guardando...' : 'Guardar'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
