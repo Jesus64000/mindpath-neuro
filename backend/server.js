@@ -188,10 +188,10 @@ app.listen(PORT, () => {
     console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
     console.log(`👉 Haz un GET a http://localhost:${PORT}/api/health para probar.`);
     
-    // Ejecutar recordatorios automáticamente cada 3 minutos en entornos que no sean Vercel/serverless
+    // Ejecutar recordatorios automáticamente cada 10 minutos en entornos que no sean Vercel/serverless
     if (!process.env.VERCEL) {
         const appointmentController = require('./controllers/appointmentController');
-        const THREE_MINUTES = 180000;
+        const TEN_MINUTES = 600000;
         setInterval(() => {
             console.log('⏰ Ejecutando cron interno de recordatorios...');
             const mockReq = { headers: {}, query: {} };
@@ -202,7 +202,7 @@ app.listen(PORT, () => {
             appointmentController.runReminderCron(mockReq, mockRes).catch(err => {
                 console.error('Error en cron interno de recordatorios:', err.message);
             });
-        }, THREE_MINUTES);
+        }, TEN_MINUTES);
         
         // También disparar una ejecución inicial 10 segundos después del arranque
         setTimeout(() => {

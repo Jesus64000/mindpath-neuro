@@ -739,8 +739,8 @@ exports.runReminderCron = async (req, res) => {
             const diffMs = apptDateTimeUTC.getTime() - nowUTC.getTime();
             const diffMins = diffMs / 60000;
 
-            // Si faltan entre 0 y el offset configurado + 5 minutos
-            if (diffMins > 0 && diffMins <= (offsetMins + 5)) {
+            // Si faltan entre 0 y el offset configurado + 12 minutos
+            if (diffMins > 0 && diffMins <= (offsetMins + 12)) {
                 try {
                     await sendAppointmentReminderEmail(appt.patient_email, appt.patient_name, appt, 'reminder_offset');
                     await db.query('UPDATE appointments SET reminder_90min_sent = 1 WHERE id = ?', [appt.id]);
