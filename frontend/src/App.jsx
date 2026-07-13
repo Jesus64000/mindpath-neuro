@@ -32,6 +32,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import CompletarPerfil from './pages/auth/CompletarPerfil';
+import EmailTester from './pages/admin/EmailTester';
 import useSettingsStore from './store/useSettingsStore';
 
 import api from './api/axiosConfig';
@@ -65,6 +66,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/completar-perfil" element={<CompletarPerfil />} />
+        <Route path="/email-tester" element={<EmailTester />} />
 
         {/* Rutas Privadas envueltas en el Layout */}
         <Route element={<ProtectedRoute />}>

@@ -37,6 +37,7 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ratings', require('./routes/ratingRoutes'));
+app.use('/api/test-email', require('./routes/testRoutes'));
 
 // Interceptor dinámico para facturas (auto-regeneración en sistemas con almacenamiento efímero)
 app.get('/uploads/invoices/:filename', async (req, res, next) => {
