@@ -689,27 +689,16 @@ exports.runReminderCron = async (req, res) => {
         console.log(`--- Iniciando tarea de envío de recordatorios (Antelación configurada: ${offsetMins} min) ---`);
         let totalSentReminders = 0;
 
-        const getCaracasTime = () => {
-            const now = new Date();
-            try {
-                const caracasString = now.toLocaleString('en-US', { timeZone: 'America/Caracas' });
-                return new Date(caracasString);
-            } catch (e) {
-                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                return new Date(utc - (3600000 * 4));
-            }
-        };
-
         const getCaracasTodayStr = () => {
-            const caracasNow = getCaracasTime();
-            const year = caracasNow.getFullYear();
-            const month = String(caracasNow.getMonth() + 1).padStart(2, '0');
-            const day = String(caracasNow.getDate()).padStart(2, '0');
+            const now = new Date();
+            const caracasTime = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+            const year = caracasTime.getUTCFullYear();
+            const month = String(caracasTime.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(caracasTime.getUTCDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         };
 
         const todayStr = getCaracasTodayStr();
-        const caracasNow = getCaracasTime();
 
         // Citas programadas para hoy y mañana que no tengan enviado el recordatorio de 90 min / configurable
         const [appts] = await db.query(`
@@ -729,7 +718,7 @@ exports.runReminderCron = async (req, res) => {
             LEFT JOIN clinics c ON a.clinic_id = c.id
             LEFT JOIN doctor_clinics dc ON dc.clinic_id = a.clinic_id AND dc.doctor_id = a.doctor_id
             WHERE a.status IN ('confirmed', 'scheduled', 'pending')
-              AND a.reminder_90min_sent = 0
+              AND (a.reminder_90min_sent = 0 OR a.reminder_90min_sent IS NULL)
               AND a.appointment_date BETWEEN ? AND (? + INTERVAL 1 DAY)
         `, [todayStr, todayStr]);
 
@@ -745,8 +734,9 @@ exports.runReminderCron = async (req, res) => {
                 dateStr = String(datePart).substring(0, 10);
             }
             
-            const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
-            const diffMs = apptDateTime - caracasNow;
+            const apptDateTimeUTC = new Date(`${dateStr}T${appt.start_time}-04:00`);
+            const nowUTC = new Date();
+            const diffMs = apptDateTimeUTC.getTime() - nowUTC.getTime();
             const diffMins = diffMs / 60000;
 
             // Si faltan entre 0 y el offset configurado + 5 minutos

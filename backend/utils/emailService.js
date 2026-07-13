@@ -728,8 +728,7 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
             ? 'Sala de consulta virtual en nuestra plataforma. El enlace estará disponible en tu panel de paciente.' 
             : `${appt.clinic_name || 'Consultorio Médico'} - ${appt.clinic_address || appt.custom_clinic_address || 'Dirección no especificada'}`;
 
-        // Obtener el tiempo restante en Caracas
-        const caracasNow = getCaracasTime();
+        // Obtener el tiempo restante
         const datePart = appt.appointment_date;
         let dateStr = "";
         if (datePart instanceof Date) {
@@ -740,8 +739,9 @@ const sendAppointmentConfirmationEmail = async (patientEmail, patientName, appt)
         } else {
             dateStr = String(datePart).substring(0, 10);
         }
-        const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
-        const diffMs = apptDateTime - caracasNow;
+        const apptDateTimeUTC = new Date(`${dateStr}T${appt.start_time}-04:00`);
+        const nowUTC = new Date();
+        const diffMs = apptDateTimeUTC.getTime() - nowUTC.getTime();
         let countdownText = "";
         if (diffMs > 0) {
             const diffSecs = Math.floor(diffMs / 1000);
@@ -935,8 +935,7 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
         const isToday = type === 'today';
         const is1Day = type === '1day';
 
-        // Obtener el tiempo restante en Caracas
-        const caracasNow = getCaracasTime();
+        // Obtener el tiempo restante
         const datePart = appt.appointment_date;
         let dateStr = "";
         if (datePart instanceof Date) {
@@ -947,8 +946,9 @@ const sendAppointmentReminderEmail = async (patientEmail, patientName, appt, typ
         } else {
             dateStr = String(datePart).substring(0, 10);
         }
-        const apptDateTime = new Date(`${dateStr}T${appt.start_time}`);
-        const diffMs = apptDateTime - caracasNow;
+        const apptDateTimeUTC = new Date(`${dateStr}T${appt.start_time}-04:00`);
+        const nowUTC = new Date();
+        const diffMs = apptDateTimeUTC.getTime() - nowUTC.getTime();
         let countdownText = "";
         if (diffMs > 0) {
             const diffSecs = Math.floor(diffMs / 1000);
