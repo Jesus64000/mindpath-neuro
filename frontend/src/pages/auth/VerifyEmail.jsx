@@ -88,13 +88,13 @@ const VerifyEmail = () => {
                             </div>
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-4">¡Correo Verificado!</h2>
                             <p className="text-gray-500 dark:text-slate-400 leading-relaxed mb-8">
-                                {message}
+                                Tu correo electrónico ha sido verificado con éxito. Ya puedes iniciar sesión en la plataforma.
                             </p>
                             <button 
-                                onClick={() => navigate(user ? '/dashboard' : '/login')}
+                                onClick={() => navigate('/login')}
                                 className="w-full inline-flex items-center justify-center gap-2 bg-mindpath-primary hover:bg-mindpath-primaryHover text-white font-black py-4 px-8 rounded-2xl transition-all shadow-lg shadow-mindpath-primary/25 active:scale-[0.98]"
                             >
-                                {user ? 'Ir a mi Panel de Control' : 'Iniciar Sesión'} <ArrowRight size={20} />
+                                Iniciar Sesión <ArrowRight size={20} />
                             </button>
                         </div>
                     )}
@@ -109,7 +109,7 @@ const VerifyEmail = () => {
                                 {message}
                             </p>
                             <Link 
-                                to={user ? '/dashboard' : '/login'}
+                                to="/login"
                                 className="w-full inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-bold py-4 px-8 rounded-2xl transition-all hover:bg-gray-200 dark:hover:bg-slate-700"
                             >
                                 Volver a la plataforma
