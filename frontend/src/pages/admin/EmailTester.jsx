@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Mail, Clock, Send, ShieldAlert, Sparkles, CheckCircle2, User, RefreshCw, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, Clock, Send, ShieldAlert, Sparkles, CheckCircle2, User, RefreshCw, ChevronRight, XCircle } from 'lucide-react';
 import api from '../../api/axiosConfig';
 
 const EmailTester = () => {
@@ -7,11 +7,36 @@ const EmailTester = () => {
     const [name, setName] = useState('Paciente de Pruebas');
     const [minutesRemaining, setMinutesRemaining] = useState(30);
     const [rejectionReason, setRejectionReason] = useState('No se adjuntaron credenciales médicas vigentes.');
+    const [sendDelay, setSendDelay] = useState(0); // in minutes: 0 = immediate, 1..5
+    const [scheduledEmails, setScheduledEmails] = useState({}); // { [type]: secondsRemaining }
     
     const [loading, setLoading] = useState(null); // Type of loading email
     const [status, setStatus] = useState(null); // { success, message }
 
-    const handleSendTestEmail = async (type) => {
+    // Procesar cuenta regresiva para correos programados
+    useEffect(() => {
+        const activeKeys = Object.keys(scheduledEmails);
+        if (activeKeys.length === 0) return;
+
+        const interval = setInterval(() => {
+            setScheduledEmails(prev => {
+                const next = { ...prev };
+                for (const key of Object.keys(next)) {
+                    if (next[key] <= 1) {
+                        delete next[key];
+                        triggerActualSend(key);
+                    } else {
+                        next[key] -= 1;
+                    }
+                }
+                return next;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [scheduledEmails, email, name, minutesRemaining, rejectionReason]);
+
+    const triggerActualSend = async (type) => {
         setLoading(type);
         setStatus(null);
         try {
@@ -28,10 +53,33 @@ const EmailTester = () => {
             console.error(error);
             setStatus({ 
                 success: false, 
-                message: error.response?.data?.message || 'Error al enviar el correo de prueba. Verifica la consola del backend.' 
+                message: error.response?.data?.message || 'Error al enviar el correo de prueba.' 
             });
         } finally {
             setLoading(null);
+        }
+    };
+
+    const handleSendTestEmail = async (type) => {
+        // Cancelar si ya está programado
+        if (scheduledEmails[type] !== undefined) {
+            setScheduledEmails(prev => {
+                const next = { ...prev };
+                delete next[type];
+                return next;
+            });
+            setStatus({ success: true, message: 'Envío programado cancelado con éxito.' });
+            return;
+        }
+
+        if (sendDelay === 0) {
+            triggerActualSend(type);
+        } else {
+            setScheduledEmails(prev => ({
+                ...prev,
+                [type]: sendDelay * 60
+            }));
+            setStatus({ success: true, message: `El envío se ha programado para dentro de ${sendDelay} minuto(s).` });
         }
     };
 
@@ -141,6 +189,23 @@ const EmailTester = () => {
                             </div>
                         </div>
 
+                        {/* RETRASO DE ENVÍO */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Retraso de Envío</label>
+                            <select 
+                                value={sendDelay}
+                                onChange={e => setSendDelay(Number(e.target.value))}
+                                className="w-full p-3.5 bg-slate-950/50 border border-slate-800 focus:border-purple-500 rounded-2xl text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-purple-500/30 transition-all cursor-pointer"
+                            >
+                                <option value={0}>🚀 Enviar Inmediatamente</option>
+                                <option value={1}>⏱️ Retrasar 1 minuto</option>
+                                <option value={2}>⏱️ Retrasar 2 minutos</option>
+                                <option value={3}>⏱️ Retrasar 3 minutos</option>
+                                <option value={4}>⏱️ Retrasar 4 minutos</option>
+                                <option value={5}>⏱️ Retrasar 5 minutos</option>
+                            </select>
+                        </div>
+
                         {/* MOTIVO DE RECHAZO */}
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Motivo de Rechazo (Médicos)</label>
@@ -182,13 +247,15 @@ const EmailTester = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {cat.items.map((item) => {
                                         const Icon = item.icon;
+                                        const secs = scheduledEmails[item.id];
+                                        const isScheduled = secs !== undefined;
                                         const isSending = loading === item.id;
                                         return (
                                             <button
                                                 key={item.id}
-                                                disabled={loading !== null}
+                                                disabled={loading !== null && !isScheduled}
                                                 onClick={() => handleSendTestEmail(item.id)}
-                                                className="group relative flex items-center justify-between p-4 bg-slate-950/60 hover:bg-slate-950/90 border border-slate-800 hover:border-slate-700/80 rounded-2xl text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:pointer-events-none"
+                                                className={`group relative flex items-center justify-between p-4 bg-slate-950/60 hover:bg-slate-950/90 border rounded-2xl text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 ${isScheduled ? 'border-purple-500 shadow-lg shadow-purple-500/10 animate-pulse' : 'border-slate-800 hover:border-slate-700/80'}`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`p-2.5 rounded-xl bg-gradient-to-br ${item.color} text-white shadow-md group-hover:scale-105 transition-transform`}>
@@ -196,13 +263,17 @@ const EmailTester = () => {
                                                     </div>
                                                     <div>
                                                         <span className="block text-xs font-bold text-slate-200 group-hover:text-white transition-colors">{item.label}</span>
-                                                        <span className="block text-[10px] text-slate-500 font-bold uppercase mt-0.5 tracking-wider">Test {item.id}</span>
+                                                        <span className="block text-[10px] text-slate-500 font-bold uppercase mt-0.5 tracking-wider">
+                                                            {isScheduled ? `⏳ En 0${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}` : `Test ${item.id}`}
+                                                        </span>
                                                     </div>
                                                 </div>
 
                                                 <div>
                                                     {isSending ? (
                                                         <RefreshCw className="animate-spin text-purple-400" size={16} />
+                                                    ) : isScheduled ? (
+                                                        <XCircle className="text-rose-500 hover:scale-110 transition-transform" size={16} title="Cancelar envío" />
                                                     ) : (
                                                         <ChevronRight className="text-slate-600 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" size={16} />
                                                     )}
